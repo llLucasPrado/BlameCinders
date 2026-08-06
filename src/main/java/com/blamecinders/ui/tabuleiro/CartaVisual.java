@@ -1,15 +1,20 @@
 package com.blamecinders.ui.tabuleiro;
 
-import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
+import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.math.Interpolation;
 import com.badlogic.gdx.scenes.scene2d.Actor;
 import com.badlogic.gdx.scenes.scene2d.InputEvent;
 import com.badlogic.gdx.scenes.scene2d.actions.Actions;
 import com.badlogic.gdx.scenes.scene2d.utils.ClickListener;
+import com.badlogic.gdx.scenes.scene2d.utils.Drawable;
+import com.badlogic.gdx.scenes.scene2d.utils.TextureRegionDrawable;
 import com.badlogic.gdx.utils.Align;
 import com.blamecinders.ui.carta.CartaExibida;
 import com.blamecinders.util.GerenciadorTexturas;
+
+import java.util.Objects;
+import java.util.function.Function;
 
 /** Ator interativo que representa uma célula do tabuleiro. */
 public class CartaVisual extends CartaExibida {
@@ -17,8 +22,9 @@ public class CartaVisual extends CartaExibida {
     public static final float LARGURA = 108;
     public static final float ALTURA = 144;
 
-    private Texture frente;
-    private final Texture verso;
+    private Drawable frente;
+    private final Drawable verso;
+    private final Function<String, Drawable> provedorFundos;
     private String nomeFrente;
     private final String nomeVerso;
     private int linha;
@@ -36,11 +42,36 @@ public class CartaVisual extends CartaExibida {
         InteracaoCartaVisual interacao,
         BitmapFont fonte
     ) {
-        super(GerenciadorTexturas.get(nomeVerso), nomeVerso, fonte);
+        this(
+            nomeFrente,
+            nomeVerso,
+            x,
+            y,
+            linha,
+            coluna,
+            interacao,
+            fonte,
+            CartaVisual::criarFundo
+        );
+    }
+
+    public CartaVisual(
+        String nomeFrente,
+        String nomeVerso,
+        float x,
+        float y,
+        int linha,
+        int coluna,
+        InteracaoCartaVisual interacao,
+        BitmapFont fonte,
+        Function<String, Drawable> provedorFundos
+    ) {
+        super(obterFundo(provedorFundos, nomeVerso), nomeVerso, fonte);
         this.nomeFrente = nomeFrente;
         this.nomeVerso = nomeVerso;
-        this.frente = GerenciadorTexturas.get(nomeFrente);
-        this.verso = GerenciadorTexturas.get(nomeVerso);
+        this.provedorFundos = Objects.requireNonNull(provedorFundos, "provedorFundos");
+        this.frente = obterFundo(provedorFundos, nomeFrente);
+        this.verso = obterFundo(provedorFundos, nomeVerso);
         this.linha = linha;
         this.coluna = coluna;
 
@@ -92,11 +123,11 @@ public class CartaVisual extends CartaExibida {
 
     public void setFrente(String nome) {
         nomeFrente = nome;
-        frente = GerenciadorTexturas.get(nome);
+        frente = obterFundo(provedorFundos, nome);
         atualizarFace();
     }
 
-    public Texture getTexturaAtual() {
+    public Drawable getFundoAtual() {
         return revelada ? frente : verso;
     }
 
@@ -104,7 +135,7 @@ public class CartaVisual extends CartaExibida {
         bloqueandoAnimacaoClique = bloqueando;
     }
 
-    public Texture getTexturaVerso() {
+    public Drawable getFundoVerso() {
         return verso;
     }
 
@@ -113,5 +144,18 @@ public class CartaVisual extends CartaExibida {
             revelada ? frente : verso,
             revelada ? nomeFrente : nomeVerso
         );
+    }
+
+    private static Drawable criarFundo(String identificador) {
+        return new TextureRegionDrawable(new TextureRegion(GerenciadorTexturas.get(identificador)));
+    }
+
+    private static Drawable obterFundo(
+        Function<String, Drawable> provedorFundos,
+        String identificador
+    ) {
+        Drawable fundo = Objects.requireNonNull(provedorFundos, "provedorFundos")
+            .apply(identificador);
+        return Objects.requireNonNull(fundo, "Fundo não encontrado: " + identificador);
     }
 }

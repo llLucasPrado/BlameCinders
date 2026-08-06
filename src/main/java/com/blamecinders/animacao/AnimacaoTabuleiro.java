@@ -2,6 +2,7 @@ package com.blamecinders.animacao;
 
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.scenes.scene2d.Stage;
+import com.badlogic.gdx.scenes.scene2d.Actor;
 import com.badlogic.gdx.scenes.scene2d.actions.Actions;
 import com.badlogic.gdx.utils.Align;
 import com.badlogic.gdx.math.Interpolation;
@@ -10,9 +11,12 @@ import com.blamecinders.ui.carta.CartaExibida;
 import com.blamecinders.util.ProvedorPosicaoCarta;
 import com.blamecinders.ui.tabuleiro.CartaVisual;
 
+import java.util.Objects;
+import java.util.function.Consumer;
+
 public class AnimacaoTabuleiro {
 
-    private final Stage stageTabuleiro;
+    private final Consumer<Actor> adicionarAtor;
     private final CartaVisual[][] cartasVisuais;
     private final float cartaLargura;
     private final float cartaAltura;
@@ -27,7 +31,25 @@ public class AnimacaoTabuleiro {
         float espaco,
         ProvedorPosicaoCarta posicaoProvider
     ) {
-        this.stageTabuleiro = stageTabuleiro;
+        this(
+            Objects.requireNonNull(stageTabuleiro, "stageTabuleiro")::addActor,
+            cartasVisuais,
+            cartaLargura,
+            cartaAltura,
+            espaco,
+            posicaoProvider
+        );
+    }
+
+    public AnimacaoTabuleiro(
+        Consumer<Actor> adicionarAtor,
+        CartaVisual[][] cartasVisuais,
+        float cartaLargura,
+        float cartaAltura,
+        float espaco,
+        ProvedorPosicaoCarta posicaoProvider
+    ) {
+        this.adicionarAtor = Objects.requireNonNull(adicionarAtor, "adicionarAtor");
         this.cartasVisuais = cartasVisuais;
         this.cartaLargura = cartaLargura;
         this.cartaAltura = cartaAltura;
@@ -312,7 +334,7 @@ public class AnimacaoTabuleiro {
         //Por isso usamos o verso neutro, e não a textura da carta usada como referência.
         //Isso evita que ela herde aparência de carta revelada, destaque ou brilho.
         CartaExibida cartaTemp = new CartaExibida(
-            cartaReferencia.getTexturaVerso(),
+            cartaReferencia.getFundoVerso(),
             "VERSO",
             cartaReferencia.getFonte()
         );
@@ -326,7 +348,7 @@ public class AnimacaoTabuleiro {
         //Ela não pode herdar sensação de destaque da carta usada como referência.
         cartaTemp.setColor(1f, 1f, 1f, 0f);
 
-        stageTabuleiro.addActor(cartaTemp);
+        adicionarAtor.accept(cartaTemp);
 
         //Fica atrás do jogador, mas visível acima do fundo.
         //Depois garantimos que o jogador volte à frente.

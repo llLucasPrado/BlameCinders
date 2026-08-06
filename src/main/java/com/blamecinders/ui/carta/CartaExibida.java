@@ -9,6 +9,7 @@ import com.badlogic.gdx.scenes.scene2d.Touchable;
 import com.badlogic.gdx.scenes.scene2d.ui.Image;
 import com.badlogic.gdx.scenes.scene2d.ui.Label;
 import com.badlogic.gdx.scenes.scene2d.utils.TextureRegionDrawable;
+import com.badlogic.gdx.scenes.scene2d.utils.Drawable;
 import com.badlogic.gdx.utils.Align;
 
 /** Carta composta por fundo e texto, transformados como uma única unidade. */
@@ -18,6 +19,10 @@ public class CartaExibida extends Group {
     private final Label rotulo;
 
     public CartaExibida(Texture textura, String texto, BitmapFont fonte) {
+        this(new TextureRegionDrawable(new TextureRegion(textura)), texto, fonte);
+    }
+
+    public CartaExibida(Drawable fundo, String texto, BitmapFont fonte) {
         imagem = new Image();
         imagem.setTouchable(Touchable.disabled);
 
@@ -31,7 +36,7 @@ public class CartaExibida extends Group {
         addActor(rotulo);
         setTransform(true);
         setOrigin(Align.center);
-        setConteudo(textura, texto);
+        setConteudo(fundo, texto);
     }
 
     @Override
@@ -50,7 +55,11 @@ public class CartaExibida extends Group {
     }
 
     public void setConteudo(Texture textura, String texto) {
-        imagem.setDrawable(new TextureRegionDrawable(new TextureRegion(textura)));
+        setConteudo(new TextureRegionDrawable(new TextureRegion(textura)), texto);
+    }
+
+    public void setConteudo(Drawable fundo, String texto) {
+        imagem.setDrawable(fundo);
         rotulo.setText(texto == null ? "" : texto);
     }
 
