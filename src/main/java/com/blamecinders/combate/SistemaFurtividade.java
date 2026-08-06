@@ -13,7 +13,7 @@ public class SistemaFurtividade {
         this(new Random());
     }
 
-    SistemaFurtividade(Random random) {
+    public SistemaFurtividade(Random random) {
         this.random = Objects.requireNonNull(random, "random");
     }
 
