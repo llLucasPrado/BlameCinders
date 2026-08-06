@@ -20,21 +20,20 @@ import com.badlogic.gdx.utils.ScreenUtils;
 import com.badlogic.gdx.utils.Timer;
 import com.blamecinders.animacao.AnimacaoCarta;
 import com.blamecinders.animacao.AnimacaoTabuleiro;
+import com.blamecinders.aplicacao.ControladorEncontro;
 import com.blamecinders.aplicacao.ControladorTurno;
 import com.blamecinders.aplicacao.EstadoPartida;
 import com.blamecinders.aplicacao.MovimentoTabuleiro;
-import com.blamecinders.item.Arma;
+import com.blamecinders.aplicacao.ResultadoColetaBau;
+import com.blamecinders.aplicacao.ResultadoColetaChama;
+import com.blamecinders.aplicacao.ResultadoEncontroInimigo;
 import com.blamecinders.combate.Jogador;
-import com.blamecinders.combate.SistemaCombate;
-import com.blamecinders.combate.SistemaFurtividade;
 import com.blamecinders.fluxo.FluxoCarta;
 import com.blamecinders.fluxo.FluxoCombate;
 import com.blamecinders.ui.ControladorHUD;
 import com.blamecinders.ui.GerenciadorPopups;
 import com.blamecinders.util.ProvedorPosicaoCarta;
 import com.blamecinders.util.GerenciadorTexturas;
-import com.blamecinders.item.Comida;
-import com.blamecinders.item.ItemBau;
 import com.blamecinders.tabuleiro.TipoCarta;
 import com.blamecinders.tabuleiro.CartaInfo;
 import com.blamecinders.tabuleiro.Tabuleiro;
@@ -73,6 +72,7 @@ public class BlameCindersGame extends ApplicationAdapter {
     //Estado e regras persistentes da partida
     private EstadoPartida partida;
     private ControladorTurno controladorTurno;
+    private ControladorEncontro controladorEncontro;
 
     //Visual do tabuleiro
     private CartaVisual[][] cartasVisuais;
@@ -134,8 +134,7 @@ public class BlameCindersGame extends ApplicationAdapter {
         //Modelo principal
         partida = new EstadoPartida();
         controladorTurno = new ControladorTurno(partida);
-        SistemaCombate sistemaCombate = new SistemaCombate();
-        SistemaFurtividade sistemaFurtividade = new SistemaFurtividade();
+        controladorEncontro = new ControladorEncontro(partida);
 
         //Controladores extraídos
         animacaoCarta = new AnimacaoCarta();
@@ -148,8 +147,7 @@ public class BlameCindersGame extends ApplicationAdapter {
             skin,
             animacaoCarta,
             popupManager,
-            sistemaCombate,
-            sistemaFurtividade
+            controladorEncontro
         );
 
         fluxoCarta = new FluxoCarta(
@@ -403,11 +401,11 @@ public class BlameCindersGame extends ApplicationAdapter {
     //Regras:
     //incrementa as chamas no tabuleiro, consome a carta da posição, atualiza HUD; verifica vitória; move jogador com animação/esteira.
     private void coletarChama(int linha, int coluna) {
-        tabuleiro().coletarChama(linha, coluna);
+        ResultadoColetaChama resultado = controladorEncontro.coletarChama(linha, coluna);
 
         atualizarHUDCompleto();
 
-        if (partida.verificarObjetivoConcluido()) {
+        if (resultado.isObjetivoConcluido()) {
             mostrarMensagem("Você venceu!");
         }
 
@@ -419,24 +417,8 @@ public class BlameCindersGame extends ApplicationAdapter {
     //Etapa final do baú:
     //equipa a arma (se houver), consome a carta e move o jogador para a posição.
     private void coletarBau(int linha, int coluna) {
-        CartaInfo cartaInfo = tabuleiro().getCartaInfo(linha, coluna);
-
-        ItemBau item = cartaInfo != null ? cartaInfo.getItemDentro() : null;
-        if (item instanceof Arma) {
-            Arma arma = (Arma) item;
-            jogador().setArmaEquipada(arma);
-            mostrarMensagem("Você equipou: " + arma.getNome());
-        } else if (item instanceof Comida) {
-            Comida comida = (Comida) item;
-            int vidaCurada = comida.consumir(jogador());
-            mostrarMensagem(vidaCurada > 0
-                ? "Você recuperou " + vidaCurada + " de vida."
-                : "Sua vida já estava cheia.");
-        } else {
-            mostrarMensagem("Baú vazio.");
-        }
-
-        tabuleiro().consumirCarta(linha, coluna);
+        ResultadoColetaBau resultado = controladorEncontro.coletarBau(linha, coluna);
+        mostrarMensagem(resultado.getMensagem());
 
         atualizarHUDCompleto();
 
@@ -908,58 +890,16 @@ public class BlameCindersGame extends ApplicationAdapter {
     //se vencer, consome o inimigo e move o jogador;
     //se sair, mantém a carta revelada no tabuleiro.
     private void executarFluxoInimigo(int linha, int coluna, CartaVisual cartaOriginal) {
-
-        Runnable acaoVoltar = () -> {
-            stageCartaZoom.clear();
-            telaModalAberta = false;
-            restaurarCartaOriginal(linha, coluna, cartaOriginal);
-            sincronizarTabuleiroVisual();
-            atualizarDestaqueCartas();
-        };
-
-        Runnable acaoVitoria = () -> {
-            stageCartaZoom.clear();
-            telaModalAberta = false;
-
-            tabuleiro().consumirCarta(linha, coluna);
-            recolocarCartaConsumidaComoPlaceholder(linha, coluna, cartaOriginal);
-
-            moverJogadorPara(linha, coluna);
-            atualizarHUDCompleto();
-        };
-
-        Runnable acaoDerrota = () -> {
-            stageCartaZoom.clear();
-            telaModalAberta = false;
-            restaurarCartaOriginal(linha, coluna, cartaOriginal);
-
-            partida.registrarDerrota();
-            popupManager.mostrarGameOver();
-        };
-
         popupManager.mostrarPopupInimigo(
-            // LUTAR
-            () -> fluxoCombate.mostrarTelaCombate(
-                tabuleiro().getCartaInfo(linha, coluna),
-                jogador(),
-                acaoVoltar,
-                acaoVitoria,
-                acaoDerrota,
-                this::mostrarMensagem
-            ),
-
-            // SAIR
+            () -> abrirCombate(linha, coluna, cartaOriginal),
             () -> {
                 CartaExibida cartaZoomAtual = fluxoCarta.getCartaZoomAtual();
-
-                Runnable finalizar = () -> {
-                    stageCartaZoom.clear();
-                    telaModalAberta = false;
-                    restaurarCartaOriginal(linha, coluna, cartaOriginal);
-                    sincronizarTabuleiroVisual();
-                    atualizarDestaqueCartas();
-                    mostrarMensagem("Você saiu.");
-                };
+                Runnable finalizar = () -> finalizarEncontroInimigo(
+                    linha,
+                    coluna,
+                    cartaOriginal,
+                    ResultadoEncontroInimigo.recuo()
+                );
 
                 if (cartaZoomAtual != null) {
                     animacaoCarta.dissolverCartaZoom(cartaZoomAtual, finalizar);
@@ -968,6 +908,65 @@ public class BlameCindersGame extends ApplicationAdapter {
                 }
             }
         );
+    }
+
+    private void abrirCombate(int linha, int coluna, CartaVisual cartaOriginal) {
+        fluxoCombate.mostrarTelaCombate(
+            tabuleiro().getCartaInfo(linha, coluna),
+            jogador(),
+            resultado -> finalizarEncontroInimigo(
+                linha,
+                coluna,
+                cartaOriginal,
+                resultado
+            ),
+            this::mostrarMensagem
+        );
+    }
+
+    private void finalizarEncontroInimigo(
+        int linha,
+        int coluna,
+        CartaVisual cartaOriginal,
+        ResultadoEncontroInimigo resultado
+    ) {
+        controladorEncontro.concluirInimigo(linha, coluna, resultado);
+
+        switch (resultado.getDesfecho()) {
+            case FURTIVIDADE_SUCESSO:
+            case COMBATE_VENCIDO:
+                stageCartaZoom.clear();
+                telaModalAberta = false;
+                recolocarCartaConsumidaComoPlaceholder(linha, coluna, cartaOriginal);
+                moverJogadorPara(linha, coluna);
+                atualizarHUDCompleto();
+                mostrarMensagem(resultado.getMensagem());
+                break;
+
+            case JOGADOR_DERROTADO:
+                stageCartaZoom.clear();
+                telaModalAberta = false;
+                restaurarCartaOriginal(linha, coluna, cartaOriginal);
+                mostrarMensagem(resultado.getMensagem());
+                popupManager.mostrarGameOver();
+                break;
+
+            case RECUO:
+                stageCartaZoom.clear();
+                telaModalAberta = false;
+                restaurarCartaOriginal(linha, coluna, cartaOriginal);
+                sincronizarTabuleiroVisual();
+                atualizarDestaqueCartas();
+                mostrarMensagem(resultado.getMensagem());
+                break;
+
+            case FURTIVIDADE_FALHOU:
+                mostrarMensagem(resultado.getMensagem());
+                break;
+
+            default:
+                throw new IllegalStateException("Desfecho de inimigo desconhecido.");
+        }
     }
 
     //Executa o fluxo de uma carta de baú.
@@ -1113,45 +1112,7 @@ public class BlameCindersGame extends ApplicationAdapter {
                     montarTextoInformacoesCarta(cartaInfo),
                     "Combater",
 
-                    // COMBATER DIRETO
-                    () -> {
-                        Runnable acaoVoltar = () -> {
-                            stageCartaZoom.clear();
-                            telaModalAberta = false;
-                            restaurarCartaOriginal(linha, coluna, cartaOriginal);
-                            sincronizarTabuleiroVisual();
-                            atualizarDestaqueCartas();
-                        };
-
-                        Runnable acaoVitoria = () -> {
-                            stageCartaZoom.clear();
-                            telaModalAberta = false;
-
-                            tabuleiro().consumirCarta(linha, coluna);
-                            recolocarCartaConsumidaComoPlaceholder(linha, coluna, cartaOriginal);
-
-                            moverJogadorPara(linha, coluna);
-                            atualizarHUDCompleto();
-                        };
-
-                        Runnable acaoDerrota = () -> {
-                            stageCartaZoom.clear();
-                            telaModalAberta = false;
-                            restaurarCartaOriginal(linha, coluna, cartaOriginal);
-
-                            partida.registrarDerrota();
-                            popupManager.mostrarGameOver();
-                        };
-
-                        fluxoCombate.mostrarTelaCombate(
-                            tabuleiro().getCartaInfo(linha, coluna),
-                            jogador(),
-                            acaoVoltar,
-                            acaoVitoria,
-                            acaoDerrota,
-                            this::mostrarMensagem
-                        );
-                    },
+                    () -> abrirCombate(linha, coluna, cartaOriginal),
 
                     // CANCELAR
                     () -> animacaoCarta.dissolverCartaZoom(cartaZoom, () -> {

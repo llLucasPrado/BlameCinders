@@ -12,17 +12,20 @@ import com.badlogic.gdx.scenes.scene2d.utils.TextureRegionDrawable;
 import com.badlogic.gdx.utils.Align;
 import com.badlogic.gdx.utils.Timer;
 import com.blamecinders.animacao.AnimacaoCarta;
+import com.blamecinders.aplicacao.ControladorEncontro;
+import com.blamecinders.aplicacao.DesfechoInimigo;
+import com.blamecinders.aplicacao.ResultadoEncontroInimigo;
 import com.blamecinders.combate.Inimigo;
 import com.blamecinders.combate.Jogador;
 import com.blamecinders.combate.ResultadoCombate;
-import com.blamecinders.combate.ResultadoFurtividade;
-import com.blamecinders.combate.SistemaCombate;
-import com.blamecinders.combate.SistemaFurtividade;
 import com.blamecinders.tabuleiro.CartaInfo;
 import com.blamecinders.ui.GerenciadorPopups;
 import com.blamecinders.ui.carta.CartaExibida;
 import com.blamecinders.util.GerenciadorTexturas;
 import com.badlogic.gdx.scenes.scene2d.Touchable;
+
+import java.util.Objects;
+import java.util.function.Consumer;
 
 //Responsável por montar e controlar a tela de combate.
 //Esta classe cuida apenas do fluxo visual e da resolução do combate.
@@ -33,23 +36,20 @@ public class FluxoCombate {
     private final Skin skin;
     private final AnimacaoCarta animacaoCarta;
     private final GerenciadorPopups popupManager;
-    private final SistemaCombate sistemaCombate;
-    private final SistemaFurtividade sistemaFurtividade;
+    private final ControladorEncontro controladorEncontro;
 
     public FluxoCombate(
         Stage stageCartaZoom,
         Skin skin,
         AnimacaoCarta animacaoCarta,
         GerenciadorPopups popupManager,
-        SistemaCombate sistemaCombate,
-        SistemaFurtividade sistemaFurtividade
+        ControladorEncontro controladorEncontro
     ) {
         this.stageCartaZoom = stageCartaZoom;
         this.skin = skin;
         this.animacaoCarta = animacaoCarta;
         this.popupManager = popupManager;
-        this.sistemaCombate = sistemaCombate;
-        this.sistemaFurtividade = sistemaFurtividade;
+        this.controladorEncontro = controladorEncontro;
     }
 
     //Abre a tela de combate.
@@ -58,14 +58,14 @@ public class FluxoCombate {
     public void mostrarTelaCombate(
         CartaInfo cartaInfo,
         Jogador jogadorCombate,
-        Runnable onVoltar,
-        Runnable onVitoria,
-        Runnable onDerrota,
-        java.util.function.Consumer<String> onMensagem
+        Consumer<ResultadoEncontroInimigo> onResultado,
+        Consumer<String> onMensagem
     ) {
+        Objects.requireNonNull(onResultado, "onResultado");
+        Objects.requireNonNull(onMensagem, "onMensagem");
         if (cartaInfo == null || cartaInfo.getInimigo() == null) {
             onMensagem.accept("Erro: inimigo não encontrado.");
-            if (onVoltar != null) onVoltar.run();
+            onResultado.accept(ResultadoEncontroInimigo.recuo());
             return;
         }
 
@@ -182,7 +182,7 @@ public class FluxoCombate {
         btnVoltar.addListener(new ClickListener() {
             @Override
             public void clicked(InputEvent event, float x, float y) {
-                if (onVoltar != null) onVoltar.run();
+                onResultado.accept(ResultadoEncontroInimigo.recuo());
             }
         });
 
@@ -194,23 +194,19 @@ public class FluxoCombate {
                     return;
                 }
 
-                cartaInfo.registrarTentativaFurtividade();
-                ResultadoFurtividade resultado = sistemaFurtividade.tentar(inimigo);
+                ResultadoEncontroInimigo resultado = controladorEncontro.tentarFurtividade(cartaInfo);
                 btnFurtividade.setDisabled(true);
                 btnFurtividade.setTouchable(Touchable.disabled);
 
-                if (resultado.isSucesso()) {
+                if (resultado.getDesfecho() == DesfechoInimigo.FURTIVIDADE_SUCESSO) {
                     combateEmAndamento[0] = true;
                     btnLutar.setDisabled(true);
                     btnVoltar.setDisabled(true);
                     btnLutar.setTouchable(Touchable.disabled);
                     btnVoltar.setTouchable(Touchable.disabled);
-                    onMensagem.accept("Furtividade bem-sucedida ("
-                        + resultado.getChancePercentual() + "% de chance). Você evitou o combate.");
-                    if (onVitoria != null) onVitoria.run();
+                    onResultado.accept(resultado);
                 } else {
-                    onMensagem.accept("Furtividade falhou ("
-                        + resultado.getChancePercentual() + "% de chance). Lute ou recue.");
+                    onMensagem.accept(resultado.getMensagem());
                 }
             }
         });
@@ -242,7 +238,8 @@ public class FluxoCombate {
                     miniArmaFinal.setTouchable(Touchable.disabled);
                 }
 
-                ResultadoCombate resultado = sistemaCombate.resolverCombate(jogadorCombate, inimigo);
+                ResultadoEncontroInimigo resultadoEncontro = controladorEncontro.lutar(cartaInfo);
+                ResultadoCombate resultado = resultadoEncontro.getCombate();
 
                 final int vidaInicialInimigo = inimigo.getVida();
                 final int vidaInicialJogador = resultado.getVidaInicialJogador();
@@ -321,19 +318,11 @@ public class FluxoCombate {
                                 cartaInimigo.clearActions();
 
                                 animacaoCarta.animarDerrotaInimigo(cartaInimigo, stageCartaZoom, () -> {
-                                    onMensagem.accept(resultado.getMensagemResultado());
-
-                                    if (onVitoria != null) {
-                                        onVitoria.run();
-                                    }
+                                    onResultado.accept(resultadoEncontro);
                                 });
 
                             } else {
-                                onMensagem.accept(resultado.getMensagemResultado());
-
-                                if (onDerrota != null) {
-                                    onDerrota.run();
-                                }
+                                onResultado.accept(resultadoEncontro);
                             }
                         }
                     }
