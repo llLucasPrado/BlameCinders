@@ -6,15 +6,11 @@ import com.badlogic.gdx.InputMultiplexer;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
-import com.badlogic.gdx.graphics.g2d.freetype.FreeTypeFontGenerator;
 import com.badlogic.gdx.math.Interpolation;
 import com.badlogic.gdx.scenes.scene2d.Stage;
 import com.badlogic.gdx.scenes.scene2d.actions.Actions;
 import com.badlogic.gdx.scenes.scene2d.ui.Label;
 import com.badlogic.gdx.scenes.scene2d.ui.Skin;
-import com.badlogic.gdx.scenes.scene2d.ui.TextButton;
-import com.badlogic.gdx.scenes.scene2d.utils.Drawable;
-import com.badlogic.gdx.scenes.scene2d.utils.TextureRegionDrawable;
 import com.badlogic.gdx.utils.Align;
 import com.badlogic.gdx.utils.ScreenUtils;
 import com.badlogic.gdx.utils.Timer;
@@ -34,6 +30,7 @@ import com.blamecinders.fluxo.FluxoCarta;
 import com.blamecinders.fluxo.FluxoCombate;
 import com.blamecinders.ui.ControladorHUD;
 import com.blamecinders.ui.GerenciadorPopups;
+import com.blamecinders.ui.TemaJogo;
 import com.blamecinders.util.ProvedorPosicaoCarta;
 import com.blamecinders.util.GerenciadorTexturas;
 import com.blamecinders.tabuleiro.TipoCarta;
@@ -67,6 +64,7 @@ public class BlameCindersGame extends ApplicationAdapter implements InteracaoCar
     private BitmapFont fonteCarta;
     private Label labelMensagem;
     private Skin skin;
+    private TemaJogo tema;
 
     //Estado transitório da apresentação
     private boolean animandoTabuleiro = false;
@@ -136,9 +134,11 @@ public class BlameCindersGame extends ApplicationAdapter implements InteracaoCar
         Gdx.input.setInputProcessor(multiplexer);
 
         //Fontes / skin base
-        fonte = criarFonte(28);
-        fonteCarta = criarFonte(18);
-        criarUI();
+        tema = TemaJogo.criar();
+        skin = tema.getSkin();
+        fonte = tema.getFonteInterface();
+        fonteCarta = tema.getFonteCarta();
+        criarMensagemUI();
 
         //Modelo principal
         partida = new EstadoPartida();
@@ -214,44 +214,12 @@ public class BlameCindersGame extends ApplicationAdapter implements InteracaoCar
         stageUI.dispose();
         stageCartaZoom.dispose();
         stageAnimacao.dispose();
-        skin.dispose();
-        fonteCarta.dispose();
+        tema.dispose();
         GerenciadorTexturas.disposeAll();
     }
 
-    //Criação de UI base
-    private void criarUI() {
-        skin = new Skin();
-
-        // Fonte padrão
-        skin.add("default-font", fonte);
-
-        Label.LabelStyle labelStyle = new Label.LabelStyle();
-        labelStyle.font = fonte;
-        labelStyle.fontColor = Color.WHITE;
-        skin.add("default", labelStyle);
-
-        // Estilo de janela
-        com.badlogic.gdx.scenes.scene2d.ui.Window.WindowStyle windowStyle =
-            new com.badlogic.gdx.scenes.scene2d.ui.Window.WindowStyle();
-
-        windowStyle.titleFont = fonte;
-        windowStyle.titleFontColor = Color.WHITE;
-        windowStyle.background = criarDrawableCor(new Color(0f, 0f, 0f, 0.85f));
-
-        skin.add("default", windowStyle);
-
-        // Estilo de botão
-        TextButton.TextButtonStyle buttonStyle = new TextButton.TextButtonStyle();
-        buttonStyle.font = fonte;
-        buttonStyle.fontColor = Color.WHITE;
-        buttonStyle.downFontColor = Color.GRAY;
-        buttonStyle.up = criarDrawableCor(new Color(0.18f, 0.18f, 0.18f, 1f));
-        buttonStyle.down = criarDrawableCor(new Color(0.10f, 0.10f, 0.10f, 1f));
-
-        skin.add("default", buttonStyle);
-
-        // Label de mensagem inferior
+    // A fonte e os estilos pertencem ao TemaJogo; a aplicação apenas posiciona a mensagem.
+    private void criarMensagemUI() {
         labelMensagem = new Label("", skin);
         labelMensagem.setPosition(20, 20);
         stageUI.addActor(labelMensagem);
@@ -438,28 +406,6 @@ public class BlameCindersGame extends ApplicationAdapter implements InteracaoCar
     }
 
     // MENSAGENS E FONTES
-    private BitmapFont criarFonte(int tamanho) {
-        String caminhoFonte = "Fonts/CinzelDecorative-Bold.ttf";
-        if (!Gdx.files.internal(caminhoFonte).exists()) {
-            BitmapFont fallback = new BitmapFont();
-            fallback.getData().setScale(tamanho / 15f);
-            return fallback;
-        }
-
-        FreeTypeFontGenerator gen =
-            new FreeTypeFontGenerator(Gdx.files.internal(caminhoFonte));
-
-        FreeTypeFontGenerator.FreeTypeFontParameter p =
-            new FreeTypeFontGenerator.FreeTypeFontParameter();
-
-        p.size = tamanho;
-        p.color = Color.WHITE;
-
-        BitmapFont f = gen.generateFont(p);
-        gen.dispose();
-        return f;
-    }
-
     //Exibe mensagem temporária no canto inferior da UI.
     private void mostrarMensagem(String texto) {
         labelMensagem.setText(texto);
@@ -691,10 +637,6 @@ public class BlameCindersGame extends ApplicationAdapter implements InteracaoCar
 
     // UTILS
     //Cria um drawable sólido simples para janelas e botões.
-    private Drawable criarDrawableCor(Color cor) {
-        return new TextureRegionDrawable(new TextureRegion(GerenciadorTexturas.getSolid(cor)));
-    }
-
     //Recoloca no stage uma carta removida pelo zoom, mas sem exibi-la visualmente.
     //Uso: inimigo derrotado, chama coletada, baú coletado.
     //Motivo: a carta precisa existir no array visual para a sincronização,
