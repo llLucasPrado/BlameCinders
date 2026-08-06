@@ -59,6 +59,7 @@ public class BlameCindersGame extends ApplicationAdapter implements InteracaoCar
     private Label labelMensagem;
     private Skin skin;
     private TemaJogo tema;
+    private Timer.Task tarefaLimparMensagem;
 
     //Estado transitório da apresentação
     private boolean animandoTabuleiro = false;
@@ -264,12 +265,11 @@ public class BlameCindersGame extends ApplicationAdapter implements InteracaoCar
         ResultadoColetaChama resultado = controladorEncontro.coletarChama(linha, coluna);
 
         atualizarHUDCompleto();
-
-        if (resultado.isObjetivoConcluido()) {
-            mostrarMensagem("Você venceu!");
-        }
-
-        moverJogadorPara(linha, coluna);
+        moverJogadorPara(linha, coluna, () -> {
+            if (resultado.isObjetivoConcluido()) {
+                mostrarMensagemFinal("Você venceu! 3/3 chamas coletadas.");
+            }
+        });
     }
 
     //Trata o fluxo completo do baú, se houver arma, pergunta se deseja equipar/trocar, se equipar, consome o baú e move o jogador;
@@ -287,13 +287,17 @@ public class BlameCindersGame extends ApplicationAdapter implements InteracaoCar
 
     //Encapsula a movimentação do jogador para uma nova posição, sempre usando a animação de esteira.
     private void moverJogadorPara(int linha, int coluna) {
+        moverJogadorPara(linha, coluna, null);
+    }
+
+    private void moverJogadorPara(int linha, int coluna, Runnable aoFinalizar) {
         MovimentoTabuleiro movimento = controladorTurno.prepararMovimento(linha, coluna);
         if (!movimento.isValido()) {
             mostrarMensagem("Movimento inválido.");
             return;
         }
 
-        atualizarTabuleiroComAnimacao(movimento);
+        atualizarTabuleiroComAnimacao(movimento, aoFinalizar);
     }
 
     //Atualiza o HUD e reinstala o click da miniatura de arma.
@@ -305,14 +309,29 @@ public class BlameCindersGame extends ApplicationAdapter implements InteracaoCar
     // MENSAGENS E FONTES
     //Exibe mensagem temporária no canto inferior da UI.
     private void mostrarMensagem(String texto) {
+        cancelarLimpezaMensagem();
         labelMensagem.setText(texto);
 
-        Timer.schedule(new Timer.Task() {
+        tarefaLimparMensagem = new Timer.Task() {
             @Override
             public void run() {
                 labelMensagem.setText("");
+                tarefaLimparMensagem = null;
             }
-        }, 2f);
+        };
+        Timer.schedule(tarefaLimparMensagem, 2f);
+    }
+
+    private void mostrarMensagemFinal(String texto) {
+        cancelarLimpezaMensagem();
+        labelMensagem.setText(texto);
+    }
+
+    private void cancelarLimpezaMensagem() {
+        if (tarefaLimparMensagem != null) {
+            tarefaLimparMensagem.cancel();
+            tarefaLimparMensagem = null;
+        }
     }
 
     // SINCRONIZAÇÃO VISUAL
@@ -348,7 +367,10 @@ public class BlameCindersGame extends ApplicationAdapter implements InteracaoCar
     //4. sincronizar visual;
     //5. resetar estado visual;
     //6. reabilitar o jogo.
-    private void atualizarTabuleiroComAnimacao(MovimentoTabuleiro movimento) {
+    private void atualizarTabuleiroComAnimacao(
+        MovimentoTabuleiro movimento,
+        Runnable aoFinalizar
+    ) {
         if (animandoTabuleiro) return;
 
         animandoTabuleiro = true;
@@ -373,6 +395,9 @@ public class BlameCindersGame extends ApplicationAdapter implements InteracaoCar
                 }, 0.12f);
 
                 animandoTabuleiro = false;
+                if (aoFinalizar != null) {
+                    aoFinalizar.run();
+                }
             }
         );
     }

@@ -1,8 +1,10 @@
 package com.blamecinders.tabuleiro;
 
 import com.blamecinders.aplicacao.ControladorEncontro;
+import com.blamecinders.aplicacao.ControladorTurno;
 import com.blamecinders.aplicacao.DesfechoInimigo;
 import com.blamecinders.aplicacao.EstadoPartida;
+import com.blamecinders.aplicacao.MovimentoTabuleiro;
 import com.blamecinders.aplicacao.ResultadoColetaBau;
 import com.blamecinders.aplicacao.ResultadoColetaChama;
 import com.blamecinders.aplicacao.ResultadoEncontroInimigo;
@@ -41,6 +43,27 @@ class ControladorEncontroTest {
         assertTrue(resultado.isObjetivoConcluido());
         assertTrue(partida.isFinalizada());
         assertNull(partida.getTabuleiro().getCartaInfo(0, 1));
+    }
+
+    @Test
+    void permiteConcluirMovimentoDaTerceiraChamaAposVitoria() {
+        CartaInfo[][] grid = criarGrid();
+        EstadoPartida partida = criarPartida(grid, 50);
+        ControladorEncontro encontros = new ControladorEncontro(partida);
+
+        for (int quantidade = 1; quantidade <= Tabuleiro.OBJETIVO_CHAMAS; quantidade++) {
+            grid[0][1] = new CartaInfo(TipoCarta.CHAMA);
+            encontros.coletarChama(0, 1);
+        }
+
+        ControladorTurno turnos = new ControladorTurno(partida);
+        MovimentoTabuleiro movimento = turnos.prepararMovimento(0, 1);
+        turnos.concluirMovimento(movimento);
+
+        assertTrue(partida.isFinalizada());
+        assertTrue(movimento.isValido());
+        assertEquals(0, partida.getTabuleiro().getJogadorLinha());
+        assertEquals(1, partida.getTabuleiro().getJogadorColuna());
     }
 
     @Test
