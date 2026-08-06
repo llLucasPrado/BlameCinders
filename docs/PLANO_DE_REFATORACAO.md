@@ -13,21 +13,19 @@
 - [x] extrair estado da partida e controlador de turno;
 - [x] sincronizar identidade dos atores com a esteira;
 - [x] agrupar fundo e rótulo em um único ator visual;
-- [x] cobrir as regras centrais com 22 testes.
+- [x] substituir callbacks de vitória/derrota por resultados explícitos;
+- [x] separar resolução de baú, chama e inimigo da montagem visual;
+- [x] preservar corretamente os resultados e mensagens de furtividade;
+- [x] separar o primeiro clique de revelação do segundo clique de interação;
+- [x] cobrir as regras centrais com 32 testes.
 
 ## Próximos lotes
-
-### Fluxos de encontro
-
-- substituir callbacks de vitória/derrota por resultados explícitos;
-- separar resolução de baú, chama e inimigo da montagem visual;
-- impedir que mensagens de furtividade sejam sobrescritas por callbacks.
 
 ### Apresentação
 
 - extrair criação de tema/fonte de `BlameCindersGame`;
 - criar uma tela própria para o tabuleiro;
-- criar testes de interação para revelar, agir e mover;
+- criar testes de integração Scene2D para revelar, agir e mover;
 - revisar o término da animação ao coletar a terceira chama.
 
 ### Balanceamento

@@ -5,8 +5,8 @@
 - O tabuleiro possui 4 linhas e 5 colunas.
 - O herói ocupa uma célula vazia; nunca existe outra carta sob ele.
 - Apenas cartas ortogonalmente adjacentes podem ser reveladas.
+- O primeiro clique revela a carta; o segundo permite interagir com ela.
 - Paredes bloqueiam movimento.
-- Uma carta revelada pode ser consultada e acionada em um segundo clique.
 - Inimigos oferecem combate, furtividade ou recuo.
 - O dano consome primeiro a durabilidade da arma e depois a vida do herói.
 - Baús podem conter arma ou comida.
@@ -19,7 +19,7 @@
 ```text
 com.blamecinders
 ├── BlameCindersGame       ciclo de vida libGDX e composição da apresentação
-├── aplicacao              EstadoPartida, ControladorTurno e comandos
+├── aplicacao              estado, turnos, interações e encontros
 ├── tabuleiro              grid, cartas, tipos e estado de revelação
 ├── combate                herói, inimigos, combate e furtividade
 ├── item                   armas, comidas e geração de itens de baú
@@ -44,15 +44,16 @@ do libGDX. A camada visual depende do domínio, nunca o contrário.
 7. Cartas procedurais identificadas por texto, sem imagens externas obrigatórias.
 8. Armas separadas de entidades de combate; caminhos viraram identificadores visuais.
 9. Estado da partida e conclusão do turno extraídos da aplicação libGDX.
-10. Regras centrais cobertas por 22 testes automatizados.
+10. Encontros de chama, baú e inimigo resolvidos fora da camada Scene2D.
+11. Combate, furtividade e recuo retornam desfechos explícitos.
+12. Primeiro clique apenas revela; o segundo clique abre a interação.
+13. Regras centrais cobertas por 32 testes automatizados.
 
 ## Pendências conhecidas
 
-- `BlameCindersGame` ainda concentra criação da UI e fluxos de encontros; caiu de
-  mais de 1.300 para cerca de 1.100 linhas, mas deve ser dividida em telas e
-  coordenadores menores.
-- `FluxoCarta` e `FluxoCombate` ainda recebem callbacks numerosos; devem retornar
-  resultados de encontro explícitos.
+- `BlameCindersGame` ainda concentra criação da UI; caiu de mais de 1.300 para
+  cerca de 950 linhas, mas deve ser dividida em tela e coordenadores menores.
+- A montagem das janelas e decisões de encontro ainda pode ser extraída dos fluxos.
 - O balanceamento atual é provisório e precisa de sessões de jogo/simulações.
 - Ainda falta um teste automatizado de interação Scene2D; hoje o smoke test apenas
   confirma inicialização real da janela sem exceções.
