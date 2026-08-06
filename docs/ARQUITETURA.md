@@ -51,7 +51,10 @@ do libGDX. A camada visual depende do domínio, nunca o contrário.
 13. Cartas visuais desacopladas da classe principal por uma porta de interação.
 14. Tema, fontes e respectivos recursos extraídos para `TemaJogo`.
 15. Stage, grid, layout e animações do tabuleiro encapsulados em `TelaTabuleiro`.
-16. Regras centrais e layout cobertos por 35 testes automatizados.
+16. Recursos das cartas abstraídos como `Drawable`, permitindo testes sem OpenGL.
+17. Revelação, ação, clique e movimento/esteira cobertos por testes Scene2D.
+18. Terceira chama conclui a animação antes da mensagem permanente de vitória.
+19. Regras, layout e apresentação cobertos por 41 testes automatizados.
 
 ## Pendências conhecidas
 
@@ -59,8 +62,8 @@ do libGDX. A camada visual depende do domínio, nunca o contrário.
   de mais de 1.300 para cerca de 700 linhas.
 - A montagem das janelas e decisões de encontro ainda pode ser extraída dos fluxos.
 - O balanceamento atual é provisório e precisa de sessões de jogo/simulações.
-- Ainda falta um teste automatizado de interação Scene2D; hoje o smoke test apenas
-  confirma inicialização real da janela sem exceções.
+- O smoke test desktop complementa os testes Scene2D confirmando a inicialização
+  real da janela e dos recursos OpenGL.
 
 ## Identidade visual temporária
 

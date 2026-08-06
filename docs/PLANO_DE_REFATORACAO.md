@@ -21,14 +21,11 @@
 - [x] extrair criação de tema/fonte de `BlameCindersGame`;
 - [x] criar uma tela própria para o tabuleiro;
 - [x] testar o cálculo de layout do grid;
-- [x] cobrir as regras centrais e o layout com 35 testes.
+- [x] criar testes Scene2D para revelar, agir e mover;
+- [x] concluir a esteira antes de apresentar a vitória da terceira chama;
+- [x] cobrir regras, layout e apresentação com 41 testes.
 
 ## Próximos lotes
-
-### Apresentação
-
-- criar testes de integração Scene2D para revelar, agir e mover;
-- revisar o término da animação ao coletar a terceira chama.
 
 ### Balanceamento
 
@@ -36,10 +33,9 @@
 - simular partidas com sementes determinísticas;
 - ajustar vida, dano, durabilidade, cura e furtividade com dados de partidas.
 
-## Critério da próxima entrega
+## Critério da próxima entrega de balanceamento
 
-- `clean test build` aprovado;
-- aplicação desktop inicia sem exceções;
-- nenhuma carta fica sob o herói;
-- ator visual e carta lógica permanecem sincronizados após a esteira;
-- paredes, chamas, baús, comida, combate e furtividade continuam cobertos.
+- números de vida, dano, durabilidade, cura e furtividade centralizados;
+- simulações reproduzíveis por semente;
+- relatório simples dos resultados das simulações;
+- `clean test build` e smoke test desktop aprovados.
