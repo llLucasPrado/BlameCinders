@@ -21,7 +21,9 @@ import com.badlogic.gdx.utils.ScreenUtils;
 import com.badlogic.gdx.utils.Timer;
 import com.blamecinders.animacao.AnimacaoCarta;
 import com.blamecinders.animacao.AnimacaoTabuleiro;
+import com.blamecinders.aplicacao.ControladorTurno;
 import com.blamecinders.aplicacao.EstadoPartida;
+import com.blamecinders.aplicacao.MovimentoTabuleiro;
 import com.blamecinders.combate.Arma;
 import com.blamecinders.combate.Jogador;
 import com.blamecinders.combate.SistemaCombate;
@@ -69,6 +71,7 @@ public class BlameCindersGame extends ApplicationAdapter {
 
     //Estado e regras persistentes da partida
     private EstadoPartida partida;
+    private ControladorTurno controladorTurno;
 
     //Visual do tabuleiro
     private CartaVisual[][] cartasVisuais;
@@ -129,6 +132,7 @@ public class BlameCindersGame extends ApplicationAdapter {
 
         //Modelo principal
         partida = new EstadoPartida();
+        controladorTurno = new ControladorTurno(partida);
         SistemaCombate sistemaCombate = new SistemaCombate();
         SistemaFurtividade sistemaFurtividade = new SistemaFurtividade();
 
@@ -398,11 +402,7 @@ public class BlameCindersGame extends ApplicationAdapter {
     //Regras:
     //incrementa as chamas no tabuleiro, consome a carta da posição, atualiza HUD; verifica vitória; move jogador com animação/esteira.
     private void coletarChama(int linha, int coluna) {
-        int antigaLinha = tabuleiro().getJogadorLinha();
-        int antigaColuna = tabuleiro().getJogadorColuna();
-
         tabuleiro().coletarChama(linha, coluna);
-        tabuleiro().consumirCarta(linha, coluna);
 
         atualizarHUDCompleto();
 
@@ -410,7 +410,7 @@ public class BlameCindersGame extends ApplicationAdapter {
             mostrarMensagem("Você venceu!");
         }
 
-        atualizarTabuleiroComAnimacao(antigaLinha, antigaColuna, linha, coluna);
+        moverJogadorPara(linha, coluna);
     }
 
     //Trata o fluxo completo do baú, se houver arma, pergunta se deseja equipar/trocar, se equipar, consome o baú e move o jogador;
@@ -439,18 +439,18 @@ public class BlameCindersGame extends ApplicationAdapter {
 
         atualizarHUDCompleto();
 
-        int antigaLinha = tabuleiro().getJogadorLinha();
-        int antigaColuna = tabuleiro().getJogadorColuna();
-
-        atualizarTabuleiroComAnimacao(antigaLinha, antigaColuna, linha, coluna);
+        moverJogadorPara(linha, coluna);
     }
 
     //Encapsula a movimentação do jogador para uma nova posição, sempre usando a animação de esteira.
     private void moverJogadorPara(int linha, int coluna) {
-        int antigaLinha = tabuleiro().getJogadorLinha();
-        int antigaColuna = tabuleiro().getJogadorColuna();
+        MovimentoTabuleiro movimento = controladorTurno.prepararMovimento(linha, coluna);
+        if (!movimento.isValido()) {
+            mostrarMensagem("Movimento inválido.");
+            return;
+        }
 
-        atualizarTabuleiroComAnimacao(antigaLinha, antigaColuna, linha, coluna);
+        atualizarTabuleiroComAnimacao(movimento);
     }
 
     //Atualiza o HUD e reinstala o click da miniatura de arma.
@@ -659,19 +659,18 @@ public class BlameCindersGame extends ApplicationAdapter {
     //4. sincronizar visual;
     //5. resetar estado visual;
     //6. reabilitar o jogo.
-    private void atualizarTabuleiroComAnimacao(int antigaLinha, int antigaColuna, int novaLinha, int novaColuna) {
+    private void atualizarTabuleiroComAnimacao(MovimentoTabuleiro movimento) {
         if (animandoTabuleiro) return;
 
         animandoTabuleiro = true;
 
         animacaoTabuleiro.animarMovimentoJogadorComEsteira(
-            antigaLinha,
-            antigaColuna,
-            novaLinha,
-            novaColuna,
+            movimento.getLinhaOrigem(),
+            movimento.getColunaOrigem(),
+            movimento.getLinhaDestino(),
+            movimento.getColunaDestino(),
             () -> {
-                tabuleiro().moverJogador(novaLinha, novaColuna);
-                tabuleiro().aplicarEsteira(antigaLinha, antigaColuna, novaLinha, novaColuna);
+                controladorTurno.concluirMovimento(movimento);
 
                 sincronizarTabuleiroVisual();
 
