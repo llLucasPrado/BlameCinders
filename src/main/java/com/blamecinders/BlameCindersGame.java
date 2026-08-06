@@ -20,7 +20,9 @@ import com.badlogic.gdx.utils.ScreenUtils;
 import com.badlogic.gdx.utils.Timer;
 import com.blamecinders.animacao.AnimacaoCarta;
 import com.blamecinders.animacao.AnimacaoTabuleiro;
+import com.blamecinders.aplicacao.AcaoCliqueCarta;
 import com.blamecinders.aplicacao.ControladorEncontro;
+import com.blamecinders.aplicacao.ControladorInteracaoCarta;
 import com.blamecinders.aplicacao.ControladorTurno;
 import com.blamecinders.aplicacao.EstadoPartida;
 import com.blamecinders.aplicacao.MovimentoTabuleiro;
@@ -73,6 +75,7 @@ public class BlameCindersGame extends ApplicationAdapter {
     private EstadoPartida partida;
     private ControladorTurno controladorTurno;
     private ControladorEncontro controladorEncontro;
+    private ControladorInteracaoCarta controladorInteracaoCarta;
 
     //Visual do tabuleiro
     private CartaVisual[][] cartasVisuais;
@@ -135,6 +138,7 @@ public class BlameCindersGame extends ApplicationAdapter {
         partida = new EstadoPartida();
         controladorTurno = new ControladorTurno(partida);
         controladorEncontro = new ControladorEncontro(partida);
+        controladorInteracaoCarta = new ControladorInteracaoCarta(partida);
 
         //Controladores extraídos
         animacaoCarta = new AnimacaoCarta();
@@ -340,60 +344,44 @@ public class BlameCindersGame extends ApplicationAdapter {
 
         if (isFinalizado() || animandoTabuleiro || telaModalAberta) return;
 
-        boolean cartaRevelada = tabuleiro().cartaEstaRevelada(linha, coluna);
-
-        boolean adjacente = fluxoCarta.podeRevelar(
-            tabuleiro().getJogadorLinha(),
-            tabuleiro().getJogadorColuna(),
-            linha,
-            coluna
-        );
-
         CartaVisual cartaOriginal = cartasVisuais[linha][coluna];
+        AcaoCliqueCarta acao = controladorInteracaoCarta.decidir(linha, coluna);
 
-        if (cartaRevelada && adjacente) {
-            telaModalAberta = true;
+        switch (acao) {
+            case INTERAGIR:
+                telaModalAberta = true;
+                popupManager.mostrarConfirmacaoVisualizarCarta(
+                    () -> mostrarOpcoesCartaReveladaAdjacente(linha, coluna, cartaOriginal),
+                    () -> telaModalAberta = false
+                );
+                break;
 
-            //Carta já revelada e adjacente: primeiro pergunta se o jogador deseja visualizar
-            //Só depois da confirmação aparecem as informações e ações possíveis.
-            popupManager.mostrarConfirmacaoVisualizarCarta(
-                () -> mostrarOpcoesCartaReveladaAdjacente(linha, coluna, cartaOriginal),
-                () -> telaModalAberta = false
-            );
+            case VISUALIZAR:
+                telaModalAberta = true;
+                popupManager.mostrarConfirmacaoVisualizarCarta(
+                    () -> visualizarInformacoesCarta(linha, coluna),
+                    () -> telaModalAberta = false
+                );
+                break;
 
-            return;
+            case BLOQUEAR:
+                mostrarMensagem("Você só pode revelar cartas adjacentes.");
+                if (animacaoTabuleiro != null) {
+                    animacaoTabuleiro.animarCartaMovimentoInvalido(linha, coluna);
+                }
+                break;
+
+            case REVELAR:
+                telaModalAberta = true;
+                popupManager.mostrarConfirmacaoCarta(
+                    () -> executarFluxoCarta(linha, coluna, cartaOriginal),
+                    () -> telaModalAberta = false
+                );
+                break;
+
+            default:
+                throw new IllegalStateException("Ação de clique desconhecida.");
         }
-
-        //Carta revelada e distante: permite apenas visualizar informações.
-        if (cartaRevelada) {
-            telaModalAberta = true;
-
-            popupManager.mostrarConfirmacaoVisualizarCarta(
-                () -> visualizarInformacoesCarta(linha, coluna),
-                () -> telaModalAberta = false
-            );
-
-            return;
-        }
-
-        //Carta fechada e distante: não pode revelar.
-        if (!adjacente) {
-            mostrarMensagem("Você só pode revelar cartas adjacentes.");
-
-            if (animacaoTabuleiro != null) {
-                animacaoTabuleiro.animarCartaMovimentoInvalido(linha, coluna);
-            }
-
-            return;
-        }
-
-        //Carta fechada e adjacente: fluxo normal de revelação.
-        telaModalAberta = true;
-
-        popupManager.mostrarConfirmacaoCarta(
-            () -> executarFluxoCarta(linha, coluna, cartaOriginal),
-            () -> telaModalAberta = false
-        );
     }
 
     // FLUXOS DE COLETA / MOVIMENTO
@@ -739,65 +727,46 @@ public class BlameCindersGame extends ApplicationAdapter {
             linha,
             coluna,
             cartaOriginal,
+            tipo -> concluirRevelacao(linha, coluna, cartaOriginal, tipo)
+        );
+    }
 
-            // INIMIGO
-            () -> executarFluxoInimigo(linha, coluna, cartaOriginal),
+    private void concluirRevelacao(
+        int linha,
+        int coluna,
+        CartaVisual cartaOriginal,
+        TipoCarta tipo
+    ) {
+        if (tipo == TipoCarta.VAZIO) {
+            stageCartaZoom.clear();
+            telaModalAberta = false;
+            restaurarCartaOriginal(linha, coluna, cartaOriginal);
+            mostrarMensagem("Não há nada nesta posição.");
+            return;
+        }
 
-            // CHAMA
-            () -> popupManager.mostrarPopupMensagem("Chama coletada!", () -> {
-                CartaExibida cartaZoomAtual = fluxoCarta.getCartaZoomAtual();
+        CartaInfo cartaInfo = tabuleiro().getCartaInfo(linha, coluna);
+        String informacoes = tipo == TipoCarta.PAREDE
+            ? "Parede encontrada.\nNão é possível avançar."
+            : montarTextoInformacoesCarta(cartaInfo);
 
-                Runnable finalizar = () -> {
-                    stageCartaZoom.clear();
-                    telaModalAberta = false;
-                    recolocarCartaConsumidaComoPlaceholder(linha, coluna, cartaOriginal);
-                    coletarChama(linha, coluna);
-                };
-
-                if (cartaZoomAtual != null) {
-                    animacaoCarta.dissolverCartaZoom(cartaZoomAtual, finalizar);
-                } else {
-                    finalizar.run();
-                }
-            }),
-
-            // BAÚ
-            () -> executarFluxoBau(linha, coluna, cartaOriginal),
-
-            // PAREDE
-            () -> popupManager.mostrarPopupMensagem(
-                "Parede encontrada.\nNão é possível avançar.",
-                () -> {
-                    CartaExibida cartaZoomAtual = fluxoCarta.getCartaZoomAtual();
-
-                    Runnable finalizar = () -> {
-                        stageCartaZoom.clear();
-                        telaModalAberta = false;
-                        restaurarCartaOriginal(linha, coluna, cartaOriginal);
-                        sincronizarTabuleiroVisual();
-                        atualizarDestaqueCartas();
-                    };
-
-                    if (cartaZoomAtual != null) {
-                        animacaoCarta.dissolverCartaZoom(cartaZoomAtual, finalizar);
-                    } else {
-                        finalizar.run();
-                    }
-                }
-            ),
-
-            // VAZIO
-            () -> {
+        popupManager.mostrarPopupMensagem(informacoes, () -> {
+            CartaExibida cartaZoomAtual = fluxoCarta.getCartaZoomAtual();
+            Runnable finalizar = () -> {
                 stageCartaZoom.clear();
                 telaModalAberta = false;
                 restaurarCartaOriginal(linha, coluna, cartaOriginal);
-                mostrarMensagem("Não há nada nesta posição.");
-            },
+                sincronizarTabuleiroVisual();
+                atualizarDestaqueCartas();
+                mostrarMensagem("Carta revelada. Clique novamente para interagir.");
+            };
 
-            // restauração genérica
-
-            this::mostrarMensagem
-        );
+            if (cartaZoomAtual != null) {
+                animacaoCarta.dissolverCartaZoom(cartaZoomAtual, finalizar);
+            } else {
+                finalizar.run();
+            }
+        });
     }
 
     //Visualiza uma carta já revelada sem executar a sua ação.
@@ -884,32 +853,6 @@ public class BlameCindersGame extends ApplicationAdapter {
         return "Carta vazia.";
     }
 
-    //Executa o fluxo de uma carta de inimigo.
-    //Fluxo: mostra opções de lutar ou sair,
-    //se lutar, abre a tela de combate;
-    //se vencer, consome o inimigo e move o jogador;
-    //se sair, mantém a carta revelada no tabuleiro.
-    private void executarFluxoInimigo(int linha, int coluna, CartaVisual cartaOriginal) {
-        popupManager.mostrarPopupInimigo(
-            () -> abrirCombate(linha, coluna, cartaOriginal),
-            () -> {
-                CartaExibida cartaZoomAtual = fluxoCarta.getCartaZoomAtual();
-                Runnable finalizar = () -> finalizarEncontroInimigo(
-                    linha,
-                    coluna,
-                    cartaOriginal,
-                    ResultadoEncontroInimigo.recuo()
-                );
-
-                if (cartaZoomAtual != null) {
-                    animacaoCarta.dissolverCartaZoom(cartaZoomAtual, finalizar);
-                } else {
-                    finalizar.run();
-                }
-            }
-        );
-    }
-
     private void abrirCombate(int linha, int coluna, CartaVisual cartaOriginal) {
         fluxoCombate.mostrarTelaCombate(
             tabuleiro().getCartaInfo(linha, coluna),
@@ -967,105 +910,6 @@ public class BlameCindersGame extends ApplicationAdapter {
             default:
                 throw new IllegalStateException("Desfecho de inimigo desconhecido.");
         }
-    }
-
-    //Executa o fluxo de uma carta de baú.
-    //Fluxo: mostra "Baú encontrado", vira o zoom para mostrar a arma, pergunta se deseja equipar/trocar;
-    //se aceitar, consome o baú e move o jogador;
-    //se recusar, mantém o baú revelado no tabuleiro.
-    private void executarFluxoBau(int linha, int coluna, CartaVisual cartaOriginal) {
-
-        popupManager.mostrarPopupMensagem("Baú encontrado!", () -> {
-            CartaInfo cartaInfo = tabuleiro().getCartaInfo(linha, coluna);
-
-            if (cartaInfo == null || cartaInfo.getItemDentro() == null) {
-                popupManager.mostrarPopupMensagem("Baú vazio.", () -> {
-                    CartaExibida cartaZoomAtual = fluxoCarta.getCartaZoomAtual();
-
-                    Runnable finalizar = () -> {
-                        stageCartaZoom.clear();
-                        telaModalAberta = false;
-                        restaurarCartaOriginal(linha, coluna, cartaOriginal);
-                        sincronizarTabuleiroVisual();
-                        atualizarDestaqueCartas();
-                    };
-
-                    if (cartaZoomAtual != null) {
-                        animacaoCarta.dissolverCartaZoom(cartaZoomAtual, finalizar);
-                    } else {
-                        finalizar.run();
-                    }
-                });
-
-                return;
-            }
-
-            CartaExibida cartaZoomAtual = fluxoCarta.getCartaZoomAtual();
-
-            if (cartaZoomAtual != null) {
-                String identificadorItem = cartaInfo.getItemDentro().getIdentificadorVisual();
-                animacaoCarta.aplicarFlip(
-                    cartaZoomAtual,
-                    () -> cartaZoomAtual.setConteudo(
-                        GerenciadorTexturas.get(identificadorItem),
-                        identificadorItem
-                    )
-                );
-            }
-
-            Timer.schedule(new Timer.Task() {
-                @Override
-                public void run() {
-                    boolean jogadorJaTemArma =
-                        jogador() != null && jogador().getArmaEquipada() != null;
-
-                    popupManager.mostrarPopupItemBau(
-                        cartaInfo,
-                        jogadorJaTemArma,
-
-                        // EQUIPAR / TROCAR
-                        () -> {
-                            CartaExibida zoomAtual = fluxoCarta.getCartaZoomAtual();
-
-                            Runnable finalizar = () -> {
-                                stageCartaZoom.clear();
-                                telaModalAberta = false;
-                                recolocarCartaConsumidaComoPlaceholder(linha, coluna, cartaOriginal);
-                                coletarBau(linha, coluna);
-                            };
-
-                            if (zoomAtual != null) {
-                                animacaoCarta.dissolverCartaZoom(zoomAtual, finalizar);
-                            } else {
-                                finalizar.run();
-                            }
-                        },
-
-                        // NÃO EQUIPAR / NÃO TROCAR
-                        () -> {
-                            CartaExibida zoomAtual = fluxoCarta.getCartaZoomAtual();
-
-                            Runnable finalizar = () -> {
-                                stageCartaZoom.clear();
-                                telaModalAberta = false;
-
-                                // O baú permanece no tabuleiro e continua revelado.
-                                restaurarCartaOriginal(linha, coluna, cartaOriginal);
-                                sincronizarTabuleiroVisual();
-                                atualizarDestaqueCartas();
-                                mostrarMensagem("Você deixou o item no baú.");
-                            };
-
-                            if (zoomAtual != null) {
-                                animacaoCarta.dissolverCartaZoom(zoomAtual, finalizar);
-                            } else {
-                                finalizar.run();
-                            }
-                        }
-                    );
-                }
-            }, 0.26f);
-        });
     }
 
     //Mostra uma carta já revelada e adjacente em zoom.
@@ -1226,7 +1070,7 @@ public class BlameCindersGame extends ApplicationAdapter {
                 boolean jogadorJaTemArma =
                     jogador() != null && jogador().getArmaEquipada() != null;
 
-                popupManager.mostrarPopupItemBauRevelado(
+                popupManager.mostrarDecisaoItemBau(
                     cartaInfo,
                     jogadorJaTemArma,
 

@@ -13,6 +13,7 @@ import com.blamecinders.util.GerenciadorTexturas;
 import com.blamecinders.tabuleiro.TipoCarta;
 import com.blamecinders.tabuleiro.CartaInfo;
 import java.util.Objects;
+import java.util.function.Consumer;
 
 //Controla o fluxo de revelação visual da carta.
 
@@ -43,28 +44,16 @@ public class FluxoCarta {
         return cartaZoomAtual;
     }
 
-    public boolean podeRevelar(int jLinha, int jColuna, int linha, int coluna) {
-        int dLinha = Math.abs(linha - jLinha);
-        int dColuna = Math.abs(coluna - jColuna);
-        return (dLinha + dColuna) == 1;
-    }
-
     public void revelarCarta(
         int linha,
         int coluna,
         CartaVisual cartaOriginal,
-        Runnable onInimigo,
-        Runnable onChama,
-        Runnable onBau,
-        Runnable onParede,
-        Runnable onVazio,
-        java.util.function.Consumer<String> mensagem
+        Consumer<TipoCarta> aoRevelar
     ) {
         TipoCarta tipo = tabuleiro.getCarta(linha, coluna);
 
         if (tipo == TipoCarta.VAZIO) {
-            mensagem.accept("Não há nada nesta posição.");
-            onVazio.run();
+            aoRevelar.accept(tipo);
             return;
         }
 
@@ -84,32 +73,7 @@ public class FluxoCarta {
         );
 
         animacaoCarta.aplicarIdleFlutuacao(cartaZoomAtual);
-
-        switch (tipo) {
-            case INIMIGO:
-                mensagem.accept("Inimigo encontrado!");
-                onInimigo.run();
-                break;
-
-            case CHAMA:
-                mensagem.accept("Chama encontrada!");
-                onChama.run();
-                break;
-
-            case BAU:
-                mensagem.accept("Baú encontrado!");
-                onBau.run();
-                break;
-
-            case PAREDE:
-                mensagem.accept("Parede encontrada.");
-                onParede.run();
-                break;
-
-            default:
-                onVazio.run();
-                break;
-        }
+        aoRevelar.accept(tipo);
     }
 
     private CartaExibida criarCartaZoom(String textura) {

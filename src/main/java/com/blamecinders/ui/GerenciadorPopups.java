@@ -100,65 +100,6 @@ public class GerenciadorPopups {
         popup.toFront();
     }
 
-    public void mostrarPopupItemBau(CartaInfo cartaInfo, boolean jogadorTemArma, Runnable aoUsar, Runnable aoDeixar) {
-        ItemBau item = cartaInfo != null ? cartaInfo.getItemDentro() : null;
-        String texto;
-        String btnPrincipal;
-        String btnSecundario;
-
-        if (item instanceof Arma) {
-            Arma arma = (Arma) item;
-            texto = "Você encontrou uma arma:\n" + arma.getNome()
-                + "\nDurabilidade: " + arma.getDurabilidade();
-            btnPrincipal = jogadorTemArma ? "Trocar" : "Equipar";
-            btnSecundario = jogadorTemArma ? "Manter" : "Deixar";
-        } else if (item instanceof Comida) {
-            Comida comida = (Comida) item;
-            texto = "Você encontrou comida:\n" + comida.getNome()
-                + "\nCura: " + comida.getCura();
-            btnPrincipal = "Consumir";
-            btnSecundario = "Deixar";
-        } else {
-            texto = "Baú vazio.";
-            btnPrincipal = "Fechar";
-            btnSecundario = "Deixar";
-        }
-
-        Window popup = new Window("", skin);
-        popup.setName("popupArmaBau");
-
-        Label label = new Label(texto, skin);
-        label.setAlignment(Align.center);
-
-        TextButton btn1 = new TextButton(btnPrincipal, skin);
-        TextButton btn2 = new TextButton(btnSecundario, skin);
-
-        btn1.addListener(new ClickListener() {
-            @Override
-            public void clicked(InputEvent event, float x, float y) {
-                animarFechamentoPopup(popup, aoUsar);
-            }
-        });
-
-        btn2.addListener(new ClickListener() {
-            @Override
-            public void clicked(InputEvent event, float x, float y) {
-                animarFechamentoPopup(popup, aoDeixar);
-            }
-        });
-
-        popup.add(label).colspan(2).pad(20);
-        popup.row();
-        popup.add(btn1).width(180).pad(10);
-        popup.add(btn2).width(180).pad(10);
-
-        popup.pack();
-        centralizarZoom(popup);
-        stageCartaZoom.addActor(popup);
-        animarAberturaPopup(popup);
-        popup.toFront();
-    }
-
     public void mostrarGameOver() {
         stageCartaZoom.clear();
 
@@ -228,47 +169,6 @@ public class GerenciadorPopups {
             stageCartaZoom.getViewport().getWorldWidth() / 2f - popup.getWidth() / 2f,
             stageCartaZoom.getViewport().getWorldHeight() / 2f - 300
         );
-    }
-
-    public void mostrarPopupInimigo(Runnable aoLutar, Runnable aoSair) {
-        Window popup = new Window("", skin);
-        popup.setName("popupCombateInimigo");
-
-        Label texto = new Label("Inimigo encontrado!\nDeseja lutar?", skin);
-        texto.setAlignment(Align.center);
-
-        TextButton btnLutar = new TextButton("Lutar", skin);
-        TextButton btnSair = new TextButton("Sair", skin);
-
-        btnLutar.addListener(new ClickListener() {
-            @Override
-            public void clicked(InputEvent event, float x, float y) {
-                animarFechamentoPopup(popup, aoLutar);
-            }
-        });
-
-        btnSair.addListener(new ClickListener() {
-            @Override
-            public void clicked(InputEvent event, float x, float y) {
-                animarFechamentoPopup(popup, aoSair);
-            }
-        });
-
-        popup.add(texto).colspan(2).pad(20);
-        popup.row();
-        popup.add(btnLutar).width(160).pad(10);
-        popup.add(btnSair).width(160).pad(10);
-
-        popup.pack();
-
-        popup.setPosition(
-            stageCartaZoom.getViewport().getWorldWidth() / 2f - popup.getWidth() / 2f,
-            stageCartaZoom.getViewport().getWorldHeight() / 2f - 300
-        );
-
-        stageCartaZoom.addActor(popup);
-        animarAberturaPopup(popup);
-        popup.toFront();
     }
 
     //Popup usado quando o jogador clica em carta já revelada.
@@ -432,11 +332,8 @@ public class GerenciadorPopups {
         });
     }
 
-    //Mostra as opções de uma arma encontrada em baú já revelado.
-    //Diferença para mostrarPopupItemBau():
-    //não exibe "Você encontrou uma arma", mostra apenas informações diretas da arma;
-    //mantém as opções conforme o jogador já tenha arma ou não.
-    public void mostrarPopupItemBauRevelado(
+    //Mostra informações diretas do item e permite usá-lo ou deixá-lo no baú.
+    public void mostrarDecisaoItemBau(
         CartaInfo cartaInfo,
         boolean jogadorTemArma,
         Runnable aoUsar,
