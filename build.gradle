@@ -34,7 +34,7 @@ sourceSets {
 }
 
 application {
-    mainClass = 'com.root.game.Desktop.DesktopLauncher'
+    mainClass = 'com.blamecinders.desktop.DesktopLauncher'
 }
 
 tasks.withType(JavaCompile).configureEach {

@@ -24,7 +24,7 @@
 
 ## Lote 4 — separação de responsabilidades
 
-- extrair estado e regras de partida de `TCC_0_01`;
+- extrair estado e regras de partida de `BlameCindersGame`;
 - mover tipos para os pacotes de domínio;
 - impedir dependências do domínio para libGDX;
 - adaptar UI e animações aos eventos da aplicação.

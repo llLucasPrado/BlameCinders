@@ -16,7 +16,7 @@
 
 ## Estrutura encontrada
 
-- `TCC_0_01`: controlador monolítico; mistura ciclo de vida libGDX, estado da
+- `BlameCindersGame`: controlador monolítico; mistura ciclo de vida libGDX, estado da
   partida, regras, criação da UI e coordenação de animações.
 - `Tabuleiro`: modelo do grid, geração aleatória, chamas, movimento e esteira.
 - `Combate`: entidades e resolução de combate, mas também contém `CartaInfo`,
@@ -24,7 +24,7 @@
 - `Fluxos`: coordena popups, zoom e combate diretamente com atores Scene2D.
 - `Animacoes`: conhece o array concreto de cartas e a implementação do grid.
 - `UI`: HUD e popups.
-- `Utils.TextureManager`: carrega caminhos de imagens usados inclusive pelo
+- `Utils.GerenciadorTexturas`: carrega caminhos de imagens usados inclusive pelo
   domínio (`Arma` e `Inimigo`).
 
 ## Problemas estruturais
@@ -36,7 +36,7 @@
 3. A esteira desloca a linha ou coluna inteira, inclusive cartas do outro lado
    do herói.
 4. Texturas e nomes de arquivos fazem parte das entidades de domínio.
-5. `TCC_0_01` possui mais de 1.300 linhas e conhece praticamente todas as classes.
+5. `BlameCindersGame` possui mais de 1.300 linhas e conhece praticamente todas as classes.
 6. A aleatoriedade global impede testes determinísticos.
 7. Não existem testes automatizados.
 8. Texturas procedurais temporárias não têm um proprietário único para descarte.
