@@ -1,0 +1,11 @@
+.gradle/
+.gradle-user-home/
+.bootstrap/
+build/
+out/
+.idea/
+*.iml
+.classpath
+.project
+.settings/
+hs_err_pid*
