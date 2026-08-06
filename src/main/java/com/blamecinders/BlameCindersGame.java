@@ -41,6 +41,7 @@ import com.blamecinders.tabuleiro.CartaInfo;
 import com.blamecinders.tabuleiro.Tabuleiro;
 import com.blamecinders.ui.carta.CartaExibida;
 import com.blamecinders.ui.tabuleiro.CartaVisual;
+import com.blamecinders.ui.tabuleiro.InteracaoCartaVisual;
 import com.blamecinders.ui.tabuleiro.RemapeadorGradeEsteira;
 
 import java.util.Objects;
@@ -53,7 +54,7 @@ import java.util.Objects;
 //sincronizar o grid lógico com o grid visual;
 //iniciar animação de movimento/esteira.
 
-public class BlameCindersGame extends ApplicationAdapter {
+public class BlameCindersGame extends ApplicationAdapter implements InteracaoCartaVisual {
 
     //Stages
     private Stage stageCartaZoom;
@@ -101,6 +102,11 @@ public class BlameCindersGame extends ApplicationAdapter {
     //Informa se o tabuleiro está animando, usado pelas cartas visuais para bloquear clique durante esteira/movimento.
     public boolean isAnimandoTabuleiro() {
         return animandoTabuleiro;
+    }
+
+    @Override
+    public boolean estaBloqueada() {
+        return isFinalizado() || animandoTabuleiro || telaModalAberta;
     }
 
     private Tabuleiro tabuleiro() {
@@ -340,7 +346,8 @@ public class BlameCindersGame extends ApplicationAdapter {
     //carta fechada não adjacente: bloqueia;
     //carta revelada não adjacente: permite apenas visualizar;
     //carta revelada adjacente: permite visualizar e, se aplicável, interagir.
-    public void clicarCarta(int linha, int coluna) {
+    @Override
+    public void aoClicar(int linha, int coluna) {
 
         if (isFinalizado() || animandoTabuleiro || telaModalAberta) return;
 

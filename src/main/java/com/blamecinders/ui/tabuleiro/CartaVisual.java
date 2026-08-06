@@ -8,7 +8,6 @@ import com.badlogic.gdx.scenes.scene2d.InputEvent;
 import com.badlogic.gdx.scenes.scene2d.actions.Actions;
 import com.badlogic.gdx.scenes.scene2d.utils.ClickListener;
 import com.badlogic.gdx.utils.Align;
-import com.blamecinders.BlameCindersGame;
 import com.blamecinders.ui.carta.CartaExibida;
 import com.blamecinders.util.GerenciadorTexturas;
 
@@ -34,7 +33,7 @@ public class CartaVisual extends CartaExibida {
         float y,
         int linha,
         int coluna,
-        BlameCindersGame jogo,
+        InteracaoCartaVisual interacao,
         BitmapFont fonte
     ) {
         super(GerenciadorTexturas.get(nomeVerso), nomeVerso, fonte);
@@ -51,10 +50,7 @@ public class CartaVisual extends CartaExibida {
         addListener(new ClickListener() {
             @Override
             public void enter(InputEvent event, float x, float y, int pointer, Actor fromActor) {
-                if (jogo.isFinalizado()
-                    || jogo.isAnimandoTabuleiro()
-                    || jogo.isTelaModalAberta()
-                    || bloqueandoAnimacaoClique) {
+                if (interacao.estaBloqueada() || bloqueandoAnimacaoClique) {
                     return;
                 }
 
@@ -65,9 +61,7 @@ public class CartaVisual extends CartaExibida {
 
             @Override
             public void exit(InputEvent event, float x, float y, int pointer, Actor toActor) {
-                if (jogo.isAnimandoTabuleiro()
-                    || jogo.isTelaModalAberta()
-                    || bloqueandoAnimacaoClique) {
+                if (interacao.estaBloqueada() || bloqueandoAnimacaoClique) {
                     return;
                 }
 
@@ -77,14 +71,11 @@ public class CartaVisual extends CartaExibida {
 
             @Override
             public void clicked(InputEvent event, float x, float y) {
-                if (jogo.isFinalizado()
-                    || jogo.isAnimandoTabuleiro()
-                    || jogo.isTelaModalAberta()
-                    || bloqueandoAnimacaoClique) {
+                if (interacao.estaBloqueada() || bloqueandoAnimacaoClique) {
                     return;
                 }
 
-                jogo.clicarCarta(CartaVisual.this.linha, CartaVisual.this.coluna);
+                interacao.aoClicar(CartaVisual.this.linha, CartaVisual.this.coluna);
             }
         });
     }
