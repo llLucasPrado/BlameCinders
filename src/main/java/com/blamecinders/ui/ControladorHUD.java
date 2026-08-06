@@ -68,7 +68,7 @@ public class ControladorHUD {
             return;
         }
 
-        String textura = jogador.getArmaEquipada().getTexturaPath();
+        String textura = jogador.getArmaEquipada().getIdentificadorVisual();
 
         imagemArmaHUD = new Image(
             new TextureRegionDrawable(

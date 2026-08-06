@@ -14,10 +14,10 @@ import com.badlogic.gdx.scenes.scene2d.ui.Window;
 import com.badlogic.gdx.scenes.scene2d.utils.ClickListener;
 import com.badlogic.gdx.scenes.scene2d.utils.TextureRegionDrawable;
 import com.badlogic.gdx.utils.Align;
-import com.blamecinders.combate.Arma;
+import com.blamecinders.item.Arma;
 import com.blamecinders.item.Comida;
 import com.blamecinders.item.ItemBau;
-import com.blamecinders.modelo.CartaInfo;
+import com.blamecinders.tabuleiro.CartaInfo;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.blamecinders.animacao.AnimacaoCarta;
 import com.blamecinders.util.GerenciadorTexturas;
@@ -366,7 +366,7 @@ public class GerenciadorPopups {
     public void mostrarDetalheArmaEquipada(
         String nomeArma,
         int durabilidade,
-        String texturaPath,
+        String identificadorVisual,
         AnimacaoCarta animacaoCarta,
         Runnable aoFechar
     ) {
@@ -374,7 +374,7 @@ public class GerenciadorPopups {
         stageCartaZoom.addActor(overlay);
 
         Image cartaArma = new Image(new TextureRegionDrawable(
-            new TextureRegion(GerenciadorTexturas.get(texturaPath))
+            new TextureRegion(GerenciadorTexturas.get(identificadorVisual))
         ));
 
         cartaArma.setSize(260, 360);

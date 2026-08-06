@@ -18,7 +18,7 @@ import com.blamecinders.combate.ResultadoCombate;
 import com.blamecinders.combate.ResultadoFurtividade;
 import com.blamecinders.combate.SistemaCombate;
 import com.blamecinders.combate.SistemaFurtividade;
-import com.blamecinders.modelo.CartaInfo;
+import com.blamecinders.tabuleiro.CartaInfo;
 import com.blamecinders.ui.GerenciadorPopups;
 import com.blamecinders.ui.carta.CartaExibida;
 import com.blamecinders.util.GerenciadorTexturas;
@@ -77,8 +77,8 @@ public class FluxoCombate {
         stageCartaZoom.addActor(overlay);
 
         CartaExibida cartaInimigo = new CartaExibida(
-            GerenciadorTexturas.get(inimigo.getTexturaPath()),
-            inimigo.getTexturaPath(),
+            GerenciadorTexturas.get(inimigo.getIdentificadorVisual()),
+            inimigo.getIdentificadorVisual(),
             skin.getFont("default-font")
         );
         cartaInimigo.setSize(280, 380);
@@ -105,7 +105,7 @@ public class FluxoCombate {
 
         if (jogadorCombate.getArmaEquipada() != null) {
             miniArmaCombate = new Image(new TextureRegionDrawable(
-                new TextureRegion(GerenciadorTexturas.get(jogadorCombate.getArmaEquipada().getTexturaPath()))
+                new TextureRegion(GerenciadorTexturas.get(jogadorCombate.getArmaEquipada().getIdentificadorVisual()))
             ));
 
             miniArmaCombate.setSize(70, 95);
@@ -132,7 +132,7 @@ public class FluxoCombate {
                     popupManager.mostrarDetalheArmaEquipada(
                         jogadorCombate.getArmaEquipada().getNome(),
                         jogadorCombate.getArmaEquipada().getDurabilidade(),
-                        jogadorCombate.getArmaEquipada().getTexturaPath(),
+                        jogadorCombate.getArmaEquipada().getIdentificadorVisual(),
                         animacaoCarta,
                         null
                     );

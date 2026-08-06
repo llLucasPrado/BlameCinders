@@ -10,8 +10,8 @@ import com.blamecinders.ui.tabuleiro.CartaVisual;
 import com.blamecinders.tabuleiro.Tabuleiro;
 import com.blamecinders.ui.GerenciadorPopups;
 import com.blamecinders.util.GerenciadorTexturas;
-import com.blamecinders.modelo.TipoCarta;
-import com.blamecinders.modelo.CartaInfo;
+import com.blamecinders.tabuleiro.TipoCarta;
+import com.blamecinders.tabuleiro.CartaInfo;
 import java.util.Objects;
 
 //Controla o fluxo de revelação visual da carta.
@@ -147,7 +147,7 @@ public class FluxoCarta {
 
         if (Objects.requireNonNull(cartaInfo.getTipo()) == TipoCarta.INIMIGO) {
             return cartaInfo.getInimigo() != null
-                ? cartaInfo.getInimigo().getTexturaPath()
+                ? cartaInfo.getInimigo().getIdentificadorVisual()
                 : "INIMIGO";
         } else if (cartaInfo.getTipo() == TipoCarta.BAU) {
             return "BAÚ";

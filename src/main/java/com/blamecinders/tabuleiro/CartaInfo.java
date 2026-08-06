@@ -1,7 +1,7 @@
-package com.blamecinders.modelo;
+package com.blamecinders.tabuleiro;
 
-import com.blamecinders.combate.Arma;
 import com.blamecinders.combate.Inimigo;
+import com.blamecinders.item.Arma;
 import com.blamecinders.item.Comida;
 import com.blamecinders.item.ItemBau;
 

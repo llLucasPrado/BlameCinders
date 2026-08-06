@@ -1,4 +1,4 @@
-package com.blamecinders.combate;
+package com.blamecinders.item;
 
 import java.util.ArrayList;
 import java.util.List;

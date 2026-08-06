@@ -1,5 +1,6 @@
 package com.blamecinders.combate;
 
+import com.blamecinders.item.Arma;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;

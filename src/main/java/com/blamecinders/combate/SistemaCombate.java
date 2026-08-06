@@ -1,5 +1,7 @@
 package com.blamecinders.combate;
 
+import com.blamecinders.item.Arma;
+
 public class SistemaCombate {
 
     public ResultadoCombate resolverCombate(Jogador jogador, Inimigo inimigo) {

@@ -4,10 +4,6 @@ import com.blamecinders.combate.CatalogoInimigos;
 import com.blamecinders.combate.Inimigo;
 import com.blamecinders.item.CatalogoItens;
 import com.blamecinders.item.ItemBau;
-import com.blamecinders.modelo.TipoCarta;
-import com.blamecinders.modelo.CartaInfo;
-import com.blamecinders.modelo.EstadoCarta;
-
 import java.util.Objects;
 import java.util.Random;
 

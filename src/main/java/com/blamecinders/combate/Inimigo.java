@@ -1,20 +1,39 @@
 package com.blamecinders.combate;
 
-public class Inimigo extends EntidadeCombate {
+import java.util.Objects;
 
+public class Inimigo {
+
+    private final String nome;
+    private final String identificadorVisual;
     private final int dificuldadeFurtividade;
+    private int vida;
 
-    public Inimigo(String nome, int vida, String texturaPath) {
-        this(nome, vida, texturaPath, Math.min(40, 10 + vida));
+    public Inimigo(String nome, int vida, String identificadorVisual) {
+        this(nome, vida, identificadorVisual, Math.min(40, 10 + vida));
     }
 
-    public Inimigo(String nome, int vida, String texturaPath, int dificuldadeFurtividade) {
-        super(nome, vida, texturaPath);
+    public Inimigo(String nome, int vida, String identificadorVisual, int dificuldadeFurtividade) {
+        this.nome = Objects.requireNonNull(nome, "nome");
+        this.identificadorVisual = Objects.requireNonNull(identificadorVisual, "identificadorVisual");
+        this.vida = Math.max(0, vida);
         this.dificuldadeFurtividade = Math.max(0, Math.min(60, dificuldadeFurtividade));
     }
 
+    public String getNome() {
+        return nome;
+    }
+
     public int getVida() {
-        return pontosDeVida;
+        return vida;
+    }
+
+    public void setVida(int vida) {
+        this.vida = Math.max(0, vida);
+    }
+
+    public String getIdentificadorVisual() {
+        return identificadorVisual;
     }
 
     public int getDificuldadeFurtividade() {
@@ -22,6 +41,6 @@ public class Inimigo extends EntidadeCombate {
     }
 
     public Inimigo copiar() {
-        return new Inimigo(this.nome, this.pontosDeVida, this.texturaPath, this.dificuldadeFurtividade);
+        return new Inimigo(nome, vida, identificadorVisual, dificuldadeFurtividade);
     }
 }

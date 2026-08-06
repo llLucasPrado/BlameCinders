@@ -1,15 +1,12 @@
 package com.blamecinders.tabuleiro;
 
-import com.blamecinders.modelo.CartaInfo;
 import org.junit.jupiter.api.Test;
 
 import java.util.Random;
 
-import com.blamecinders.modelo.TipoCarta;
-
-import static com.blamecinders.modelo.TipoCarta.CHAMA;
-import static com.blamecinders.modelo.TipoCarta.INIMIGO;
-import static com.blamecinders.modelo.TipoCarta.PAREDE;
+import static com.blamecinders.tabuleiro.TipoCarta.CHAMA;
+import static com.blamecinders.tabuleiro.TipoCarta.INIMIGO;
+import static com.blamecinders.tabuleiro.TipoCarta.PAREDE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;

@@ -1,8 +1,5 @@
 package com.blamecinders.item;
 
-import com.blamecinders.combate.Arma;
-import com.blamecinders.combate.CatalogoArmas;
-
 import java.util.Arrays;
 import java.util.List;
 import java.util.Random;

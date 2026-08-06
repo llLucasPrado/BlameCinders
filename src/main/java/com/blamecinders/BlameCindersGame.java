@@ -23,7 +23,7 @@ import com.blamecinders.animacao.AnimacaoTabuleiro;
 import com.blamecinders.aplicacao.ControladorTurno;
 import com.blamecinders.aplicacao.EstadoPartida;
 import com.blamecinders.aplicacao.MovimentoTabuleiro;
-import com.blamecinders.combate.Arma;
+import com.blamecinders.item.Arma;
 import com.blamecinders.combate.Jogador;
 import com.blamecinders.combate.SistemaCombate;
 import com.blamecinders.combate.SistemaFurtividade;
@@ -35,8 +35,8 @@ import com.blamecinders.util.ProvedorPosicaoCarta;
 import com.blamecinders.util.GerenciadorTexturas;
 import com.blamecinders.item.Comida;
 import com.blamecinders.item.ItemBau;
-import com.blamecinders.modelo.TipoCarta;
-import com.blamecinders.modelo.CartaInfo;
+import com.blamecinders.tabuleiro.TipoCarta;
+import com.blamecinders.tabuleiro.CartaInfo;
 import com.blamecinders.tabuleiro.Tabuleiro;
 import com.blamecinders.ui.carta.CartaExibida;
 import com.blamecinders.ui.tabuleiro.CartaVisual;
@@ -317,7 +317,7 @@ public class BlameCindersGame extends ApplicationAdapter {
 
         if (Objects.requireNonNull(tipo) == TipoCarta.INIMIGO) {
             if (cartaInfo.getInimigo() != null) {
-                return cartaInfo.getInimigo().getTexturaPath();
+                return cartaInfo.getInimigo().getIdentificadorVisual();
             }
             return "INIMIGO";
         } else if (tipo == TipoCarta.BAU) {
@@ -706,7 +706,7 @@ public class BlameCindersGame extends ApplicationAdapter {
         popupManager.mostrarDetalheArmaEquipada(
             jogador().getArmaEquipada().getNome(),
             jogador().getArmaEquipada().getDurabilidade(),
-            jogador().getArmaEquipada().getTexturaPath(),
+            jogador().getArmaEquipada().getIdentificadorVisual(),
             animacaoCarta,
             () -> telaModalAberta = false
         );
