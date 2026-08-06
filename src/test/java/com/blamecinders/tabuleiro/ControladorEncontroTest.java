@@ -127,6 +127,39 @@ class ControladorEncontroTest {
         assertSame(inimigo, partida.getTabuleiro().getCartaInfo(0, 1));
     }
 
+    @Test
+    void combateVencidoConsomeInimigo() {
+        CartaInfo[][] grid = criarGrid();
+        CartaInfo inimigo = criarInimigo(10);
+        grid[0][1] = inimigo;
+        EstadoPartida partida = criarPartida(grid, 50);
+        ControladorEncontro controlador = new ControladorEncontro(partida);
+
+        ResultadoEncontroInimigo resultado = controlador.lutar(inimigo);
+        controlador.concluirInimigo(0, 1, resultado);
+
+        assertEquals(DesfechoInimigo.COMBATE_VENCIDO, resultado.getDesfecho());
+        assertEquals(40, partida.getJogador().getVida());
+        assertNull(partida.getTabuleiro().getCartaInfo(0, 1));
+        assertFalse(partida.isFinalizada());
+    }
+
+    @Test
+    void recuoMantemInimigoNoTabuleiro() {
+        CartaInfo[][] grid = criarGrid();
+        CartaInfo inimigo = criarInimigo(10);
+        grid[0][1] = inimigo;
+        EstadoPartida partida = criarPartida(grid, 50);
+        ControladorEncontro controlador = new ControladorEncontro(partida);
+        ResultadoEncontroInimigo resultado = ResultadoEncontroInimigo.recuo();
+
+        controlador.concluirInimigo(0, 1, resultado);
+
+        assertEquals(DesfechoInimigo.RECUO, resultado.getDesfecho());
+        assertSame(inimigo, partida.getTabuleiro().getCartaInfo(0, 1));
+        assertFalse(partida.isFinalizada());
+    }
+
     private EstadoPartida criarPartida(CartaInfo[][] grid, int vida) {
         return new EstadoPartida(
             new Tabuleiro(grid, 0, 0, new Random(1)),
