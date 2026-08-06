@@ -1,13 +1,11 @@
 package com.blamecinders.fluxo;
 
-import com.badlogic.gdx.graphics.g2d.TextureRegion;
+import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.scenes.scene2d.Stage;
-import com.badlogic.gdx.scenes.scene2d.ui.Image;
-import com.badlogic.gdx.scenes.scene2d.ui.Label;
 import com.badlogic.gdx.scenes.scene2d.ui.Skin;
-import com.badlogic.gdx.scenes.scene2d.utils.TextureRegionDrawable;
 import com.badlogic.gdx.utils.Align;
 import com.blamecinders.animacao.AnimacaoCarta;
+import com.blamecinders.ui.carta.CartaExibida;
 import com.blamecinders.ui.tabuleiro.CartaVisual;
 import com.blamecinders.tabuleiro.Tabuleiro;
 import com.blamecinders.ui.GerenciadorPopups;
@@ -25,7 +23,7 @@ public class FluxoCarta {
     private final AnimacaoCarta animacaoCarta;
     private final GerenciadorPopups popupManager;
     private final Skin skin;
-    private Image cartaZoomAtual;
+    private CartaExibida cartaZoomAtual;
 
     public FluxoCarta(
         Stage stageCartaZoom,
@@ -41,7 +39,7 @@ public class FluxoCarta {
         this.skin = skin;
     }
 
-    public Image getCartaZoomAtual() {
+    public CartaExibida getCartaZoomAtual() {
         return cartaZoomAtual;
     }
 
@@ -79,13 +77,11 @@ public class FluxoCarta {
         stageCartaZoom.clear();
         stageCartaZoom.addActor(popupManager.criarOverlayBloqueador(0.65f));
         stageCartaZoom.addActor(cartaZoomAtual);
-        adicionarRotuloCarta(cartaZoomAtual, textura);
 
-        animacaoCarta.aplicarFlip(cartaZoomAtual, () -> cartaZoomAtual.setDrawable(
-            new TextureRegionDrawable(
-                new TextureRegion(GerenciadorTexturas.get(textura))
-            )
-        ));
+        animacaoCarta.aplicarFlip(
+            cartaZoomAtual,
+            () -> cartaZoomAtual.setConteudo(GerenciadorTexturas.get(textura), textura)
+        );
 
         animacaoCarta.aplicarIdleFlutuacao(cartaZoomAtual);
 
@@ -116,21 +112,25 @@ public class FluxoCarta {
         }
     }
 
-    private Image criarCartaZoom(String textura) {
-        TextureRegion region = new TextureRegion(GerenciadorTexturas.get(textura));
-        Image cartaZoom = new Image(new TextureRegionDrawable(region));
+    private CartaExibida criarCartaZoom(String textura) {
+        Texture texturaFrente = GerenciadorTexturas.get(textura);
+        CartaExibida cartaZoom = new CartaExibida(
+            GerenciadorTexturas.get("VERSO"),
+            "VERSO",
+            skin.getFont("default-font")
+        );
 
         float maxLargura = 300f;
         float maxAltura = 400f;
 
         float escala = Math.min(
-            maxLargura / region.getRegionWidth(),
-            maxAltura / region.getRegionHeight()
+            maxLargura / texturaFrente.getWidth(),
+            maxAltura / texturaFrente.getHeight()
         );
 
         cartaZoom.setSize(
-            region.getRegionWidth() * escala,
-            region.getRegionHeight() * escala
+            texturaFrente.getWidth() * escala,
+            texturaFrente.getHeight() * escala
         );
 
         cartaZoom.setOrigin(Align.center);
@@ -138,18 +138,6 @@ public class FluxoCarta {
         cartaZoom.setPosition(640 - cartaZoom.getWidth() / 2f, 360 - 120);
 
         return cartaZoom;
-    }
-
-    private void adicionarRotuloCarta(Image carta, String texto) {
-        Label rotulo = new Label(texto, skin);
-        rotulo.setAlignment(Align.center);
-        rotulo.setWrap(true);
-        rotulo.setSize(carta.getWidth() - 24f, 100f);
-        rotulo.setPosition(
-            carta.getX() + 12f,
-            carta.getY() + (carta.getHeight() - rotulo.getHeight()) / 2f
-        );
-        stageCartaZoom.addActor(rotulo);
     }
 
     private String obterTextura(int linha, int coluna) {

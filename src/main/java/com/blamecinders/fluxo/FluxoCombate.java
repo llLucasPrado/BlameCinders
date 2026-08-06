@@ -20,6 +20,7 @@ import com.blamecinders.combate.SistemaCombate;
 import com.blamecinders.combate.SistemaFurtividade;
 import com.blamecinders.modelo.CartaInfo;
 import com.blamecinders.ui.GerenciadorPopups;
+import com.blamecinders.ui.carta.CartaExibida;
 import com.blamecinders.util.GerenciadorTexturas;
 import com.badlogic.gdx.scenes.scene2d.Touchable;
 
@@ -75,21 +76,23 @@ public class FluxoCombate {
         Image overlay = popupManager.criarOverlayBloqueador(0.75f);
         stageCartaZoom.addActor(overlay);
 
-        Image cartaInimigo = new Image(new TextureRegionDrawable(
-            new TextureRegion(GerenciadorTexturas.get(inimigo.getTexturaPath()))
-        ));
+        CartaExibida cartaInimigo = new CartaExibida(
+            GerenciadorTexturas.get(inimigo.getTexturaPath()),
+            inimigo.getTexturaPath(),
+            skin.getFont("default-font")
+        );
         cartaInimigo.setSize(280, 380);
         cartaInimigo.setPosition(300, 300);
         stageCartaZoom.addActor(cartaInimigo);
-        adicionarRotuloCarta(cartaInimigo, inimigo.getTexturaPath());
 
-        Image cartaJogador = new Image(new TextureRegionDrawable(
-            new TextureRegion(GerenciadorTexturas.get("HERÓI-TESTE"))
-        ));
+        CartaExibida cartaJogador = new CartaExibida(
+            GerenciadorTexturas.get("HERÓI-TESTE"),
+            "HERÓI-TESTE",
+            skin.getFont("default-font")
+        );
         cartaJogador.setSize(280, 380);
         cartaJogador.setPosition(700, 300);
         stageCartaZoom.addActor(cartaJogador);
-        adicionarRotuloCarta(cartaJogador, "HERÓI-TESTE");
 
         animacaoCarta.aplicarIdleFlutuacao(cartaInimigo);
         animacaoCarta.aplicarIdleFlutuacao(cartaJogador);
@@ -357,18 +360,6 @@ public class FluxoCombate {
         }
 
         return texto;
-    }
-
-    private void adicionarRotuloCarta(Image carta, String texto) {
-        Label rotulo = new Label(texto, skin);
-        rotulo.setAlignment(Align.center);
-        rotulo.setWrap(true);
-        rotulo.setSize(carta.getWidth() - 24f, 100f);
-        rotulo.setPosition(
-            carta.getX() + 12f,
-            carta.getY() + (carta.getHeight() - rotulo.getHeight()) / 2f
-        );
-        stageCartaZoom.addActor(rotulo);
     }
 
 }

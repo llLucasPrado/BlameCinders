@@ -3,10 +3,10 @@ package com.blamecinders.animacao;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.scenes.scene2d.Stage;
 import com.badlogic.gdx.scenes.scene2d.actions.Actions;
-import com.badlogic.gdx.scenes.scene2d.ui.Image;
 import com.badlogic.gdx.utils.Align;
 import com.badlogic.gdx.math.Interpolation;
 import com.blamecinders.tabuleiro.Tabuleiro;
+import com.blamecinders.ui.carta.CartaExibida;
 import com.blamecinders.util.ProvedorPosicaoCarta;
 import com.blamecinders.ui.tabuleiro.CartaVisual;
 
@@ -311,7 +311,11 @@ public class AnimacaoTabuleiro {
         //A carta temporária de entrada representa uma carta nova ainda desconhecida visualmente.
         //Por isso usamos o verso neutro, e não a textura da carta usada como referência.
         //Isso evita que ela herde aparência de carta revelada, destaque ou brilho.
-        Image cartaTemp = new Image(cartaReferencia.getTexturaVerso());
+        CartaExibida cartaTemp = new CartaExibida(
+            cartaReferencia.getTexturaVerso(),
+            "VERSO",
+            cartaReferencia.getFonte()
+        );
 
         cartaTemp.setSize(cartaReferencia.getWidth(), cartaReferencia.getHeight());
         cartaTemp.setOrigin(Align.center);

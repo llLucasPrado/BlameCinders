@@ -1,6 +1,7 @@
 package com.blamecinders.animacao;
 
 import com.badlogic.gdx.math.Interpolation;
+import com.badlogic.gdx.scenes.scene2d.Actor;
 import com.badlogic.gdx.scenes.scene2d.actions.Actions;
 import com.badlogic.gdx.scenes.scene2d.ui.Image;
 import com.badlogic.gdx.utils.Align;
@@ -23,7 +24,7 @@ public class AnimacaoCarta {
     //fecha quase totalmente no eixo X, troca o conteúdo no meio e reabre em seguida.
     //{carta} imagem da carta
     //{aposFlip} callback chamado no exato momento da troca visual
-    public void aplicarFlip(Image carta, Runnable aposFlip) {
+    public void aplicarFlip(Actor carta, Runnable aposFlip) {
         carta.setOrigin(Align.center);
 
         carta.addAction(
@@ -37,7 +38,7 @@ public class AnimacaoCarta {
 
     //Aplica uma animação contínua de flutuação vertical.
     //{carta} imagem que ficará flutuando
-    public void aplicarIdleFlutuacao(Image carta) {
+    public void aplicarIdleFlutuacao(Actor carta) {
         carta.addAction(
             Actions.forever(
                 Actions.sequence(
@@ -51,7 +52,7 @@ public class AnimacaoCarta {
     //Dissolve suavemente a carta de zoom: reduz escala, sobe levemente e perde opacidade
     //{cartaZoom} imagem da carta em destaque
     //{aoFinalizar} callback executado ao final da animação
-    public void dissolverCartaZoom(Image cartaZoom, Runnable aoFinalizar) {
+    public void dissolverCartaZoom(Actor cartaZoom, Runnable aoFinalizar) {
         cartaZoom.clearActions();
 
         cartaZoom.addAction(
@@ -71,7 +72,7 @@ public class AnimacaoCarta {
     }
 
     //Executa um pequeno avanço/impacto visual do jogador para ataque no combate.
-    public void animarImpactoJogador(Image cartaJogador) {
+    public void animarImpactoJogador(Actor cartaJogador) {
         cartaJogador.addAction(
             Actions.sequence(
                 Actions.parallel(
@@ -138,7 +139,7 @@ public class AnimacaoCarta {
     //Anima a derrota do inimigo com sensação de carta quebrando.
     //Estratégia visual:
     //cria rachaduras temporárias sobre a carta, aplica impacto/tremor, espalha fragmentos, colapsa e dissolve a carta.
-    public void animarDerrotaInimigo(Image cartaInimigo, Stage stage, Runnable aoFinalizar) {
+    public void animarDerrotaInimigo(Actor cartaInimigo, Stage stage, Runnable aoFinalizar) {
         if (cartaInimigo == null) {
             if (aoFinalizar != null) aoFinalizar.run();
             return;
@@ -194,7 +195,7 @@ public class AnimacaoCarta {
     }
 
     //Reseta transformações visuais básicas de uma imagem. Útil antes de aplicar outra animação.
-    public void resetarTransformacoes(Image imagem) {
+    public void resetarTransformacoes(Actor imagem) {
         if (imagem == null) return;
 
         imagem.clearActions();
@@ -208,7 +209,7 @@ public class AnimacaoCarta {
     //A ideia é evitar corte seco entre: carta do inimigo derrotada, fechamento da tela de combate, retorno para o tabuleiro.
     //Cria fragmentos visuais simples para simular quebra, os fragmentos são pequenas imagens escuras criadas por Pixmap.
     //São temporários e removidos automaticamente após a animação.
-    private void criarFragmentosQuebra(Stage stage, Image origem, int quantidade) {
+    private void criarFragmentosQuebra(Stage stage, Actor origem, int quantidade) {
         if (stage == null || origem == null) return;
 
         for (int i = 0; i < quantidade; i++) {
@@ -258,7 +259,7 @@ public class AnimacaoCarta {
     }
 
     //Cria rachaduras espalhadas por quase toda a carta.
-    private void criarRachadurasSobreCarta(Stage stage, Image carta) {
+    private void criarRachadurasSobreCarta(Stage stage, Actor carta) {
         if (stage == null || carta == null) return;
 
         float x = carta.getX();

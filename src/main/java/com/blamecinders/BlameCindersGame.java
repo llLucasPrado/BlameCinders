@@ -10,7 +10,6 @@ import com.badlogic.gdx.graphics.g2d.freetype.FreeTypeFontGenerator;
 import com.badlogic.gdx.math.Interpolation;
 import com.badlogic.gdx.scenes.scene2d.Stage;
 import com.badlogic.gdx.scenes.scene2d.actions.Actions;
-import com.badlogic.gdx.scenes.scene2d.ui.Image;
 import com.badlogic.gdx.scenes.scene2d.ui.Label;
 import com.badlogic.gdx.scenes.scene2d.ui.Skin;
 import com.badlogic.gdx.scenes.scene2d.ui.TextButton;
@@ -39,6 +38,7 @@ import com.blamecinders.item.ItemBau;
 import com.blamecinders.modelo.TipoCarta;
 import com.blamecinders.modelo.CartaInfo;
 import com.blamecinders.tabuleiro.Tabuleiro;
+import com.blamecinders.ui.carta.CartaExibida;
 import com.blamecinders.ui.tabuleiro.CartaVisual;
 import com.blamecinders.ui.tabuleiro.RemapeadorGradeEsteira;
 
@@ -763,7 +763,7 @@ public class BlameCindersGame extends ApplicationAdapter {
 
             // CHAMA
             () -> popupManager.mostrarPopupMensagem("Chama coletada!", () -> {
-                Image cartaZoomAtual = fluxoCarta.getCartaZoomAtual();
+                CartaExibida cartaZoomAtual = fluxoCarta.getCartaZoomAtual();
 
                 Runnable finalizar = () -> {
                     stageCartaZoom.clear();
@@ -786,7 +786,7 @@ public class BlameCindersGame extends ApplicationAdapter {
             () -> popupManager.mostrarPopupMensagem(
                 "Parede encontrada.\nNão é possível avançar.",
                 () -> {
-                    Image cartaZoomAtual = fluxoCarta.getCartaZoomAtual();
+                    CartaExibida cartaZoomAtual = fluxoCarta.getCartaZoomAtual();
 
                     Runnable finalizar = () -> {
                         stageCartaZoom.clear();
@@ -841,39 +841,16 @@ public class BlameCindersGame extends ApplicationAdapter {
 
         String textura = obterTextura(linha, coluna);
 
-        TextureRegion region = new TextureRegion(GerenciadorTexturas.get(textura));
-        Image cartaZoom = new Image(new TextureRegionDrawable(region));
-
-        float maxLargura = 300f;
-        float maxAltura = 400f;
-
-        float escala = Math.min(
-            maxLargura / region.getRegionWidth(),
-            maxAltura / region.getRegionHeight()
-        );
-
-        float larguraFinal = region.getRegionWidth() * escala;
-        float alturaFinal = region.getRegionHeight() * escala;
-
-        cartaZoom.setSize(larguraFinal, alturaFinal);
-        cartaZoom.setOrigin(Align.center);
-        cartaZoom.setScale(0.01f);
-
-        cartaZoom.setPosition(
-            stageCartaZoom.getViewport().getWorldWidth() / 2f - larguraFinal / 2f,
-            stageCartaZoom.getViewport().getWorldHeight() / 2f - 120
-        );
+        CartaExibida cartaZoom = criarCartaZoom(textura);
 
         stageCartaZoom.clear();
         stageCartaZoom.addActor(popupManager.criarOverlayBloqueador(0.65f));
         stageCartaZoom.addActor(cartaZoom);
-        adicionarRotuloCartaZoom(cartaZoom, textura);
 
-        animacaoCarta.aplicarFlip(cartaZoom, () -> cartaZoom.setDrawable(
-            new TextureRegionDrawable(
-                new TextureRegion(GerenciadorTexturas.get(textura))
-            )
-        ));
+        animacaoCarta.aplicarFlip(
+            cartaZoom,
+            () -> cartaZoom.setConteudo(GerenciadorTexturas.get(textura), textura)
+        );
 
         animacaoCarta.aplicarIdleFlutuacao(cartaZoom);
 
@@ -973,7 +950,7 @@ public class BlameCindersGame extends ApplicationAdapter {
 
             // SAIR
             () -> {
-                Image cartaZoomAtual = fluxoCarta.getCartaZoomAtual();
+                CartaExibida cartaZoomAtual = fluxoCarta.getCartaZoomAtual();
 
                 Runnable finalizar = () -> {
                     stageCartaZoom.clear();
@@ -1004,7 +981,7 @@ public class BlameCindersGame extends ApplicationAdapter {
 
             if (cartaInfo == null || cartaInfo.getItemDentro() == null) {
                 popupManager.mostrarPopupMensagem("Baú vazio.", () -> {
-                    Image cartaZoomAtual = fluxoCarta.getCartaZoomAtual();
+                    CartaExibida cartaZoomAtual = fluxoCarta.getCartaZoomAtual();
 
                     Runnable finalizar = () -> {
                         stageCartaZoom.clear();
@@ -1024,16 +1001,17 @@ public class BlameCindersGame extends ApplicationAdapter {
                 return;
             }
 
-            Image cartaZoomAtual = fluxoCarta.getCartaZoomAtual();
+            CartaExibida cartaZoomAtual = fluxoCarta.getCartaZoomAtual();
 
             if (cartaZoomAtual != null) {
-                animacaoCarta.aplicarFlip(cartaZoomAtual, () -> cartaZoomAtual.setDrawable(
-                    new TextureRegionDrawable(
-                        new TextureRegion(
-                            GerenciadorTexturas.get(cartaInfo.getItemDentro().getIdentificadorVisual())
-                        )
+                String identificadorItem = cartaInfo.getItemDentro().getIdentificadorVisual();
+                animacaoCarta.aplicarFlip(
+                    cartaZoomAtual,
+                    () -> cartaZoomAtual.setConteudo(
+                        GerenciadorTexturas.get(identificadorItem),
+                        identificadorItem
                     )
-                ));
+                );
             }
 
             Timer.schedule(new Timer.Task() {
@@ -1048,7 +1026,7 @@ public class BlameCindersGame extends ApplicationAdapter {
 
                         // EQUIPAR / TROCAR
                         () -> {
-                            Image zoomAtual = fluxoCarta.getCartaZoomAtual();
+                            CartaExibida zoomAtual = fluxoCarta.getCartaZoomAtual();
 
                             Runnable finalizar = () -> {
                                 stageCartaZoom.clear();
@@ -1066,7 +1044,7 @@ public class BlameCindersGame extends ApplicationAdapter {
 
                         // NÃO EQUIPAR / NÃO TROCAR
                         () -> {
-                            Image zoomAtual = fluxoCarta.getCartaZoomAtual();
+                            CartaExibida zoomAtual = fluxoCarta.getCartaZoomAtual();
 
                             Runnable finalizar = () -> {
                                 stageCartaZoom.clear();
@@ -1114,40 +1092,17 @@ public class BlameCindersGame extends ApplicationAdapter {
 
         String textura = obterTextura(linha, coluna);
 
-        TextureRegion region = new TextureRegion(GerenciadorTexturas.get(textura));
-        Image cartaZoom = new Image(new TextureRegionDrawable(region));
-
-        float maxLargura = 300f;
-        float maxAltura = 400f;
-
-        float escala = Math.min(
-            maxLargura / region.getRegionWidth(),
-            maxAltura / region.getRegionHeight()
-        );
-
-        float larguraFinal = region.getRegionWidth() * escala;
-        float alturaFinal = region.getRegionHeight() * escala;
-
-        cartaZoom.setSize(larguraFinal, alturaFinal);
-        cartaZoom.setOrigin(Align.center);
-        cartaZoom.setScale(0.01f);
-
-        cartaZoom.setPosition(
-            stageCartaZoom.getViewport().getWorldWidth() / 2f - larguraFinal / 2f,
-            stageCartaZoom.getViewport().getWorldHeight() / 2f - 120
-        );
+        CartaExibida cartaZoom = criarCartaZoom(textura);
 
         stageCartaZoom.clear();
         stageCartaZoom.addActor(popupManager.criarOverlayBloqueador(0.65f));
         stageCartaZoom.addActor(cartaZoom);
-        adicionarRotuloCartaZoom(cartaZoom, textura);
 
         //Usa o mesmo efeito visual de ampliação/flip das cartas reveladas.
-        animacaoCarta.aplicarFlip(cartaZoom, () -> cartaZoom.setDrawable(
-            new TextureRegionDrawable(
-                new TextureRegion(GerenciadorTexturas.get(textura))
-            )
-        ));
+        animacaoCarta.aplicarFlip(
+            cartaZoom,
+            () -> cartaZoom.setConteudo(GerenciadorTexturas.get(textura), textura)
+        );
 
         animacaoCarta.aplicarIdleFlutuacao(cartaZoom);
 
@@ -1279,7 +1234,7 @@ public class BlameCindersGame extends ApplicationAdapter {
     //Executa o fluxo de um baú que já estava revelado.
     //Fluxo: não mostra "Baú encontrado", a carta ampliada já está visível pela visualização;
     //ao abrir, faz flip para mostrar a arma mostra apenas nome/durabilidade da arma e opções.
-    private void executarFluxoBauJaRevelado(int linha, int coluna, CartaVisual cartaOriginal, Image cartaZoom) {
+    private void executarFluxoBauJaRevelado(int linha, int coluna, CartaVisual cartaOriginal, CartaExibida cartaZoom) {
         CartaInfo cartaInfo = tabuleiro().getCartaInfo(linha, coluna);
 
         if (cartaInfo == null || cartaInfo.getItemDentro() == null) {
@@ -1294,13 +1249,14 @@ public class BlameCindersGame extends ApplicationAdapter {
         }
 
         //Baú já revelado: ao abrir, apenas viramos a carta ampliada para mostrar a arma.
-        animacaoCarta.aplicarFlip(cartaZoom, () -> cartaZoom.setDrawable(
-            new TextureRegionDrawable(
-                new TextureRegion(
-                    GerenciadorTexturas.get(cartaInfo.getItemDentro().getIdentificadorVisual())
-                )
+        String identificadorItem = cartaInfo.getItemDentro().getIdentificadorVisual();
+        animacaoCarta.aplicarFlip(
+            cartaZoom,
+            () -> cartaZoom.setConteudo(
+                GerenciadorTexturas.get(identificadorItem),
+                identificadorItem
             )
-        ));
+        );
 
         //Aguarda o flip terminar antes de mostrar as opções.
         Timer.schedule(new Timer.Task() {
@@ -1339,16 +1295,29 @@ public class BlameCindersGame extends ApplicationAdapter {
         }, 0.26f);
     }
 
-    private void adicionarRotuloCartaZoom(Image carta, String texto) {
-        Label rotulo = new Label(texto, skin);
-        rotulo.setAlignment(Align.center);
-        rotulo.setWrap(true);
-        rotulo.setSize(carta.getWidth() - 24f, 100f);
-        rotulo.setPosition(
-            carta.getX() + 12f,
-            carta.getY() + (carta.getHeight() - rotulo.getHeight()) / 2f
+    private CartaExibida criarCartaZoom(String identificadorFrente) {
+        TextureRegion regiao = new TextureRegion(GerenciadorTexturas.get(identificadorFrente));
+        CartaExibida carta = new CartaExibida(
+            GerenciadorTexturas.get("VERSO"),
+            "VERSO",
+            fonte
         );
-        stageCartaZoom.addActor(rotulo);
+
+        float escala = Math.min(
+            300f / regiao.getRegionWidth(),
+            400f / regiao.getRegionHeight()
+        );
+        float largura = regiao.getRegionWidth() * escala;
+        float altura = regiao.getRegionHeight() * escala;
+
+        carta.setSize(largura, altura);
+        carta.setOrigin(Align.center);
+        carta.setScale(0.01f);
+        carta.setPosition(
+            stageCartaZoom.getViewport().getWorldWidth() / 2f - largura / 2f,
+            stageCartaZoom.getViewport().getWorldHeight() / 2f - 120f
+        );
+        return carta;
     }
 
 }
