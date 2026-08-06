@@ -3,19 +3,15 @@ package com.blamecinders;
 import com.badlogic.gdx.ApplicationAdapter;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.InputMultiplexer;
-import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
-import com.badlogic.gdx.math.Interpolation;
 import com.badlogic.gdx.scenes.scene2d.Stage;
-import com.badlogic.gdx.scenes.scene2d.actions.Actions;
 import com.badlogic.gdx.scenes.scene2d.ui.Label;
 import com.badlogic.gdx.scenes.scene2d.ui.Skin;
 import com.badlogic.gdx.utils.Align;
 import com.badlogic.gdx.utils.ScreenUtils;
 import com.badlogic.gdx.utils.Timer;
 import com.blamecinders.animacao.AnimacaoCarta;
-import com.blamecinders.animacao.AnimacaoTabuleiro;
 import com.blamecinders.aplicacao.AcaoCliqueCarta;
 import com.blamecinders.aplicacao.ControladorEncontro;
 import com.blamecinders.aplicacao.ControladorInteracaoCarta;
@@ -31,7 +27,6 @@ import com.blamecinders.fluxo.FluxoCombate;
 import com.blamecinders.ui.ControladorHUD;
 import com.blamecinders.ui.GerenciadorPopups;
 import com.blamecinders.ui.TemaJogo;
-import com.blamecinders.util.ProvedorPosicaoCarta;
 import com.blamecinders.util.GerenciadorTexturas;
 import com.blamecinders.tabuleiro.TipoCarta;
 import com.blamecinders.tabuleiro.CartaInfo;
@@ -39,9 +34,8 @@ import com.blamecinders.tabuleiro.Tabuleiro;
 import com.blamecinders.ui.carta.CartaExibida;
 import com.blamecinders.ui.tabuleiro.CartaVisual;
 import com.blamecinders.ui.tabuleiro.InteracaoCartaVisual;
-import com.blamecinders.ui.tabuleiro.RemapeadorGradeEsteira;
+import com.blamecinders.ui.tabuleiro.TelaTabuleiro;
 
-import java.util.Objects;
 
 //Classe principal do jogo.
 
@@ -55,7 +49,7 @@ public class BlameCindersGame extends ApplicationAdapter implements InteracaoCar
 
     //Stages
     private Stage stageCartaZoom;
-    private Stage stageTabuleiro;
+    private TelaTabuleiro telaTabuleiro;
     private Stage stageUI;
     private Stage stageAnimacao;
 
@@ -76,21 +70,12 @@ public class BlameCindersGame extends ApplicationAdapter implements InteracaoCar
     private ControladorEncontro controladorEncontro;
     private ControladorInteracaoCarta controladorInteracaoCarta;
 
-    //Visual do tabuleiro
-    private CartaVisual[][] cartasVisuais;
-
     //Controladores / fluxos extraídos
-    private AnimacaoTabuleiro animacaoTabuleiro;
     private AnimacaoCarta animacaoCarta;
     private GerenciadorPopups popupManager;
     private ControladorHUD hudController;
     private FluxoCombate fluxoCombate;
     private FluxoCarta fluxoCarta;
-
-    //Constantes visuais das cartas
-    private static final float CARTA_LARGURA = 108;
-    private static final float CARTA_ALTURA = 144;
-    private static final float ESPACO = 8;
 
     //Informa se o jogo terminou, usado pelas cartas visuais para bloquear interação.
     public boolean isFinalizado() {
@@ -120,18 +105,9 @@ public class BlameCindersGame extends ApplicationAdapter implements InteracaoCar
     public void create() {
 
         //Criação dos stages
-        stageTabuleiro = new Stage(new com.badlogic.gdx.utils.viewport.FitViewport(1280, 720));
         stageUI = new Stage(new com.badlogic.gdx.utils.viewport.FitViewport(1280, 720));
         stageCartaZoom = new Stage(new com.badlogic.gdx.utils.viewport.FitViewport(1280, 720));
         stageAnimacao = new Stage(new com.badlogic.gdx.utils.viewport.FitViewport(1280, 720));
-
-        //Input multiplexer, Ordem importante: zoom > UI > animação > tabuleiro
-        InputMultiplexer multiplexer = new InputMultiplexer();
-        multiplexer.addProcessor(stageCartaZoom);
-        multiplexer.addProcessor(stageUI);
-        multiplexer.addProcessor(stageAnimacao);
-        multiplexer.addProcessor(stageTabuleiro);
-        Gdx.input.setInputProcessor(multiplexer);
 
         //Fontes / skin base
         tema = TemaJogo.criar();
@@ -145,6 +121,16 @@ public class BlameCindersGame extends ApplicationAdapter implements InteracaoCar
         controladorTurno = new ControladorTurno(partida);
         controladorEncontro = new ControladorEncontro(partida);
         controladorInteracaoCarta = new ControladorInteracaoCarta(partida);
+
+        telaTabuleiro = new TelaTabuleiro(tabuleiro(), fonteCarta, this);
+
+        //Input multiplexer, Ordem importante: zoom > UI > animação > tabuleiro
+        InputMultiplexer multiplexer = new InputMultiplexer();
+        multiplexer.addProcessor(stageCartaZoom);
+        multiplexer.addProcessor(stageUI);
+        multiplexer.addProcessor(stageAnimacao);
+        multiplexer.addProcessor(telaTabuleiro.getStage());
+        Gdx.input.setInputProcessor(multiplexer);
 
         //Controladores extraídos
         animacaoCarta = new AnimacaoCarta();
@@ -168,23 +154,19 @@ public class BlameCindersGame extends ApplicationAdapter implements InteracaoCar
             skin
         );
 
-        //Grid visual
-        cartasVisuais = new CartaVisual[Tabuleiro.LINHAS][Tabuleiro.COLUNAS];
-        criarTabuleiroVisual();
-
         //HUD
         hudController.criarHUD();
         atualizarHUDCompleto();
 
         //Estado visual inicial
-        sincronizarTabuleiroVisual();
-        atualizarDestaqueCartas();
+        telaTabuleiro.sincronizar();
+        telaTabuleiro.atualizarDestaques();
     }
 
     //controla o tamanho e proporção da tela
     @Override
     public void resize(int width, int height) {
-        stageTabuleiro.getViewport().update(width, height, true);
+        telaTabuleiro.resize(width, height);
         stageUI.getViewport().update(width, height, true);
         stageCartaZoom.getViewport().update(width, height, true);
         stageAnimacao.getViewport().update(width, height, true);
@@ -197,12 +179,12 @@ public class BlameCindersGame extends ApplicationAdapter implements InteracaoCar
 
         ScreenUtils.clear(0.1f, 0.1f, 0.1f, 1f);
 
-        stageTabuleiro.act(delta);
+        telaTabuleiro.act(delta);
         stageUI.act(delta);
         stageCartaZoom.act(delta);
         stageAnimacao.act(delta);
 
-        stageTabuleiro.draw();
+        telaTabuleiro.draw();
         stageUI.draw();
         stageCartaZoom.draw();
         stageAnimacao.draw();
@@ -210,7 +192,7 @@ public class BlameCindersGame extends ApplicationAdapter implements InteracaoCar
 
     @Override
     public void dispose() {
-        stageTabuleiro.dispose();
+        telaTabuleiro.dispose();
         stageUI.dispose();
         stageCartaZoom.dispose();
         stageAnimacao.dispose();
@@ -225,89 +207,6 @@ public class BlameCindersGame extends ApplicationAdapter implements InteracaoCar
         stageUI.addActor(labelMensagem);
     }
 
-    // TABULEIRO VISUAL
-    //Cria as cartas visuais iniciais do tabuleiro, cada célula do grid lógico ganha um ator visual correspondente.
-    //O jogador começa revelado na posição inicial.
-    private void criarTabuleiroVisual() {
-        float larguraTotal = Tabuleiro.COLUNAS * CARTA_LARGURA + (Tabuleiro.COLUNAS - 1) * ESPACO;
-        float alturaTotal = Tabuleiro.LINHAS * CARTA_ALTURA + (Tabuleiro.LINHAS - 1) * ESPACO;
-
-        float startX = (stageTabuleiro.getViewport().getWorldWidth() - larguraTotal) / 2f;
-        float startY = (stageTabuleiro.getViewport().getWorldHeight() - alturaTotal) / 2f;
-
-        for (int i = 0; i < Tabuleiro.LINHAS; i++) {
-            for (int j = 0; j < Tabuleiro.COLUNAS; j++) {
-
-                String frente = obterTextura(i, j);
-                String verso = "VERSO";
-
-                float x = startX + j * (CARTA_LARGURA + ESPACO);
-                float y = startY + (Tabuleiro.LINHAS - 1 - i) * (CARTA_ALTURA + ESPACO);
-
-                CartaVisual carta = new CartaVisual(frente, verso, x, y, i, j, this, fonteCarta);
-
-                if (i == tabuleiro().getJogadorLinha() && j == tabuleiro().getJogadorColuna()) {
-                    carta.setRevelada(true);
-                }
-
-                cartasVisuais[i][j] = carta;
-                stageTabuleiro.addActor(carta);
-            }
-        }
-
-        animacaoTabuleiro = new AnimacaoTabuleiro(
-            stageTabuleiro,
-            cartasVisuais,
-            CARTA_LARGURA,
-            CARTA_ALTURA,
-            ESPACO,
-            new ProvedorPosicaoCarta() {
-                @Override
-                public float getCartaX(int coluna) {
-                    return BlameCindersGame.this.getCartaX(coluna);
-                }
-
-                @Override
-                public float getCartaY(int linha) {
-                    return BlameCindersGame.this.getCartaY(linha);
-                }
-            }
-        );
-    }
-
-    //Traduz o conteúdo lógico da célula em caminho de textura.
-    //PRIORIDADE: se a célula é a posição do jogador, usa textura do jogador, se a carta for null, usa verso;
-    //caso contrário, escolhe pela CartaInfo/TipoCarta.
-    private String obterTextura(int linha, int coluna) {
-        if (linha == tabuleiro().getJogadorLinha() && coluna == tabuleiro().getJogadorColuna()) {
-            return "HERÓI-TESTE";
-        }
-
-        CartaInfo cartaInfo = tabuleiro().getCartaInfo(linha, coluna);
-
-        if (cartaInfo == null) {
-            return "VERSO";
-        }
-
-        TipoCarta tipo = cartaInfo.getTipo();
-
-        if (Objects.requireNonNull(tipo) == TipoCarta.INIMIGO) {
-            if (cartaInfo.getInimigo() != null) {
-                return cartaInfo.getInimigo().getIdentificadorVisual();
-            }
-            return "INIMIGO";
-        } else if (tipo == TipoCarta.BAU) {
-            return "BAÚ";
-        } else if (tipo == TipoCarta.CHAMA) {
-            return "CHAMA";
-        } else if (tipo == TipoCarta.PAREDE) {
-            return "PAREDE";
-        } else if (tipo == TipoCarta.VAZIO) {
-            return "VERSO";
-        }
-        return "INIMIGO";
-    }
-
     //Entrada principal de clique em carta.
     //Regras:
     //carta fechada adjacente: pergunta se deseja revelar;
@@ -319,7 +218,7 @@ public class BlameCindersGame extends ApplicationAdapter implements InteracaoCar
 
         if (isFinalizado() || animandoTabuleiro || telaModalAberta) return;
 
-        CartaVisual cartaOriginal = cartasVisuais[linha][coluna];
+        CartaVisual cartaOriginal = telaTabuleiro.getCarta(linha, coluna);
         AcaoCliqueCarta acao = controladorInteracaoCarta.decidir(linha, coluna);
 
         switch (acao) {
@@ -341,9 +240,7 @@ public class BlameCindersGame extends ApplicationAdapter implements InteracaoCar
 
             case BLOQUEAR:
                 mostrarMensagem("Você só pode revelar cartas adjacentes.");
-                if (animacaoTabuleiro != null) {
-                    animacaoTabuleiro.animarCartaMovimentoInvalido(linha, coluna);
-                }
+                telaTabuleiro.animarMovimentoInvalido(linha, coluna);
                 break;
 
             case REVELAR:
@@ -422,69 +319,12 @@ public class BlameCindersGame extends ApplicationAdapter implements InteracaoCar
     //Sincroniza todas as cartas visuais com o estado lógico do tabuleiro, este é um dos métodos mais importantes da classe.
     //Ele garante, posição correta, textura correta, reset de transformações, revelação correta, prioridade visual do jogador.
     private void sincronizarTabuleiroVisual() {
-        int jogadorLinha = tabuleiro().getJogadorLinha();
-        int jogadorColuna = tabuleiro().getJogadorColuna();
-
-        for (int i = 0; i < Tabuleiro.LINHAS; i++) {
-            for (int j = 0; j < Tabuleiro.COLUNAS; j++) {
-
-                CartaVisual carta = cartasVisuais[i][j];
-                if (carta == null) continue;
-
-                carta.setPosicaoGrid(i, j);
-
-                carta.setVisible(true);
-                carta.getColor().a = 1f;
-                carta.setScale(1f, 1f);
-                carta.setRotation(0f);
-                carta.setPosition(getCartaX(j), getCartaY(i));
-
-                if (i == jogadorLinha && j == jogadorColuna) {
-                    carta.setFrente("HERÓI-TESTE");
-                    carta.setRevelada(true);
-                    carta.toFront();
-                } else {
-                    carta.setFrente(obterTextura(i, j));
-
-                    if (tabuleiro().getCarta(i, j) == TipoCarta.VAZIO) {
-                        carta.setRevelada(false);
-                    } else {
-                        carta.setRevelada(tabuleiro().cartaEstaRevelada(i, j));
-                    }
-                }
-            }
-        }
+        telaTabuleiro.sincronizar();
     }
 
     //Restaura uma carta visual removida temporariamente do stage durante o zoom/revelação.
     private void restaurarCartaOriginal(int linha, int coluna, CartaVisual cartaOriginal) {
-        if (cartaOriginal.getStage() == null) {
-            stageTabuleiro.addActor(cartaOriginal);
-        }
-
-        cartasVisuais[linha][coluna] = cartaOriginal;
-
-        cartaOriginal.clearActions();
-        cartaOriginal.setVisible(true);
-        cartaOriginal.setScale(1f, 1f);
-        cartaOriginal.setRotation(0f);
-        cartaOriginal.getColor().a = 1f;
-        cartaOriginal.setPosition(getCartaX(coluna), getCartaY(linha));
-        cartaOriginal.setPosicaoGrid(linha, coluna);
-
-        if (linha == tabuleiro().getJogadorLinha() && coluna == tabuleiro().getJogadorColuna()) {
-            cartaOriginal.setFrente("HERÓI-TESTE");
-            cartaOriginal.setRevelada(true);
-            cartaOriginal.toFront();
-        } else {
-            cartaOriginal.setFrente(obterTextura(linha, coluna));
-
-            if (tabuleiro().getCarta(linha, coluna) == TipoCarta.VAZIO) {
-                cartaOriginal.setRevelada(false);
-            } else {
-                cartaOriginal.setRevelada(tabuleiro().cartaEstaRevelada(linha, coluna));
-            }
-        }
+        telaTabuleiro.restaurarCarta(linha, coluna, cartaOriginal);
     }
 
     //Atualiza o destaque das cartas adjacentes ao jogador.
@@ -496,82 +336,7 @@ public class BlameCindersGame extends ApplicationAdapter implements InteracaoCar
     //Deve ser chamado depois do movimento/sincronização.
     //Ele limpa ações antigas para evitar pulso preso em cartas antigas.
     private void atualizarDestaqueCartas() {
-        int jLinha = tabuleiro().getJogadorLinha();
-        int jColuna = tabuleiro().getJogadorColuna();
-
-        for (int i = 0; i < cartasVisuais.length; i++) {
-            for (int j = 0; j < cartasVisuais[i].length; j++) {
-
-                CartaVisual carta = cartasVisuais[i][j];
-                if (carta == null) continue;
-
-                boolean jogador = (i == jLinha && j == jColuna);
-                boolean adjacente =
-                    Math.abs(i - jLinha) + Math.abs(j - jColuna) == 1;
-
-                carta.clearActions();
-
-                if (jogador) {
-                    carta.addAction(
-                        Actions.color(
-                            new Color(1f, 1f, 1f, 1f),
-                            0.18f,
-                            Interpolation.fade
-                        )
-                    );
-                    continue;
-                }
-
-                if (adjacente) {
-
-                    //Primeiro entra no destaque de forma gradual, ó depois começa o pulso infinito.
-                    carta.addAction(
-                        Actions.sequence(
-                            Actions.color(
-                                new Color(1f, 1f, 1f, 0.90f),
-                                0.28f,
-                                Interpolation.fade
-                            ),
-                            Actions.forever(
-                                Actions.sequence(
-                                    Actions.color(
-                                        new Color(0.86f, 0.92f, 1f, 1f),
-                                        0.85f,
-                                        Interpolation.sine
-                                    ),
-                                    Actions.color(
-                                        new Color(1f, 1f, 1f, 0.90f),
-                                        0.85f,
-                                        Interpolation.sine
-                                    )
-                                )
-                            )
-                        )
-                    );
-                } else {
-                    carta.addAction(
-                        Actions.color(
-                            new Color(0.8f, 0.85f, 1f, 0.65f),
-                            0.25f,
-                            Interpolation.fade
-                        )
-                    );
-                }
-            }
-        }
-    }
-
-    // POSIÇÕES VISUAIS
-    private float getCartaX(int coluna) {
-        float larguraTotal = Tabuleiro.COLUNAS * CARTA_LARGURA + (Tabuleiro.COLUNAS - 1) * ESPACO;
-        float startX = (stageTabuleiro.getViewport().getWorldWidth() - larguraTotal) / 2f;
-        return startX + coluna * (CARTA_LARGURA + ESPACO);
-    }
-
-    private float getCartaY(int linha) {
-        float alturaTotal = Tabuleiro.LINHAS * CARTA_ALTURA + (Tabuleiro.LINHAS - 1) * ESPACO;
-        float startY = (stageTabuleiro.getViewport().getWorldHeight() - alturaTotal) / 2f;
-        return startY + (Tabuleiro.LINHAS - 1 - linha) * (CARTA_ALTURA + ESPACO);
+        telaTabuleiro.atualizarDestaques();
     }
 
     // MOVIMENTO + ESTEIRA
@@ -588,14 +353,11 @@ public class BlameCindersGame extends ApplicationAdapter implements InteracaoCar
 
         animandoTabuleiro = true;
 
-        animacaoTabuleiro.animarMovimentoJogadorComEsteira(
-            movimento.getLinhaOrigem(),
-            movimento.getColunaOrigem(),
-            movimento.getLinhaDestino(),
-            movimento.getColunaDestino(),
+        telaTabuleiro.animarMovimento(
+            movimento,
             () -> {
                 controladorTurno.concluirMovimento(movimento);
-                RemapeadorGradeEsteira.remapear(cartasVisuais, movimento);
+                telaTabuleiro.remapearAposEsteira(movimento);
 
                 sincronizarTabuleiroVisual();
 
@@ -642,25 +404,7 @@ public class BlameCindersGame extends ApplicationAdapter implements InteracaoCar
     //Motivo: a carta precisa existir no array visual para a sincronização,
     //mas não deve reaparecer revelada por um instante antes da esteira.
     private void recolocarCartaConsumidaComoPlaceholder(int linha, int coluna, CartaVisual cartaOriginal) {
-        if (cartaOriginal == null) return;
-
-        if (cartaOriginal.getStage() == null) {
-            stageTabuleiro.addActor(cartaOriginal);
-        }
-
-        cartasVisuais[linha][coluna] = cartaOriginal;
-
-        cartaOriginal.clearActions();
-        cartaOriginal.setPosicaoGrid(linha, coluna);
-        cartaOriginal.setPosition(getCartaX(coluna), getCartaY(linha));
-        cartaOriginal.setScale(1f, 1f);
-        cartaOriginal.setRotation(0f);
-
-        //Ponto principal: a carta volta fechada e invisível.
-        //Assim ela não aparece revelada antes da esteira/sincronização.
-        cartaOriginal.setRevelada(false);
-        cartaOriginal.setVisible(false);
-        cartaOriginal.getColor().a = 0f;
+        telaTabuleiro.recolocarComoPlaceholder(linha, coluna, cartaOriginal);
     }
 
     //Informa se existe alguma tela modal/popup aberta.
@@ -730,7 +474,7 @@ public class BlameCindersGame extends ApplicationAdapter implements InteracaoCar
             return;
         }
 
-        CartaVisual cartaOriginal = cartasVisuais[linha][coluna];
+        CartaVisual cartaOriginal = telaTabuleiro.getCarta(linha, coluna);
 
         if (cartaOriginal == null) {
             telaModalAberta = false;
@@ -739,7 +483,7 @@ public class BlameCindersGame extends ApplicationAdapter implements InteracaoCar
 
         cartaOriginal.remove();
 
-        String textura = obterTextura(linha, coluna);
+        String textura = telaTabuleiro.getIdentificador(linha, coluna);
 
         CartaExibida cartaZoom = criarCartaZoom(textura);
 
@@ -774,7 +518,7 @@ public class BlameCindersGame extends ApplicationAdapter implements InteracaoCar
             return "Carta desconhecida.";
         }
 
-        if (Objects.requireNonNull(cartaInfo.getTipo()) == TipoCarta.INIMIGO) {
+        if (cartaInfo.getTipo() == TipoCarta.INIMIGO) {
             if (cartaInfo.getInimigo() != null) {
                 return cartaInfo.getInimigo().getNome()
                     + "\nVida: " + cartaInfo.getInimigo().getVida();
@@ -882,7 +626,7 @@ public class BlameCindersGame extends ApplicationAdapter implements InteracaoCar
 
         cartaOriginal.remove();
 
-        String textura = obterTextura(linha, coluna);
+        String textura = telaTabuleiro.getIdentificador(linha, coluna);
 
         CartaExibida cartaZoom = criarCartaZoom(textura);
 
