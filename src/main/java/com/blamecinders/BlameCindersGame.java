@@ -21,6 +21,7 @@ import com.badlogic.gdx.utils.ScreenUtils;
 import com.badlogic.gdx.utils.Timer;
 import com.blamecinders.animacao.AnimacaoCarta;
 import com.blamecinders.animacao.AnimacaoTabuleiro;
+import com.blamecinders.aplicacao.EstadoPartida;
 import com.blamecinders.combate.Arma;
 import com.blamecinders.combate.Jogador;
 import com.blamecinders.combate.SistemaCombate;
@@ -62,14 +63,12 @@ public class BlameCindersGame extends ApplicationAdapter {
     private Label labelMensagem;
     private Skin skin;
 
-    //Estado global do jogo
-    private boolean jogoFinalizado = false;
+    //Estado transitório da apresentação
     private boolean animandoTabuleiro = false;
     private boolean telaModalAberta = false;
 
-    //Modelo / lógica
-    private Tabuleiro tabuleiro;
-    private Jogador jogadorCombate;
+    //Estado e regras persistentes da partida
+    private EstadoPartida partida;
 
     //Visual do tabuleiro
     private CartaVisual[][] cartasVisuais;
@@ -89,12 +88,20 @@ public class BlameCindersGame extends ApplicationAdapter {
 
     //Informa se o jogo terminou, usado pelas cartas visuais para bloquear interação.
     public boolean isFinalizado() {
-        return jogoFinalizado;
+        return partida != null && partida.isFinalizada();
     }
 
     //Informa se o tabuleiro está animando, usado pelas cartas visuais para bloquear clique durante esteira/movimento.
     public boolean isAnimandoTabuleiro() {
         return animandoTabuleiro;
+    }
+
+    private Tabuleiro tabuleiro() {
+        return partida.getTabuleiro();
+    }
+
+    private Jogador jogador() {
+        return partida.getJogador();
     }
 
     //Ciclo de vida
@@ -121,8 +128,7 @@ public class BlameCindersGame extends ApplicationAdapter {
         criarUI();
 
         //Modelo principal
-        tabuleiro = new Tabuleiro();
-        jogadorCombate = new Jogador(50);
+        partida = new EstadoPartida();
         SistemaCombate sistemaCombate = new SistemaCombate();
         SistemaFurtividade sistemaFurtividade = new SistemaFurtividade();
 
@@ -143,7 +149,7 @@ public class BlameCindersGame extends ApplicationAdapter {
 
         fluxoCarta = new FluxoCarta(
             stageCartaZoom,
-            tabuleiro,
+            tabuleiro(),
             animacaoCarta,
             popupManager,
             skin
@@ -259,7 +265,7 @@ public class BlameCindersGame extends ApplicationAdapter {
 
                 CartaVisual carta = new CartaVisual(frente, verso, x, y, i, j, this, fonteCarta);
 
-                if (i == tabuleiro.getJogadorLinha() && j == tabuleiro.getJogadorColuna()) {
+                if (i == tabuleiro().getJogadorLinha() && j == tabuleiro().getJogadorColuna()) {
                     carta.setRevelada(true);
                 }
 
@@ -292,11 +298,11 @@ public class BlameCindersGame extends ApplicationAdapter {
     //PRIORIDADE: se a célula é a posição do jogador, usa textura do jogador, se a carta for null, usa verso;
     //caso contrário, escolhe pela CartaInfo/TipoCarta.
     private String obterTextura(int linha, int coluna) {
-        if (linha == tabuleiro.getJogadorLinha() && coluna == tabuleiro.getJogadorColuna()) {
+        if (linha == tabuleiro().getJogadorLinha() && coluna == tabuleiro().getJogadorColuna()) {
             return "HERÓI-TESTE";
         }
 
-        CartaInfo cartaInfo = tabuleiro.getCartaInfo(linha, coluna);
+        CartaInfo cartaInfo = tabuleiro().getCartaInfo(linha, coluna);
 
         if (cartaInfo == null) {
             return "VERSO";
@@ -329,13 +335,13 @@ public class BlameCindersGame extends ApplicationAdapter {
     //carta revelada adjacente: permite visualizar e, se aplicável, interagir.
     public void clicarCarta(int linha, int coluna) {
 
-        if (jogoFinalizado || animandoTabuleiro || telaModalAberta) return;
+        if (isFinalizado() || animandoTabuleiro || telaModalAberta) return;
 
-        boolean cartaRevelada = tabuleiro.cartaEstaRevelada(linha, coluna);
+        boolean cartaRevelada = tabuleiro().cartaEstaRevelada(linha, coluna);
 
         boolean adjacente = fluxoCarta.podeRevelar(
-            tabuleiro.getJogadorLinha(),
-            tabuleiro.getJogadorColuna(),
+            tabuleiro().getJogadorLinha(),
+            tabuleiro().getJogadorColuna(),
             linha,
             coluna
         );
@@ -392,16 +398,15 @@ public class BlameCindersGame extends ApplicationAdapter {
     //Regras:
     //incrementa as chamas no tabuleiro, consome a carta da posição, atualiza HUD; verifica vitória; move jogador com animação/esteira.
     private void coletarChama(int linha, int coluna) {
-        int antigaLinha = tabuleiro.getJogadorLinha();
-        int antigaColuna = tabuleiro.getJogadorColuna();
+        int antigaLinha = tabuleiro().getJogadorLinha();
+        int antigaColuna = tabuleiro().getJogadorColuna();
 
-        tabuleiro.coletarChama(linha, coluna);
-        tabuleiro.consumirCarta(linha, coluna);
+        tabuleiro().coletarChama(linha, coluna);
+        tabuleiro().consumirCarta(linha, coluna);
 
         atualizarHUDCompleto();
 
-        if (tabuleiro.getChamasColetadas() >= Tabuleiro.OBJETIVO_CHAMAS) {
-            jogoFinalizado = true;
+        if (partida.verificarObjetivoConcluido()) {
             mostrarMensagem("Você venceu!");
         }
 
@@ -413,16 +418,16 @@ public class BlameCindersGame extends ApplicationAdapter {
     //Etapa final do baú:
     //equipa a arma (se houver), consome a carta e move o jogador para a posição.
     private void coletarBau(int linha, int coluna) {
-        CartaInfo cartaInfo = tabuleiro.getCartaInfo(linha, coluna);
+        CartaInfo cartaInfo = tabuleiro().getCartaInfo(linha, coluna);
 
         ItemBau item = cartaInfo != null ? cartaInfo.getItemDentro() : null;
         if (item instanceof Arma) {
             Arma arma = (Arma) item;
-            jogadorCombate.setArmaEquipada(arma);
+            jogador().setArmaEquipada(arma);
             mostrarMensagem("Você equipou: " + arma.getNome());
         } else if (item instanceof Comida) {
             Comida comida = (Comida) item;
-            int vidaCurada = comida.consumir(jogadorCombate);
+            int vidaCurada = comida.consumir(jogador());
             mostrarMensagem(vidaCurada > 0
                 ? "Você recuperou " + vidaCurada + " de vida."
                 : "Sua vida já estava cheia.");
@@ -430,27 +435,27 @@ public class BlameCindersGame extends ApplicationAdapter {
             mostrarMensagem("Baú vazio.");
         }
 
-        tabuleiro.consumirCarta(linha, coluna);
+        tabuleiro().consumirCarta(linha, coluna);
 
         atualizarHUDCompleto();
 
-        int antigaLinha = tabuleiro.getJogadorLinha();
-        int antigaColuna = tabuleiro.getJogadorColuna();
+        int antigaLinha = tabuleiro().getJogadorLinha();
+        int antigaColuna = tabuleiro().getJogadorColuna();
 
         atualizarTabuleiroComAnimacao(antigaLinha, antigaColuna, linha, coluna);
     }
 
     //Encapsula a movimentação do jogador para uma nova posição, sempre usando a animação de esteira.
     private void moverJogadorPara(int linha, int coluna) {
-        int antigaLinha = tabuleiro.getJogadorLinha();
-        int antigaColuna = tabuleiro.getJogadorColuna();
+        int antigaLinha = tabuleiro().getJogadorLinha();
+        int antigaColuna = tabuleiro().getJogadorColuna();
 
         atualizarTabuleiroComAnimacao(antigaLinha, antigaColuna, linha, coluna);
     }
 
     //Atualiza o HUD e reinstala o click da miniatura de arma.
     private void atualizarHUDCompleto() {
-        hudController.atualizarHUD(jogadorCombate, tabuleiro.getChamasColetadas());
+        hudController.atualizarHUD(jogador(), tabuleiro().getChamasColetadas());
         hudController.setClickArmaListener(this::mostrarPopupDetalheArmaHUD);
     }
 
@@ -493,8 +498,8 @@ public class BlameCindersGame extends ApplicationAdapter {
     //Sincroniza todas as cartas visuais com o estado lógico do tabuleiro, este é um dos métodos mais importantes da classe.
     //Ele garante, posição correta, textura correta, reset de transformações, revelação correta, prioridade visual do jogador.
     private void sincronizarTabuleiroVisual() {
-        int jogadorLinha = tabuleiro.getJogadorLinha();
-        int jogadorColuna = tabuleiro.getJogadorColuna();
+        int jogadorLinha = tabuleiro().getJogadorLinha();
+        int jogadorColuna = tabuleiro().getJogadorColuna();
 
         for (int i = 0; i < Tabuleiro.LINHAS; i++) {
             for (int j = 0; j < Tabuleiro.COLUNAS; j++) {
@@ -517,10 +522,10 @@ public class BlameCindersGame extends ApplicationAdapter {
                 } else {
                     carta.setFrente(obterTextura(i, j));
 
-                    if (tabuleiro.getCarta(i, j) == TipoCarta.VAZIO) {
+                    if (tabuleiro().getCarta(i, j) == TipoCarta.VAZIO) {
                         carta.setRevelada(false);
                     } else {
-                        carta.setRevelada(tabuleiro.cartaEstaRevelada(i, j));
+                        carta.setRevelada(tabuleiro().cartaEstaRevelada(i, j));
                     }
                 }
             }
@@ -543,17 +548,17 @@ public class BlameCindersGame extends ApplicationAdapter {
         cartaOriginal.setPosition(getCartaX(coluna), getCartaY(linha));
         cartaOriginal.setPosicaoGrid(linha, coluna);
 
-        if (linha == tabuleiro.getJogadorLinha() && coluna == tabuleiro.getJogadorColuna()) {
+        if (linha == tabuleiro().getJogadorLinha() && coluna == tabuleiro().getJogadorColuna()) {
             cartaOriginal.setFrente("HERÓI-TESTE");
             cartaOriginal.setRevelada(true);
             cartaOriginal.toFront();
         } else {
             cartaOriginal.setFrente(obterTextura(linha, coluna));
 
-            if (tabuleiro.getCarta(linha, coluna) == TipoCarta.VAZIO) {
+            if (tabuleiro().getCarta(linha, coluna) == TipoCarta.VAZIO) {
                 cartaOriginal.setRevelada(false);
             } else {
-                cartaOriginal.setRevelada(tabuleiro.cartaEstaRevelada(linha, coluna));
+                cartaOriginal.setRevelada(tabuleiro().cartaEstaRevelada(linha, coluna));
             }
         }
     }
@@ -567,8 +572,8 @@ public class BlameCindersGame extends ApplicationAdapter {
     //Deve ser chamado depois do movimento/sincronização.
     //Ele limpa ações antigas para evitar pulso preso em cartas antigas.
     private void atualizarDestaqueCartas() {
-        int jLinha = tabuleiro.getJogadorLinha();
-        int jColuna = tabuleiro.getJogadorColuna();
+        int jLinha = tabuleiro().getJogadorLinha();
+        int jColuna = tabuleiro().getJogadorColuna();
 
         for (int i = 0; i < cartasVisuais.length; i++) {
             for (int j = 0; j < cartasVisuais[i].length; j++) {
@@ -665,8 +670,8 @@ public class BlameCindersGame extends ApplicationAdapter {
             novaLinha,
             novaColuna,
             () -> {
-                tabuleiro.moverJogador(novaLinha, novaColuna);
-                tabuleiro.aplicarEsteira(antigaLinha, antigaColuna, novaLinha, novaColuna);
+                tabuleiro().moverJogador(novaLinha, novaColuna);
+                tabuleiro().aplicarEsteira(antigaLinha, antigaColuna, novaLinha, novaColuna);
 
                 sincronizarTabuleiroVisual();
 
@@ -690,7 +695,7 @@ public class BlameCindersGame extends ApplicationAdapter {
     //Exibe a arma equipada em destaque.
     //Este popup continua local porque faz parte da integração direta com o clique da miniatura da HUD.
     private void mostrarPopupDetalheArmaHUD() {
-        if (jogadorCombate == null || jogadorCombate.getArmaEquipada() == null) {
+        if (jogador() == null || jogador().getArmaEquipada() == null) {
             mostrarMensagem("Nenhuma arma equipada.");
             return;
         }
@@ -698,9 +703,9 @@ public class BlameCindersGame extends ApplicationAdapter {
         telaModalAberta = true;
 
         popupManager.mostrarDetalheArmaEquipada(
-            jogadorCombate.getArmaEquipada().getNome(),
-            jogadorCombate.getArmaEquipada().getDurabilidade(),
-            jogadorCombate.getArmaEquipada().getTexturaPath(),
+            jogador().getArmaEquipada().getNome(),
+            jogador().getArmaEquipada().getDurabilidade(),
+            jogador().getArmaEquipada().getTexturaPath(),
             animacaoCarta,
             () -> telaModalAberta = false
         );
@@ -816,7 +821,7 @@ public class BlameCindersGame extends ApplicationAdapter {
     //Usado principalmente para cartas reveladas não adjacentes.
     //Exibe informações da carta, como nome, vida e futuramente furtividade.
     private void visualizarInformacoesCarta(int linha, int coluna) {
-        CartaInfo cartaInfo = tabuleiro.getCartaInfo(linha, coluna);
+        CartaInfo cartaInfo = tabuleiro().getCartaInfo(linha, coluna);
 
         if (cartaInfo == null) {
             telaModalAberta = false;
@@ -938,7 +943,7 @@ public class BlameCindersGame extends ApplicationAdapter {
             stageCartaZoom.clear();
             telaModalAberta = false;
 
-            tabuleiro.consumirCarta(linha, coluna);
+            tabuleiro().consumirCarta(linha, coluna);
             recolocarCartaConsumidaComoPlaceholder(linha, coluna, cartaOriginal);
 
             moverJogadorPara(linha, coluna);
@@ -950,15 +955,15 @@ public class BlameCindersGame extends ApplicationAdapter {
             telaModalAberta = false;
             restaurarCartaOriginal(linha, coluna, cartaOriginal);
 
-            jogoFinalizado = true;
+            partida.registrarDerrota();
             popupManager.mostrarGameOver();
         };
 
         popupManager.mostrarPopupInimigo(
             // LUTAR
             () -> fluxoCombate.mostrarTelaCombate(
-                tabuleiro.getCartaInfo(linha, coluna),
-                jogadorCombate,
+                tabuleiro().getCartaInfo(linha, coluna),
+                jogador(),
                 acaoVoltar,
                 acaoVitoria,
                 acaoDerrota,
@@ -994,7 +999,7 @@ public class BlameCindersGame extends ApplicationAdapter {
     private void executarFluxoBau(int linha, int coluna, CartaVisual cartaOriginal) {
 
         popupManager.mostrarPopupMensagem("Baú encontrado!", () -> {
-            CartaInfo cartaInfo = tabuleiro.getCartaInfo(linha, coluna);
+            CartaInfo cartaInfo = tabuleiro().getCartaInfo(linha, coluna);
 
             if (cartaInfo == null || cartaInfo.getItemDentro() == null) {
                 popupManager.mostrarPopupMensagem("Baú vazio.", () -> {
@@ -1034,7 +1039,7 @@ public class BlameCindersGame extends ApplicationAdapter {
                 @Override
                 public void run() {
                     boolean jogadorJaTemArma =
-                        jogadorCombate != null && jogadorCombate.getArmaEquipada() != null;
+                        jogador() != null && jogador().getArmaEquipada() != null;
 
                     popupManager.mostrarPopupItemBau(
                         cartaInfo,
@@ -1091,7 +1096,7 @@ public class BlameCindersGame extends ApplicationAdapter {
     //3. mostra informações;
     //4. se houver ação possível, mostra o botão de ação.
     private void mostrarOpcoesCartaReveladaAdjacente(int linha, int coluna, CartaVisual cartaOriginal) {
-        CartaInfo cartaInfo = tabuleiro.getCartaInfo(linha, coluna);
+        CartaInfo cartaInfo = tabuleiro().getCartaInfo(linha, coluna);
 
         if (cartaInfo == null) {
             telaModalAberta = false;
@@ -1166,7 +1171,7 @@ public class BlameCindersGame extends ApplicationAdapter {
                             stageCartaZoom.clear();
                             telaModalAberta = false;
 
-                            tabuleiro.consumirCarta(linha, coluna);
+                            tabuleiro().consumirCarta(linha, coluna);
                             recolocarCartaConsumidaComoPlaceholder(linha, coluna, cartaOriginal);
 
                             moverJogadorPara(linha, coluna);
@@ -1178,13 +1183,13 @@ public class BlameCindersGame extends ApplicationAdapter {
                             telaModalAberta = false;
                             restaurarCartaOriginal(linha, coluna, cartaOriginal);
 
-                            jogoFinalizado = true;
+                            partida.registrarDerrota();
                             popupManager.mostrarGameOver();
                         };
 
                         fluxoCombate.mostrarTelaCombate(
-                            tabuleiro.getCartaInfo(linha, coluna),
-                            jogadorCombate,
+                            tabuleiro().getCartaInfo(linha, coluna),
+                            jogador(),
                             acaoVoltar,
                             acaoVitoria,
                             acaoDerrota,
@@ -1274,7 +1279,7 @@ public class BlameCindersGame extends ApplicationAdapter {
     //Fluxo: não mostra "Baú encontrado", a carta ampliada já está visível pela visualização;
     //ao abrir, faz flip para mostrar a arma mostra apenas nome/durabilidade da arma e opções.
     private void executarFluxoBauJaRevelado(int linha, int coluna, CartaVisual cartaOriginal, Image cartaZoom) {
-        CartaInfo cartaInfo = tabuleiro.getCartaInfo(linha, coluna);
+        CartaInfo cartaInfo = tabuleiro().getCartaInfo(linha, coluna);
 
         if (cartaInfo == null || cartaInfo.getItemDentro() == null) {
             popupManager.mostrarPopupMensagem("Baú vazio.", () -> animacaoCarta.dissolverCartaZoom(cartaZoom, () -> {
@@ -1301,7 +1306,7 @@ public class BlameCindersGame extends ApplicationAdapter {
             @Override
             public void run() {
                 boolean jogadorJaTemArma =
-                    jogadorCombate != null && jogadorCombate.getArmaEquipada() != null;
+                    jogador() != null && jogador().getArmaEquipada() != null;
 
                 popupManager.mostrarPopupItemBauRevelado(
                     cartaInfo,
