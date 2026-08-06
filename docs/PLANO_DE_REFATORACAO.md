@@ -1,38 +1,45 @@
 # Plano incremental de refatoração
 
-## Lote 1 — fundação e regras do grid
+## Concluído
 
-- testes de combate e tabuleiro;
-- aleatoriedade injetável;
-- célula do herói sempre vazia;
-- esteira parcial;
-- objetivo explícito de três chamas.
+- [x] configurar JDK 17, Gradle Wrapper e dependências libGDX;
+- [x] adotar o layout `src/main` e `src/test`;
+- [x] normalizar pacotes e nomes de classes;
+- [x] manter a célula do herói vazia;
+- [x] bloquear paredes e limitar a esteira ao segmento correto;
+- [x] implementar objetivo de três chamas;
+- [x] criar cartas textuais procedurais e fonte dark fantasy;
+- [x] adicionar comida, cura, armas e furtividade;
+- [x] extrair estado da partida e controlador de turno;
+- [x] sincronizar identidade dos atores com a esteira;
+- [x] agrupar fundo e rótulo em um único ator visual;
+- [x] cobrir as regras centrais com 22 testes.
 
-## Lote 2 — visual sem assets de cartas
+## Próximos lotes
 
-- tema procedural reutilizável;
-- cartas e zoom identificados por texto;
-- fonte Cinzel Decorative com fallback;
-- remoção de caminhos de imagem do domínio.
+### Fluxos de encontro
 
-## Lote 3 — itens e combate
+- substituir callbacks de vitória/derrota por resultados explícitos;
+- separar resolução de baú, chama e inimigo da montagem visual;
+- impedir que mensagens de furtividade sejam sobrescritas por callbacks.
 
-- tipo comum para itens de baú;
-- comida e cura com limite de vida;
-- furtividade com regra explícita e testável;
-- tabela inicial de balanceamento.
+### Apresentação
 
-## Lote 4 — separação de responsabilidades
+- extrair criação de tema/fonte de `BlameCindersGame`;
+- criar uma tela própria para o tabuleiro;
+- criar testes de interação para revelar, agir e mover;
+- revisar o término da animação ao coletar a terceira chama.
 
-- extrair estado e regras de partida de `BlameCindersGame`;
-- mover tipos para os pacotes de domínio;
-- impedir dependências do domínio para libGDX;
-- adaptar UI e animações aos eventos da aplicação.
+### Balanceamento
 
-## Critério para o commit final
+- centralizar números em uma configuração de balanceamento;
+- simular partidas com sementes determinísticas;
+- ajustar vida, dano, durabilidade, cura e furtividade com dados de partidas.
+
+## Critério da próxima entrega
 
 - `clean test build` aprovado;
-- aplicação inicia sem imagens externas;
-- movimento não deixa carta sob o herói;
-- esteira parcial visual e lógica sincronizadas;
-- paredes, chamas, baús, comida e combate cobertos por testes.
+- aplicação desktop inicia sem exceções;
+- nenhuma carta fica sob o herói;
+- ator visual e carta lógica permanecem sincronizados após a esteira;
+- paredes, chamas, baús, comida, combate e furtividade continuam cobertos.
