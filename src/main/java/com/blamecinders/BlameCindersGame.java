@@ -40,6 +40,7 @@ import com.blamecinders.modelo.TipoCarta;
 import com.blamecinders.modelo.CartaInfo;
 import com.blamecinders.tabuleiro.Tabuleiro;
 import com.blamecinders.ui.tabuleiro.CartaVisual;
+import com.blamecinders.ui.tabuleiro.RemapeadorGradeEsteira;
 
 import java.util.Objects;
 
@@ -671,6 +672,7 @@ public class BlameCindersGame extends ApplicationAdapter {
             movimento.getColunaDestino(),
             () -> {
                 controladorTurno.concluirMovimento(movimento);
+                RemapeadorGradeEsteira.remapear(cartasVisuais, movimento);
 
                 sincronizarTabuleiroVisual();
 
