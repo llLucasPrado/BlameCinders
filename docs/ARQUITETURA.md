@@ -24,7 +24,8 @@ com.blamecinders
 ├── combate                herói, inimigos, combate e furtividade
 ├── item                   armas, comidas e geração de itens de baú
 ├── fluxo                  coordenação das telas de carta e combate
-├── ui                     HUD, popups e atores visuais compostos
+├── ui                     tema, HUD, popups e atores visuais compostos
+│   └── tabuleiro          tela, layout e atores do grid
 ├── animacao               animações Scene2D
 ├── util                   texturas procedurais e cálculo de posições
 └── desktop                DesktopLauncher
@@ -47,12 +48,15 @@ do libGDX. A camada visual depende do domínio, nunca o contrário.
 10. Encontros de chama, baú e inimigo resolvidos fora da camada Scene2D.
 11. Combate, furtividade e recuo retornam desfechos explícitos.
 12. Primeiro clique apenas revela; o segundo clique abre a interação.
-13. Regras centrais cobertas por 32 testes automatizados.
+13. Cartas visuais desacopladas da classe principal por uma porta de interação.
+14. Tema, fontes e respectivos recursos extraídos para `TemaJogo`.
+15. Stage, grid, layout e animações do tabuleiro encapsulados em `TelaTabuleiro`.
+16. Regras centrais e layout cobertos por 35 testes automatizados.
 
 ## Pendências conhecidas
 
-- `BlameCindersGame` ainda concentra criação da UI; caiu de mais de 1.300 para
-  cerca de 950 linhas, mas deve ser dividida em tela e coordenadores menores.
+- `BlameCindersGame` ainda coordena popups e decisões visuais dos encontros; caiu
+  de mais de 1.300 para cerca de 700 linhas.
 - A montagem das janelas e decisões de encontro ainda pode ser extraída dos fluxos.
 - O balanceamento atual é provisório e precisa de sessões de jogo/simulações.
 - Ainda falta um teste automatizado de interação Scene2D; hoje o smoke test apenas

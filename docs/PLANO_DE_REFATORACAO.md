@@ -17,14 +17,16 @@
 - [x] separar resolução de baú, chama e inimigo da montagem visual;
 - [x] preservar corretamente os resultados e mensagens de furtividade;
 - [x] separar o primeiro clique de revelação do segundo clique de interação;
-- [x] cobrir as regras centrais com 32 testes.
+- [x] desacoplar as cartas visuais da aplicação;
+- [x] extrair criação de tema/fonte de `BlameCindersGame`;
+- [x] criar uma tela própria para o tabuleiro;
+- [x] testar o cálculo de layout do grid;
+- [x] cobrir as regras centrais e o layout com 35 testes.
 
 ## Próximos lotes
 
 ### Apresentação
 
-- extrair criação de tema/fonte de `BlameCindersGame`;
-- criar uma tela própria para o tabuleiro;
 - criar testes de integração Scene2D para revelar, agir e mover;
 - revisar o término da animação ao coletar a terceira chama.
 
