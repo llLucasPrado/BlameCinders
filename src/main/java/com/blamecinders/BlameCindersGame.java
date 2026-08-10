@@ -37,23 +37,14 @@ import com.blamecinders.ui.tabuleiro.InteracaoCartaVisual;
 import com.blamecinders.ui.tabuleiro.TelaTabuleiro;
 
 
-//Classe principal do jogo.
-
-//RESPONSABILIDADE DESTA CLASSE:
-//inicializar o jogo e os stages, criar o tabuleiro visual, orquestrar os controladores extraídos (HUD, popups, fluxo de cartas e combate);
-//manter o estado global da run;
-//sincronizar o grid lógico com o grid visual;
-//iniciar animação de movimento/esteira.
-
+/** Coordena o ciclo de vida libGDX e os fluxos visuais da partida. */
 public class BlameCindersGame extends ApplicationAdapter implements InteracaoCartaVisual {
 
-    //Stages
     private Stage stageCartaZoom;
     private TelaTabuleiro telaTabuleiro;
     private Stage stageUI;
     private Stage stageAnimacao;
 
-    //UI base
     private BitmapFont fonte;
     private BitmapFont fonteCarta;
     private Label labelMensagem;
@@ -61,29 +52,24 @@ public class BlameCindersGame extends ApplicationAdapter implements InteracaoCar
     private TemaJogo tema;
     private Timer.Task tarefaLimparMensagem;
 
-    //Estado transitório da apresentação
     private boolean animandoTabuleiro = false;
     private boolean telaModalAberta = false;
 
-    //Estado e regras persistentes da partida
     private EstadoPartida partida;
     private ControladorTurno controladorTurno;
     private ControladorEncontro controladorEncontro;
     private ControladorInteracaoCarta controladorInteracaoCarta;
 
-    //Controladores / fluxos extraídos
     private AnimacaoCarta animacaoCarta;
     private GerenciadorPopups popupManager;
     private ControladorHUD hudController;
     private FluxoCombate fluxoCombate;
     private FluxoCarta fluxoCarta;
 
-    //Informa se o jogo terminou, usado pelas cartas visuais para bloquear interação.
     public boolean isFinalizado() {
         return partida != null && partida.isFinalizada();
     }
 
-    //Informa se o tabuleiro está animando, usado pelas cartas visuais para bloquear clique durante esteira/movimento.
     public boolean isAnimandoTabuleiro() {
         return animandoTabuleiro;
     }
@@ -101,23 +87,19 @@ public class BlameCindersGame extends ApplicationAdapter implements InteracaoCar
         return partida.getJogador();
     }
 
-    //Ciclo de vida
     @Override
     public void create() {
 
-        //Criação dos stages
         stageUI = new Stage(new com.badlogic.gdx.utils.viewport.FitViewport(1280, 720));
         stageCartaZoom = new Stage(new com.badlogic.gdx.utils.viewport.FitViewport(1280, 720));
         stageAnimacao = new Stage(new com.badlogic.gdx.utils.viewport.FitViewport(1280, 720));
 
-        //Fontes / skin base
         tema = TemaJogo.criar();
         skin = tema.getSkin();
         fonte = tema.getFonteInterface();
         fonteCarta = tema.getFonteCarta();
         criarMensagemUI();
 
-        //Modelo principal
         partida = new EstadoPartida();
         controladorTurno = new ControladorTurno(partida);
         controladorEncontro = new ControladorEncontro(partida);
@@ -125,7 +107,7 @@ public class BlameCindersGame extends ApplicationAdapter implements InteracaoCar
 
         telaTabuleiro = new TelaTabuleiro(tabuleiro(), fonteCarta, this);
 
-        //Input multiplexer, Ordem importante: zoom > UI > animação > tabuleiro
+        // A ordem determina qual camada recebe o clique primeiro.
         InputMultiplexer multiplexer = new InputMultiplexer();
         multiplexer.addProcessor(stageCartaZoom);
         multiplexer.addProcessor(stageUI);
@@ -133,7 +115,6 @@ public class BlameCindersGame extends ApplicationAdapter implements InteracaoCar
         multiplexer.addProcessor(telaTabuleiro.getStage());
         Gdx.input.setInputProcessor(multiplexer);
 
-        //Controladores extraídos
         animacaoCarta = new AnimacaoCarta();
 
         popupManager = new GerenciadorPopups(stageUI, stageCartaZoom, skin);
@@ -155,16 +136,13 @@ public class BlameCindersGame extends ApplicationAdapter implements InteracaoCar
             skin
         );
 
-        //HUD
         hudController.criarHUD();
         atualizarHUDCompleto();
 
-        //Estado visual inicial
         telaTabuleiro.sincronizar();
         telaTabuleiro.atualizarDestaques();
     }
 
-    //controla o tamanho e proporção da tela
     @Override
     public void resize(int width, int height) {
         telaTabuleiro.resize(width, height);
@@ -173,7 +151,6 @@ public class BlameCindersGame extends ApplicationAdapter implements InteracaoCar
         stageAnimacao.getViewport().update(width, height, true);
     }
 
-    //Renderiza os Stages, que define onde cada coisa é desenhada
     @Override
     public void render() {
         float delta = Gdx.graphics.getDeltaTime();
@@ -201,19 +178,12 @@ public class BlameCindersGame extends ApplicationAdapter implements InteracaoCar
         GerenciadorTexturas.disposeAll();
     }
 
-    // A fonte e os estilos pertencem ao TemaJogo; a aplicação apenas posiciona a mensagem.
     private void criarMensagemUI() {
         labelMensagem = new Label("", skin);
         labelMensagem.setPosition(20, 20);
         stageUI.addActor(labelMensagem);
     }
 
-    //Entrada principal de clique em carta.
-    //Regras:
-    //carta fechada adjacente: pergunta se deseja revelar;
-    //carta fechada não adjacente: bloqueia;
-    //carta revelada não adjacente: permite apenas visualizar;
-    //carta revelada adjacente: permite visualizar e, se aplicável, interagir.
     @Override
     public void aoClicar(int linha, int coluna) {
 
@@ -257,10 +227,6 @@ public class BlameCindersGame extends ApplicationAdapter implements InteracaoCar
         }
     }
 
-    // FLUXOS DE COLETA / MOVIMENTO
-    //Trata a coleta de chama.
-    //Regras:
-    //incrementa as chamas no tabuleiro, consome a carta da posição, atualiza HUD; verifica vitória; move jogador com animação/esteira.
     private void coletarChama(int linha, int coluna) {
         ResultadoColetaChama resultado = controladorEncontro.coletarChama(linha, coluna);
 
@@ -272,10 +238,6 @@ public class BlameCindersGame extends ApplicationAdapter implements InteracaoCar
         });
     }
 
-    //Trata o fluxo completo do baú, se houver arma, pergunta se deseja equipar/trocar, se equipar, consome o baú e move o jogador;
-    //se não equipar, mantém o baú no tabuleiro
-    //Etapa final do baú:
-    //equipa a arma (se houver), consome a carta e move o jogador para a posição.
     private void coletarBau(int linha, int coluna) {
         ResultadoColetaBau resultado = controladorEncontro.coletarBau(linha, coluna);
         mostrarMensagem(resultado.getMensagem());
@@ -285,7 +247,6 @@ public class BlameCindersGame extends ApplicationAdapter implements InteracaoCar
         moverJogadorPara(linha, coluna);
     }
 
-    //Encapsula a movimentação do jogador para uma nova posição, sempre usando a animação de esteira.
     private void moverJogadorPara(int linha, int coluna) {
         moverJogadorPara(linha, coluna, null);
     }
@@ -300,14 +261,11 @@ public class BlameCindersGame extends ApplicationAdapter implements InteracaoCar
         atualizarTabuleiroComAnimacao(movimento, aoFinalizar);
     }
 
-    //Atualiza o HUD e reinstala o click da miniatura de arma.
     private void atualizarHUDCompleto() {
         hudController.atualizarHUD(jogador(), tabuleiro().getChamasColetadas());
         hudController.setClickArmaListener(this::mostrarPopupDetalheArmaHUD);
     }
 
-    // MENSAGENS E FONTES
-    //Exibe mensagem temporária no canto inferior da UI.
     private void mostrarMensagem(String texto) {
         cancelarLimpezaMensagem();
         labelMensagem.setText(texto);
@@ -334,39 +292,18 @@ public class BlameCindersGame extends ApplicationAdapter implements InteracaoCar
         }
     }
 
-    // SINCRONIZAÇÃO VISUAL
-    //Sincroniza todas as cartas visuais com o estado lógico do tabuleiro, este é um dos métodos mais importantes da classe.
-    //Ele garante, posição correta, textura correta, reset de transformações, revelação correta, prioridade visual do jogador.
     private void sincronizarTabuleiroVisual() {
         telaTabuleiro.sincronizar();
     }
 
-    //Restaura uma carta visual removida temporariamente do stage durante o zoom/revelação.
     private void restaurarCartaOriginal(int linha, int coluna, CartaVisual cartaOriginal) {
         telaTabuleiro.restaurarCarta(linha, coluna, cartaOriginal);
     }
 
-    //Atualiza o destaque das cartas adjacentes ao jogador.
-    //Regras visuais:
-    //o jogador fica normal;
-    //cartas adjacentes entram gradualmente no destaque;
-    //depois começam a pulsar suavemente;
-    //cartas não adjacentes perdem destaque suavemente.
-    //Deve ser chamado depois do movimento/sincronização.
-    //Ele limpa ações antigas para evitar pulso preso em cartas antigas.
     private void atualizarDestaqueCartas() {
         telaTabuleiro.atualizarDestaques();
     }
 
-    // MOVIMENTO + ESTEIRA
-    //Executa a animação de movimento do jogador com esteira.
-    //A ordem lógica é:
-    //1. animação visual;
-    //2. mover jogador no grid;
-    //3. aplicar esteira;
-    //4. sincronizar visual;
-    //5. resetar estado visual;
-    //6. reabilitar o jogo.
     private void atualizarTabuleiroComAnimacao(
         MovimentoTabuleiro movimento,
         Runnable aoFinalizar
@@ -383,10 +320,7 @@ public class BlameCindersGame extends ApplicationAdapter implements InteracaoCar
 
                 sincronizarTabuleiroVisual();
 
-                /*
-                 * Aguarda a carta temporária terminar de entrar antes de aplicar destaque.
-                 * Isso evita a piscada brusca na carta nova.
-                 */
+                // Evita destacar a carta real antes de a temporária terminar de entrar.
                 Timer.schedule(new Timer.Task() {
                     @Override
                     public void run() {
@@ -402,9 +336,6 @@ public class BlameCindersGame extends ApplicationAdapter implements InteracaoCar
         );
     }
 
-    // POPUP DE DETALHE DA ARMA
-    //Exibe a arma equipada em destaque.
-    //Este popup continua local porque faz parte da integração direta com o clique da miniatura da HUD.
     private void mostrarPopupDetalheArmaHUD() {
         if (jogador() == null || jogador().getArmaEquipada() == null) {
             mostrarMensagem("Nenhuma arma equipada.");
@@ -422,24 +353,14 @@ public class BlameCindersGame extends ApplicationAdapter implements InteracaoCar
         );
     }
 
-    // UTILS
-    //Cria um drawable sólido simples para janelas e botões.
-    //Recoloca no stage uma carta removida pelo zoom, mas sem exibi-la visualmente.
-    //Uso: inimigo derrotado, chama coletada, baú coletado.
-    //Motivo: a carta precisa existir no array visual para a sincronização,
-    //mas não deve reaparecer revelada por um instante antes da esteira.
     private void recolocarCartaConsumidaComoPlaceholder(int linha, int coluna, CartaVisual cartaOriginal) {
         telaTabuleiro.recolocarComoPlaceholder(linha, coluna, cartaOriginal);
     }
 
-    //Informa se existe alguma tela modal/popup aberta.
-    //Usado pelas cartas para bloquear hover e clique enquanto overlays, popups, combate ou vitória estão ativos.
     public boolean isTelaModalAberta() {
         return telaModalAberta;
     }
 
-    //Executa o fluxo de evento da carta.
-    //Usado em dois casos: carta fechada após confirmar revelação, carta já revelada e adjacente, para permitir interação novamente
     private void executarFluxoCarta(int linha, int coluna, CartaVisual cartaOriginal) {
         fluxoCarta.revelarCarta(
             linha,
@@ -487,9 +408,6 @@ public class BlameCindersGame extends ApplicationAdapter implements InteracaoCar
         });
     }
 
-    //Visualiza uma carta já revelada sem executar a sua ação.
-    //Usado principalmente para cartas reveladas não adjacentes.
-    //Exibe informações da carta, como nome, vida e futuramente furtividade.
     private void visualizarInformacoesCarta(int linha, int coluna) {
         CartaInfo cartaInfo = tabuleiro().getCartaInfo(linha, coluna);
 
@@ -535,9 +453,6 @@ public class BlameCindersGame extends ApplicationAdapter implements InteracaoCar
         );
     }
 
-    //Monta o texto de informações de uma carta revelada.
-    //Exibe apenas informações úteis no momento.
-    //Para inimigos, mostra nome e vida atual.
     private String montarTextoInformacoesCarta(CartaInfo cartaInfo) {
         if (cartaInfo == null) {
             return "Carta desconhecida.";
@@ -630,11 +545,6 @@ public class BlameCindersGame extends ApplicationAdapter implements InteracaoCar
         }
     }
 
-    //Mostra uma carta já revelada e adjacente em zoom.
-    //1. remove temporariamente a carta do tabuleiro;
-    //2. amplia a carta no stage de zoom;
-    //3. mostra informações;
-    //4. se houver ação possível, mostra o botão de ação.
     private void mostrarOpcoesCartaReveladaAdjacente(int linha, int coluna, CartaVisual cartaOriginal) {
         CartaInfo cartaInfo = tabuleiro().getCartaInfo(linha, coluna);
 
@@ -659,7 +569,6 @@ public class BlameCindersGame extends ApplicationAdapter implements InteracaoCar
         stageCartaZoom.addActor(popupManager.criarOverlayBloqueador(0.65f));
         stageCartaZoom.addActor(cartaZoom);
 
-        //Usa o mesmo efeito visual de ampliação/flip das cartas reveladas.
         animacaoCarta.aplicarFlip(
             cartaZoom,
             () -> cartaZoom.setConteudo(GerenciadorTexturas.get(textura), textura)
@@ -676,7 +585,6 @@ public class BlameCindersGame extends ApplicationAdapter implements InteracaoCar
 
                     () -> abrirCombate(linha, coluna, cartaOriginal),
 
-                    // CANCELAR
                     () -> animacaoCarta.dissolverCartaZoom(cartaZoom, () -> {
                         stageCartaZoom.clear();
                         telaModalAberta = false;
@@ -692,9 +600,6 @@ public class BlameCindersGame extends ApplicationAdapter implements InteracaoCar
                     montarTextoInformacoesCarta(cartaInfo),
                     "Abrir baú",
 
-                    //Baú já revelado:
-                    //primeiro o jogador já viu as informações do baú.
-                    //Ao abrir, fazemos flip para a arma e mostramos opções diretas.
                     () -> executarFluxoBauJaRevelado(linha, coluna, cartaOriginal, cartaZoom),
 
                     () -> animacaoCarta.dissolverCartaZoom(cartaZoom, () -> {
@@ -754,9 +659,6 @@ public class BlameCindersGame extends ApplicationAdapter implements InteracaoCar
         }
     }
 
-    //Executa o fluxo de um baú que já estava revelado.
-    //Fluxo: não mostra "Baú encontrado", a carta ampliada já está visível pela visualização;
-    //ao abrir, faz flip para mostrar a arma mostra apenas nome/durabilidade da arma e opções.
     private void executarFluxoBauJaRevelado(int linha, int coluna, CartaVisual cartaOriginal, CartaExibida cartaZoom) {
         CartaInfo cartaInfo = tabuleiro().getCartaInfo(linha, coluna);
 
@@ -771,7 +673,6 @@ public class BlameCindersGame extends ApplicationAdapter implements InteracaoCar
             return;
         }
 
-        //Baú já revelado: ao abrir, apenas viramos a carta ampliada para mostrar a arma.
         String identificadorItem = cartaInfo.getItemDentro().getIdentificadorVisual();
         animacaoCarta.aplicarFlip(
             cartaZoom,
@@ -781,7 +682,6 @@ public class BlameCindersGame extends ApplicationAdapter implements InteracaoCar
             )
         );
 
-        //Aguarda o flip terminar antes de mostrar as opções.
         Timer.schedule(new Timer.Task() {
             @Override
             public void run() {
@@ -792,7 +692,6 @@ public class BlameCindersGame extends ApplicationAdapter implements InteracaoCar
                     cartaInfo,
                     jogadorJaTemArma,
 
-                    // EQUIPAR / TROCAR
                     () -> animacaoCarta.dissolverCartaZoom(cartaZoom, () -> {
                         stageCartaZoom.clear();
                         telaModalAberta = false;
@@ -800,14 +699,10 @@ public class BlameCindersGame extends ApplicationAdapter implements InteracaoCar
                         coletarBau(linha, coluna);
                     }),
 
-                    // NÃO EQUIPAR / MANTER ATUAL
                     () -> animacaoCarta.dissolverCartaZoom(cartaZoom, () -> {
                         stageCartaZoom.clear();
                         telaModalAberta = false;
 
-                        /*
-                         * Baú permanece no tabuleiro e revelado.
-                         */
                         restaurarCartaOriginal(linha, coluna, cartaOriginal);
                         sincronizarTabuleiroVisual();
                         atualizarDestaqueCartas();

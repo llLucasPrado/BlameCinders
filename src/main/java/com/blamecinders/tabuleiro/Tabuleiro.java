@@ -7,33 +7,24 @@ import com.blamecinders.item.ItemBau;
 import java.util.Objects;
 import java.util.Random;
 
-//Classe responsável pela lógica do tabuleiro.
-
-//RESPONSABILIDADES:
-//manter o grid de CartaInfo, manter posição do jogador, gerar cartas aleatórias, garantir existência de apenas uma CHAMA;
-//aplicar a mecânica de esteira, controlar revelação/consumo das cartas.
-
-//IMPORTANTE PARA ESTE PROJETO:
-//o grid pode conter null temporariamente;
-//consultas de tipo devem ser feitas com getTipoSeguro(), a esteira deve preservar os mesmos objetos CartaInfo sempre que possível;
-//idealmente, apenas uma nova carta deve entrar por movimento.
-
+/**
+ * Grade lógica da partida. A célula do herói permanece {@code null} e é lida
+ * como {@link TipoCarta#VAZIO}; a esteira preserva as cartas existentes e cria
+ * apenas a carta que entra pela borda.
+ */
 public class Tabuleiro {
 
-    public static final int LINHAS = 4; //Quantidade de linhas do grid lógico.
-    public static final int COLUNAS = 5; //Quantidade de colunas do grid lógico.
+    public static final int LINHAS = 4;
+    public static final int COLUNAS = 5;
     public static final int OBJETIVO_CHAMAS = 3;
 
-    //Grid principal do jogo.
-    //Cada posição pode conter uma CartaInfo válida, null temporariamente, durante transições ou após consumo.
     private final CartaInfo[][] grid;
     private final Random random;
 
-    private int jogadorLinha = 0; //Linha atual do jogador no grid
-    private int jogadorColuna = 0; //Coluna atual do jogador no grid
-    private int chamasColetadas = 0; //Quantidade de chamas coletadas na run atual.
+    private int jogadorLinha = 0;
+    private int jogadorColuna = 0;
+    private int chamasColetadas = 0;
 
-    //Construtor do tabuleiro, cria o grid e inicializa o conteúdo inicial
     public Tabuleiro() {
         this(new Random());
     }
@@ -64,14 +55,7 @@ public class Tabuleiro {
         this.grid[jogadorLinha][jogadorColuna] = null;
     }
 
-    //Preenche o tabuleiro inicial.
-
-    //Regras atuais:
-    //o jogador começa em (0,0);
-    //as posições (0,1) e (1,0) são forçadas como INIMIGO, o restante é aleatório;
-    //ao final, garante ao menos uma CHAMA no tabuleiro.
     private void inicializar() {
-        // A célula ocupada pelo herói é sempre o único espaço vazio do grid.
         grid[0][0] = null;
 
         for (int i = 0; i < LINHAS; i++) {
@@ -96,9 +80,6 @@ public class Tabuleiro {
         garantirUmaChama();
     }
 
-    //Cria uma CartaInfo conforme o tipo.
-    //Regras:
-    //INIMIGO recebe um inimigo aleatório, BAU recebe uma arma aleatória, outros tipos ficam apenas com o seu tipo base.
     private CartaInfo criarCarta(TipoCarta tipo) {
         CartaInfo carta = new CartaInfo(tipo);
 
@@ -113,35 +94,24 @@ public class Tabuleiro {
         return carta;
     }
 
-    //Puxa um inimigo aleatório ao catálogo.
     private Inimigo gerarInimigoAleatorio() {
         return CatalogoInimigos.gerarInimigoAleatorio(random);
     }
 
-    //Puxa uma arma aleatória ao catálogo
     private ItemBau gerarItemAleatorio() {
         return CatalogoItens.gerarItemAleatorio(random);
     }
 
-    //Chances/porcentagem de geração de um tipo aleatório para cartas normais do tabuleiro
-    //Distribuição atual:
-    //10..29 → BAU
-    //30..39 → PAREDE
-    //restante → INIMIGO
-    //CHAMA não sai daqui, ela é controlada separadamente.
     private TipoCarta gerarTipoCartaAleatoria() {
 
         int r = random.nextInt(100);
 
-        // Faixa de chance de baú: 20%
-        // Porém só gera se ainda houver menos de 3 no tabuleiro.
         if (r >= 10 && r < 30) {
             if (contarBausNoTabuleiro() < 3) {
                 return TipoCarta.BAU;
             }
         }
 
-        // Faixa de chance de parede: 10%
         if (r >= 30 && r < 40) {
             return TipoCarta.PAREDE;
         }
@@ -149,9 +119,6 @@ public class Tabuleiro {
         return TipoCarta.INIMIGO;
     }
 
-    //Verifica se o jogador pode se mover para a posição informada.
-    //Regras:
-    //deve estar dentro do tabuleiro, deve ser adjacente ortogonalmente, não pode ser PAREDE.
     public boolean podeMover(int novaLinha, int novaColuna) {
         if (!estaDentro(novaLinha, novaColuna)) {
             return false;
@@ -171,14 +138,10 @@ public class Tabuleiro {
         return true;
     }
 
-    //Consulta pública do tipo de carta numa posição, usa a versão segura para proteger contra null.
     public TipoCarta getCarta(int linha, int coluna) {
         return getTipoSeguro(linha, coluna);
     }
 
-    //Consulta segura do tipo da posição.
-    //REGRA FUNDAMENTAL DO PROJETO:
-    //se a posição estiver null, ela é tratada como VAZIO.
     public TipoCarta getTipoSeguro(int linha, int coluna) {
         if (grid[linha][coluna] == null) {
             return TipoCarta.VAZIO;
@@ -186,7 +149,6 @@ public class Tabuleiro {
         return grid[linha][coluna].getTipo();
     }
 
-    //Retorna a referência bruta de CartaInfo na posição. Pode ser null
     public CartaInfo getCartaInfo(int linha, int coluna) {
         return grid[linha][coluna];
     }
@@ -203,10 +165,6 @@ public class Tabuleiro {
         return chamasColetadas;
     }
 
-    //Atualiza a posição do jogador.
-    //IMPORTANTE:
-    //Apenas move o jogador lógicamente
-    //Ele não consome carta, não revela carta e não aplica a esteira.
     public void moverJogador(int novaLinha, int novaColuna) {
         if (!podeMover(novaLinha, novaColuna))
             return;
@@ -216,9 +174,6 @@ public class Tabuleiro {
         grid[jogadorLinha][jogadorColuna] = null;
     }
 
-    //Gera uma única chama em posição aleatória válida.
-    //Restrições:
-    //não pode nascer na posição do jogador, não pode nascer em PAREDE, não pode sobrepor outra CHAMA, não pode nascer em carta já REVELADA.
     public void gerarNovaChamaUnica() {
 
         for (int tentativas = 0; tentativas < 300; tentativas++) {
@@ -237,8 +192,6 @@ public class Tabuleiro {
 
     }
 
-    //Registra a coleta e deixa a célula livre para o movimento do herói.
-    //A nova chama é garantida após a esteira, exceto quando o objetivo foi alcançado.
     public boolean coletarChama(int linha, int coluna) {
         if (!estaDentro(linha, coluna) || getTipoSeguro(linha, coluna) != TipoCarta.CHAMA) {
             return false;
@@ -249,12 +202,6 @@ public class Tabuleiro {
         return true;
     }
 
-    //Aplica o efeito de esteira após o movimento do jogador.
-    //Regras atuais:
-    //se o jogador foi para a direita, a linha anda para a esquerda;
-    //se foi para a esquerda, a linha anda para a direita;
-    //se foi para baixo, a coluna sobe;
-    //se foi para cima, a coluna desce.
     public void aplicarEsteira(int antigaLinha, int antigaColuna, int novaLinha, int novaColuna) {
         int dx = novaColuna - antigaColuna;
         int dy = novaLinha - antigaLinha;
@@ -263,16 +210,16 @@ public class Tabuleiro {
             throw new IllegalArgumentException("A esteira exige um movimento ortogonal de uma célula.");
         }
 
-        if (dx == 1) { // jogador foi para a direita; preenche o vazio pela borda esquerda
+        if (dx == 1) {
             preencherVazioPelaEsquerda(antigaLinha, antigaColuna);
         }
-        else if (dx == -1) { // jogador foi para a esquerda; preenche pela borda direita
+        else if (dx == -1) {
             preencherVazioPelaDireita(antigaLinha, antigaColuna);
         }
-        else if (dy == 1) { // jogador foi para baixo; preenche pela borda superior
+        else if (dy == 1) {
             preencherVazioPorCima(antigaColuna, antigaLinha);
         }
-        else { // jogador foi para cima; preenche pela borda inferior
+        else {
             preencherVazioPorBaixo(antigaColuna, antigaLinha);
         }
 
@@ -287,7 +234,6 @@ public class Tabuleiro {
         }
     }
 
-    //Verifica se existe alguma CHAMA no tabuleiro
     private boolean existeChama() {
         for (int i = 0; i < LINHAS; i++) {
             for (int j = 0; j < COLUNAS; j++) {
@@ -328,8 +274,6 @@ public class Tabuleiro {
         grid[LINHAS - 1][coluna] = gerarCartaEsteiraSegura();
     }
 
-    //Gera uma carta válida para entrar pela esteira.
-    //CHAMA é proibida aqui, porque a presença de CHAMA é controlada separadamente por garantirUmaChama().
     private CartaInfo gerarCartaEsteiraSegura() {
         TipoCarta tipo;
 
@@ -341,7 +285,6 @@ public class Tabuleiro {
         return criarCarta(tipo);
     }
 
-    //Verifica se o jogador possui ao menos um movimento ortogonal disponível.
     public boolean existeMovimentoValido() {
         int l = jogadorLinha;
         int c = jogadorColuna;
@@ -354,7 +297,6 @@ public class Tabuleiro {
         return false;
     }
 
-    //Se o jogador ficar sem saída válida força a criação de uma carta acessível nesse caso um INIMIGO.
     private void gerarSaidaEmergencial() {
         int l = jogadorLinha;
         int c = jogadorColuna;
@@ -363,7 +305,7 @@ public class Tabuleiro {
         else grid[l + 1][c] = criarCarta(TipoCarta.INIMIGO);
     }
 
-    //Garante a regra de exatamente uma CHAMA ativa, se não houver nenhuma, cria uma, se houver mais de uma, mantém apenas a primeira encontrada.
+    // Mantém exatamente uma chama ativa enquanto o objetivo não foi concluído.
     private void garantirUmaChama() {
         int quantidade = 0;
 
@@ -397,7 +339,6 @@ public class Tabuleiro {
         }
     }
 
-    //Marca a carta como revelada no modelo lógico.
     public void revelarCarta(int linha, int coluna) {
         CartaInfo carta = grid[linha][coluna];
         if (carta != null) {
@@ -405,19 +346,15 @@ public class Tabuleiro {
         }
     }
 
-    //Consulta se a carta está revelada no modelo lógico.
     public boolean cartaEstaRevelada(int linha, int coluna) {
         CartaInfo carta = grid[linha][coluna];
         return carta != null && carta.getEstado() == EstadoCarta.REVELADA;
     }
 
-    //Remove a carta da posição.
     public void consumirCarta(int linha, int coluna) {
         grid[linha][coluna] = null;
     }
 
-    //PREENCHIMENTO GLOBAL DE NULOS
-    //Recompõe qualquer posição null do grid com uma nova carta fechada.
     private void preencherNulosExcetoJogador() {
         for (int i = 0; i < LINHAS; i++) {
             for (int j = 0; j < COLUNAS; j++) {
@@ -433,7 +370,6 @@ public class Tabuleiro {
         }
     }
 
-    //Conta quantos baús existem atualmente no tabuleiro
     private int contarBausNoTabuleiro() {
         int quantidade = 0;
 

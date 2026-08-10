@@ -15,8 +15,7 @@ import com.blamecinders.tabuleiro.CartaInfo;
 import java.util.Objects;
 import java.util.function.Consumer;
 
-//Controla o fluxo de revelação visual da carta.
-
+/** Coordena a revelação visual de uma carta. */
 public class FluxoCarta {
 
     private final Stage stageCartaZoom;

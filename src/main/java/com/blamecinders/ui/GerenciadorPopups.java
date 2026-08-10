@@ -22,8 +22,7 @@ import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.blamecinders.animacao.AnimacaoCarta;
 import com.blamecinders.util.GerenciadorTexturas;
 
-//Gerencia os popups e overlays do jogo.
-
+/** Cria e anima os popups e overlays da partida. */
 public class GerenciadorPopups {
 
     private final Stage stageUI;
@@ -136,7 +135,6 @@ public class GerenciadorPopups {
 
     }
 
-    //Cria um overlay bloqueador com alpha configurável
     public Image criarOverlayBloqueador(float alpha) {
         Image overlay = new Image(new TextureRegionDrawable(
             GerenciadorTexturas.getSolid(Color.BLACK)
@@ -171,8 +169,6 @@ public class GerenciadorPopups {
         );
     }
 
-    //Popup usado quando o jogador clica em carta já revelada.
-    //Opções: visualizar a carta em zoom, cancelar e voltar ao tabuleiro
     public void mostrarConfirmacaoVisualizarCarta(Runnable visualizar, Runnable cancelar) {
         if (stageUI.getRoot().findActor("popupVisualizarCarta") != null) return;
 
@@ -216,10 +212,6 @@ public class GerenciadorPopups {
         popup.toFront();
     }
 
-    //Mostra informações de uma carta revelada com uma ação principal.
-    //Usado para cartas reveladas adjacentes.
-    //Exemplo:
-    //inimigo: Combater / Cancelar, baú: Abrir baú / Cancelar, chama: Coletar / Cancelar
     public void mostrarPopupCartaReveladaComAcao(String mensagem, String textoAcao, Runnable acaoPrincipal, Runnable cancelar) {
         Window popup = new Window("", skin);
         popup.setName("popupCartaReveladaComAcao");
@@ -261,8 +253,6 @@ public class GerenciadorPopups {
         popup.toFront();
     }
 
-    //Exibe a arma equipada em destaque.
-    //Usado no HUD do tabuleiro, na miniatura da arma durante o combate.
     public void mostrarDetalheArmaEquipada(
         String nomeArma,
         int durabilidade,
@@ -318,8 +308,7 @@ public class GerenciadorPopups {
             @Override
             public void clicked(InputEvent event, float x, float y) {
 
-                //Remove apenas os elementos deste popup.
-                //Não limpa o stage inteiro, pois pode existir combate por baixo.
+                // O stage pode conter a tela de combate por baixo deste popup.
                 overlay.remove();
                 cartaArma.remove();
                 labelInfo.remove();
@@ -332,7 +321,6 @@ public class GerenciadorPopups {
         });
     }
 
-    //Mostra informações diretas do item e permite usá-lo ou deixá-lo no baú.
     public void mostrarDecisaoItemBau(
         CartaInfo cartaInfo,
         boolean jogadorTemArma,
@@ -400,8 +388,6 @@ public class GerenciadorPopups {
         popup.toFront();
     }
 
-    //Aplica animação de abertura em janela/popup.
-    //Efeito: abre no eixo X, parecido com carta abrindo.
     private void animarAberturaPopup(Actor actor) {
         if (actor == null) return;
 
@@ -418,8 +404,6 @@ public class GerenciadorPopups {
         );
     }
 
-    //Fecha o popup com animação no eixo Y.
-    //Efeito: fecha verticalmente; remove o ator somente após a animação.
     private void animarFechamentoPopup(Actor actor, Runnable aoFinalizar) {
         if (actor == null) {
             if (aoFinalizar != null) aoFinalizar.run();

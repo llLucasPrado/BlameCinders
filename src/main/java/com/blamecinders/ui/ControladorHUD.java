@@ -9,8 +9,7 @@ import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.blamecinders.combate.Jogador;
 import com.blamecinders.util.GerenciadorTexturas;
 
-//Controla o HUD do jogo, texto de chamas, vida do jogador, arma equipada, miniatura da arma clicável
-
+/** Apresenta vida, chamas e arma equipada durante a partida. */
 public class ControladorHUD {
 
     private final Stage stageUI;
@@ -24,7 +23,6 @@ public class ControladorHUD {
         this.skin = skin;
     }
 
-    //criação do HUD
     public void criarHUD() {
 
         labelHUD = new Label("", skin);
@@ -33,7 +31,6 @@ public class ControladorHUD {
         stageUI.addActor(labelHUD);
     }
 
-    //Atualiza o HUD
     public void atualizarHUD(Jogador jogador, int chamasColetadas) {
 
         if (labelHUD == null) return;
@@ -56,7 +53,6 @@ public class ControladorHUD {
         atualizarMiniaturaArma(jogador);
     }
 
-    //Miniatura da arma
     private void atualizarMiniaturaArma(Jogador jogador) {
 
         if (imagemArmaHUD != null) {
@@ -85,7 +81,6 @@ public class ControladorHUD {
         stageUI.addActor(imagemArmaHUD);
     }
 
-    //Evento de click na arma
     public void setClickArmaListener(Runnable aoClicar) {
 
         if (imagemArmaHUD == null) return;

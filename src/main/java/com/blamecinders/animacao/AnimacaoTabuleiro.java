@@ -14,6 +14,7 @@ import com.blamecinders.ui.tabuleiro.CartaVisual;
 import java.util.Objects;
 import java.util.function.Consumer;
 
+/** Anima o herói e o segmento da esteira afetado por cada movimento. */
 public class AnimacaoTabuleiro {
 
     private final Consumer<Actor> adicionarAtor;
@@ -57,7 +58,6 @@ public class AnimacaoTabuleiro {
         this.posicaoProvider = posicaoProvider;
     }
 
-    //Anima o movimento do jogador com a esteira.
     public void animarMovimentoJogadorComEsteira(
         int antigaLinha,
         int antigaColuna,
@@ -94,13 +94,11 @@ public class AnimacaoTabuleiro {
             Actions.sequence(
 
 
-                //1) O jogador se destaca da carta atual.
                 Actions.parallel(
                     Actions.moveTo(origemX, origemY + 18f, levantarDuracao, Interpolation.sineOut),
                     Actions.scaleTo(1.07f, 1.12f, levantarDuracao, Interpolation.sineOut)
                 ),
 
-                //2) A esteira começa enquanto o jogador está destacado.
                 Actions.run(() -> {
                     animarDeslizamentoEsteira(
                         antigaLinha,
@@ -112,16 +110,13 @@ public class AnimacaoTabuleiro {
                     jogador.toFront();
                 }),
 
-                //3) Aguarda a maior parte da esteira.
                 Actions.delay(esteiraDuracao * 0.82f),
 
-                //4) Movimento contínuo até o destino.
                 Actions.parallel(
                     Actions.moveTo(destinoX, destinoY, moverJogadorDuracao, Interpolation.sine),
                     Actions.scaleTo(1f, 1f, moverJogadorDuracao, Interpolation.sine)
                 ),
 
-                //5) Libera atualização lógica.
                 Actions.run(() -> {
                     if (aoFinalizar != null) {
                         aoFinalizar.run();
@@ -131,8 +126,6 @@ public class AnimacaoTabuleiro {
         );
     }
 
-    //Desliza a linha ou coluna afetada pela esteira,
-    //também dispara a carta temporária de entrada com o movimento para não ter atraso visual.
     private void animarDeslizamentoEsteira(int antigaLinha, int antigaColuna, int novaLinha, int novaColuna) {
         int dx = novaColuna - antigaColuna;
         int dy = novaLinha - antigaLinha;
@@ -151,7 +144,6 @@ public class AnimacaoTabuleiro {
         }
     }
 
-    //Anima apenas o segmento que preenche a antiga célula do herói.
     private void animarLinhaEsteira(int linha, int colunaJogador, int dx) {
         float deslocamento = cartaLargura + espaco;
         float moveX = dx * deslocamento;
@@ -166,8 +158,7 @@ public class AnimacaoTabuleiro {
         }
     }
 
-    //Anima a coluna vertical da esteira.
-    //No grid, linha cresce para baixo; no libGDX, Y cresce para cima.
+    // O eixo Y do grid cresce para baixo; no Scene2D, cresce para cima.
     private void animarColunaEsteira(int coluna, int linhaJogador, int dy) {
         float deslocamento = cartaAltura + espaco;
         float moveY = -dy * deslocamento;
@@ -182,15 +173,12 @@ public class AnimacaoTabuleiro {
         }
     }
 
-    //Anima uma carta comum deslizando com a esteira, usada para cartas internas, que não entram nem saem do tabuleiro.
     private void animarCartaDeslizandoNaEsteira(CartaVisual carta, float moveX, float moveY, float delay) {
         if (carta == null) return;
 
         carta.clearActions();
         carta.setOrigin(Align.center);
 
-        //Garante continuidade visual.
-        //Algumas cartas podem vir de animações anteriores com alpha baixo ou invisíveis.
         carta.setVisible(true);
         carta.getColor().a = 1f;
         carta.setScale(1f, 1f);
@@ -212,13 +200,10 @@ public class AnimacaoTabuleiro {
         );
     }
 
-    //Calcula um atraso pequeno para criar sensação de onda.
-    //O atraso é intencionalmente baixo para não parecer travado.
     private float calcularAtrasoSuave(int indiceCarta, int indiceJogador) {
         return Math.abs(indiceCarta - indiceJogador) * 0.008f;
     }
 
-    //Anima o movimento da carta não adjacente e não revelada quando clicada
     public void animarCartaMovimentoInvalido(int linha, int coluna) {
         CartaVisual carta = cartasVisuais[linha][coluna];
         if (carta == null) return;
@@ -266,8 +251,6 @@ public class AnimacaoTabuleiro {
         return posicaoProvider.getCartaY(linha);
     }
 
-    //Cria uma carta temporária entrando pela borda da esteira. Esta carta é apenas visual.
-    //A carta real será sincronizada depois pelo grid.
     private void animarEntradaTemporariaEsteira(int antigaLinha, int antigaColuna, int novaLinha, int novaColuna) {
         int dx = novaColuna - antigaColuna;
         int dy = novaLinha - antigaLinha;
@@ -330,9 +313,7 @@ public class AnimacaoTabuleiro {
         CartaVisual cartaReferencia = cartasVisuais[linhaEntrada][colunaEntrada];
         if (cartaReferencia == null) return;
 
-        //A carta temporária de entrada representa uma carta nova ainda desconhecida visualmente.
-        //Por isso usamos o verso neutro, e não a textura da carta usada como referência.
-        //Isso evita que ela herde aparência de carta revelada, destaque ou brilho.
+        // A carta de entrada ainda é desconhecida e deve usar o verso neutro.
         CartaExibida cartaTemp = new CartaExibida(
             cartaReferencia.getFundoVerso(),
             "VERSO",
@@ -344,22 +325,15 @@ public class AnimacaoTabuleiro {
         cartaTemp.setPosition(origemX, origemY);
         cartaTemp.setScale(0.96f, 0.96f);
 
-        //A carta temporária de entrada deve ser visualmente neutra.
-        //Ela não pode herdar sensação de destaque da carta usada como referência.
         cartaTemp.setColor(1f, 1f, 1f, 0f);
 
         adicionarAtor.accept(cartaTemp);
 
-        //Fica atrás do jogador, mas visível acima do fundo.
-        //Depois garantimos que o jogador volte à frente.
         cartaTemp.toFront();
 
-        //Garante que a carta temporária fique atrás das cartas reais
-        //Isso evita ela passar por cima do jogador durante a esteira.
+        // Impede a carta temporária de passar sobre o herói.
         cartaTemp.toBack();
 
-        //A carta temporária entra com a esteira e permanece por alguns instantes na posição final.
-        //Esse pequeno "segurar" evita o buraco visual entre: fim da animação temporária, sincronização da carta real no grid.
         cartaTemp.addAction(
             Actions.sequence(
                 Actions.parallel(
@@ -368,8 +342,7 @@ public class AnimacaoTabuleiro {
                     Actions.scaleTo(1f, 1f, (float) 0.3, Interpolation.sine)
                 ),
 
-                //Mantém a carta visível até a sincronização visual terminar.
-                //Esse delay remove a piscada.
+                // Evita um quadro vazio antes da sincronização da carta real.
                 Actions.delay(0.22f),
 
                 Actions.removeActor()

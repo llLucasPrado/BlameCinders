@@ -27,9 +27,7 @@ import com.badlogic.gdx.scenes.scene2d.Touchable;
 import java.util.Objects;
 import java.util.function.Consumer;
 
-//Responsável por montar e controlar a tela de combate.
-//Esta classe cuida apenas do fluxo visual e da resolução do combate.
-//A lógica macro do jogo continua no controlador principal.
+/** Monta a apresentação do combate e encaminha seu resultado ao jogo. */
 public class FluxoCombate {
 
     private final Stage stageCartaZoom;
@@ -52,9 +50,6 @@ public class FluxoCombate {
         this.controladorEncontro = controladorEncontro;
     }
 
-    //Abre a tela de combate.
-    //Os parâmetros linha, coluna e cartaOriginal são mantidos na assinatura
-    //para ficar compatível com a chamada atual da BlameCindersGame, mesmo que esta classe não use todos diretamente.
     public void mostrarTelaCombate(
         CartaInfo cartaInfo,
         Jogador jogadorCombate,
@@ -99,8 +94,7 @@ public class FluxoCombate {
 
         Image miniArmaCombate = null;
 
-        //Trava lógica do combate.
-        //Mesmo que o botão receba múltiplos eventos de clique rapidamente, o combate só pode ser resolvido uma vez.
+        // Protege a resolução contra eventos de clique repetidos do Scene2D.
         final boolean[] combateEmAndamento = { false };
 
         if (jogadorCombate.getArmaEquipada() != null) {
@@ -123,7 +117,6 @@ public class FluxoCombate {
                 @Override
                 public void clicked(InputEvent event, float x, float y) {
 
-                    //Só permite visualizar a arma antes da resolução começar.
                     if (combateEmAndamento[0]) {
                         event.stop();
                         return;
@@ -217,7 +210,6 @@ public class FluxoCombate {
             @Override
             public void clicked(InputEvent event, float x, float y) {
 
-                //Impede clique duplo ou múltiplos cliques durante a animação.
                 if (combateEmAndamento[0]) {
                     event.stop();
                     return;
@@ -225,8 +217,7 @@ public class FluxoCombate {
 
                 combateEmAndamento[0] = true;
 
-                //Bloqueio visual e funcional dos botões.
-                //setDisabled sozinho nem sempre impede múltiplos eventos em Scene2D, por isso usamos também Touchable.disabled.
+                // setDisabled não bloqueia todos os eventos; Touchable também é necessário.
                 btnLutar.setDisabled(true);
                 btnFurtividade.setDisabled(true);
                 btnVoltar.setDisabled(true);
@@ -248,10 +239,7 @@ public class FluxoCombate {
                 final int durabilidadeInicialArma = resultado.getDurabilidadeInicialArma();
                 final int durabilidadeFinalArma = Math.max(0, resultado.getDurabilidadeFinalArma());
 
-                //Calcula quanto "recurso" o jogador gastou no combate.
-                //Se o jogador venceu, o inimigo deve chegar a 0.
-                //Se o jogador perdeu, o inimigo só deve perder vida proporcional
-                //ao quanto o jogador conseguiu resistir.
+                // Em derrota, o dano no inimigo é limitado ao quanto o herói resistiu.
                 int danoAbsorvidoPelaArma = durabilidadeInicialArma - durabilidadeFinalArma;
                 int danoRecebidoPeloJogador = vidaInicialJogador - vidaFinalJogador;
                 int danoTotalSustentado = danoAbsorvidoPelaArma + danoRecebidoPeloJogador;
@@ -266,25 +254,22 @@ public class FluxoCombate {
 
                 animacaoCarta.animarImpactoJogador(cartaJogador);
 
-                //Timer único: vida do inimigo, vida do jogador e durabilidade da arma descem ao mesmo tempo.
+                // Um único timer mantém os três contadores visuais sincronizados.
                 Timer.schedule(new Timer.Task() {
                     @Override
                     public void run() {
 
                         boolean alterouAlgo = false;
 
-                        // Inimigo desce apenas até a vida final correta.
                         if (vidaInimigoExibida[0] > vidaFinalInimigo) {
                             vidaInimigoExibida[0]--;
                             alterouAlgo = true;
                         }
 
-                        // Primeiro reduz a durabilidade da arma.
                         if (durabilidadeExibida[0] > durabilidadeFinalArma) {
                             durabilidadeExibida[0]--;
                             alterouAlgo = true;
                         }
-                        // Depois reduz a vida do jogador.
                         else if (vidaJogadorExibida[0] > vidaFinalJogador) {
                             vidaJogadorExibida[0]--;
                             alterouAlgo = true;
@@ -302,7 +287,6 @@ public class FluxoCombate {
                             )
                         );
 
-                        //Quando nada mais precisa mudar, a animação numérica terminou.
                         if (!alterouAlgo) {
                             cancel();
 
@@ -311,8 +295,6 @@ public class FluxoCombate {
                                 onMensagem.accept("Sua arma quebrou!");
                             }
 
-                            //Se venceu, inimigo recebe animação de derrota.
-                            //Se perdeu, não faz sentido animar o inimigo morrendo.
                             if (resultado.isJogadorVenceu()) {
                                 animacaoCarta.resetarTransformacoes(cartaJogador);
                                 cartaInimigo.clearActions();
@@ -335,7 +317,6 @@ public class FluxoCombate {
         stageCartaZoom.addActor(btnFurtividade);
     }
 
-    //Monta o texto do status do jogador durante o combate.
     private String montarTextoStatusJogadorCombate(Jogador jogadorCombate, int vidaExibida, Integer durabilidadeExibida) {
         String texto = "Jogador - Vida: " + vidaExibida;
 
