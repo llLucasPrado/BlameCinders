@@ -1,8 +1,10 @@
 package com.blamecinders.util;
 
+import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.Pixmap;
 import com.badlogic.gdx.graphics.Texture;
+import com.badlogic.gdx.files.FileHandle;
 import java.util.HashMap;
 import java.util.Locale;
 
@@ -14,7 +16,10 @@ public class GerenciadorTexturas {
     public static Texture get(String identificador) {
 
         if (!cache.containsKey(identificador)) {
-            Texture tex = criarFundoCarta(identificador);
+            Texture tex = carregarImagemCarta(identificador);
+            if (tex == null) {
+                tex = criarFundoCarta(identificador);
+            }
             tex.setFilter(Texture.TextureFilter.Linear,
                 Texture.TextureFilter.Linear);
             cache.put(identificador, tex);
@@ -69,6 +74,58 @@ public class GerenciadorTexturas {
         Texture textura = new Texture(pixmap);
         pixmap.dispose();
         return textura;
+    }
+
+    /** Carrega a imagem correspondente em assets/Cartas, quando disponÃ­vel. */
+    private static Texture carregarImagemCarta(String identificador) {
+        String caminho = obterCaminhoImagem(identificador);
+        if (caminho == null || Gdx.files == null) return null;
+
+        FileHandle arquivo = Gdx.files.internal(caminho);
+        return arquivo.exists() ? new Texture(arquivo) : null;
+    }
+
+    private static String obterCaminhoImagem(String identificador) {
+        String id = identificador == null ? "" : identificador.toUpperCase(Locale.ROOT);
+
+        if (id.contains("VERSO")) return "Cartas/Versos/versoTeste.jpg";
+        if (id.startsWith("HER")) return "Cartas/Frente/Jogador/jogadorTeste.png";
+        if (id.startsWith("BA")) return "Cartas/Frente/Bau/frenteTeste7.jpg";
+        if (id.contains("HERÃ“I") || id.contains("HEROI")) {
+            return "Cartas/Frente/Jogador/jogadorTeste.png";
+        }
+        if (id.contains("BAÃš") || id.contains("BAU")) {
+            return "Cartas/Frente/Bau/frenteTeste7.jpg";
+        }
+        if (id.contains("CHAMA")) return "Cartas/Frente/Chama/frenteTeste4.jpg";
+        if (id.contains("PAREDE")) return "Cartas/Frente/Parede/paredeTeste1.png";
+        if (id.contains("CLAYMORE")) return "Cartas/Frente/Armas/claymore.jpeg";
+        if (id.contains("PUNHAL")) return "Cartas/Frente/Armas/punhal.jpeg";
+
+        if (id.startsWith("INIMIGO")) {
+            return "Cartas/Frente/Inimigo/frenteTeste"
+                + extrairNumeroInimigo(id) + ".jpg";
+        }
+        return null;
+    }
+
+    private static int extrairNumeroInimigo(String identificador) {
+        String somenteDigitos = identificador.replaceAll("\\D+", "");
+        if (somenteDigitos.isEmpty()) return 0;
+
+        switch (Integer.parseInt(somenteDigitos)) {
+            case 1: return 0;
+            case 2: return 1;
+            case 3: return 2;
+            case 4: return 3;
+            case 5: return 5;
+            case 6: return 6;
+            case 7: return 8;
+            case 8: return 9;
+            case 9: return 10;
+            case 10: return 11;
+            default: return 0;
+        }
     }
 
     private static Color escolherCor(String identificador) {

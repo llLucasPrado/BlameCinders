@@ -53,6 +53,7 @@ public class ControladorHUD {
         atualizarMiniaturaArma(jogador);
     }
 
+    /** Reposiciona os elementos presos Ã s bordas apÃ³s alterar o viewport. */
     private void atualizarMiniaturaArma(Jogador jogador) {
 
         if (imagemArmaHUD != null) {

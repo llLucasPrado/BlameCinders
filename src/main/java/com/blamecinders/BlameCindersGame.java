@@ -4,7 +4,6 @@ import com.badlogic.gdx.ApplicationAdapter;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.InputMultiplexer;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
-import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.scenes.scene2d.Stage;
 import com.badlogic.gdx.scenes.scene2d.ui.Label;
 import com.badlogic.gdx.scenes.scene2d.ui.Skin;
@@ -424,11 +423,9 @@ public class BlameCindersGame extends ApplicationAdapter implements InteracaoCar
             return;
         }
 
-        cartaOriginal.remove();
-
         String textura = telaTabuleiro.getIdentificador(linha, coluna);
 
-        CartaExibida cartaZoom = criarCartaZoom(textura);
+        CartaVisual cartaZoom = prepararCartaZoom(cartaOriginal);
 
         stageCartaZoom.clear();
         stageCartaZoom.addActor(popupManager.criarOverlayBloqueador(0.65f));
@@ -559,11 +556,9 @@ public class BlameCindersGame extends ApplicationAdapter implements InteracaoCar
             return;
         }
 
-        cartaOriginal.remove();
-
         String textura = telaTabuleiro.getIdentificador(linha, coluna);
 
-        CartaExibida cartaZoom = criarCartaZoom(textura);
+        CartaVisual cartaZoom = prepararCartaZoom(cartaOriginal);
 
         stageCartaZoom.clear();
         stageCartaZoom.addActor(popupManager.criarOverlayBloqueador(0.65f));
@@ -713,26 +708,17 @@ public class BlameCindersGame extends ApplicationAdapter implements InteracaoCar
         }, 0.26f);
     }
 
-    private CartaExibida criarCartaZoom(String identificadorFrente) {
-        TextureRegion regiao = new TextureRegion(GerenciadorTexturas.get(identificadorFrente));
-        CartaExibida carta = new CartaExibida(
-            GerenciadorTexturas.get("VERSO"),
-            "VERSO",
-            fonte
-        );
-
-        float escala = Math.min(
-            300f / regiao.getRegionWidth(),
-            400f / regiao.getRegionHeight()
-        );
-        float largura = regiao.getRegionWidth() * escala;
-        float altura = regiao.getRegionHeight() * escala;
-
-        carta.setSize(largura, altura);
+    /** Reaproveita a carta clicada na camada de zoom, evitando sobreposições. */
+    private CartaVisual prepararCartaZoom(CartaVisual carta) {
+        carta.remove();
+        carta.clearActions();
+        carta.setSize(300f, 400f);
         carta.setOrigin(Align.center);
         carta.setScale(0.01f);
+        carta.setRotation(0f);
+        carta.setConteudo(GerenciadorTexturas.get("VERSO"), "VERSO");
         carta.setPosition(
-            stageCartaZoom.getViewport().getWorldWidth() / 2f - largura / 2f,
+            stageCartaZoom.getViewport().getWorldWidth() / 2f - carta.getWidth() / 2f,
             stageCartaZoom.getViewport().getWorldHeight() / 2f - 120f
         );
         return carta;

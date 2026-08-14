@@ -5,6 +5,7 @@ import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.math.Interpolation;
 import com.badlogic.gdx.scenes.scene2d.Stage;
 import com.badlogic.gdx.scenes.scene2d.actions.Actions;
+import com.badlogic.gdx.utils.Align;
 import com.badlogic.gdx.utils.Disposable;
 import com.badlogic.gdx.utils.viewport.FitViewport;
 import com.blamecinders.animacao.AnimacaoTabuleiro;
@@ -156,6 +157,7 @@ public final class TelaTabuleiro implements Disposable {
         carta.clearActions();
         carta.setPosicaoGrid(linha, coluna);
         carta.setPosition(layout.getCartaX(coluna), layout.getCartaY(linha));
+        carta.setOrigin(Align.center);
         carta.setScale(1f, 1f);
         carta.setRotation(0f);
         carta.setRevelada(false);
@@ -217,6 +219,8 @@ public final class TelaTabuleiro implements Disposable {
     private void prepararCarta(CartaVisual carta, int linha, int coluna) {
         carta.clearActions();
         carta.setPosicaoGrid(linha, coluna);
+        carta.setSize(CartaVisual.LARGURA, CartaVisual.ALTURA);
+        carta.setOrigin(Align.center);
         carta.setVisible(true);
         carta.getColor().a = 1f;
         carta.setScale(1f, 1f);

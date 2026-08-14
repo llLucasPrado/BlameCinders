@@ -1,11 +1,9 @@
 package com.blamecinders.fluxo;
 
-import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.scenes.scene2d.Stage;
 import com.badlogic.gdx.scenes.scene2d.ui.Skin;
 import com.badlogic.gdx.utils.Align;
 import com.blamecinders.animacao.AnimacaoCarta;
-import com.blamecinders.ui.carta.CartaExibida;
 import com.blamecinders.ui.tabuleiro.CartaVisual;
 import com.blamecinders.tabuleiro.Tabuleiro;
 import com.blamecinders.ui.GerenciadorPopups;
@@ -22,8 +20,7 @@ public class FluxoCarta {
     private final Tabuleiro tabuleiro;
     private final AnimacaoCarta animacaoCarta;
     private final GerenciadorPopups popupManager;
-    private final Skin skin;
-    private CartaExibida cartaZoomAtual;
+    private CartaVisual cartaZoomAtual;
 
     public FluxoCarta(
         Stage stageCartaZoom,
@@ -36,10 +33,9 @@ public class FluxoCarta {
         this.tabuleiro = tabuleiro;
         this.animacaoCarta = animacaoCarta;
         this.popupManager = popupManager;
-        this.skin = skin;
     }
 
-    public CartaExibida getCartaZoomAtual() {
+    public CartaVisual getCartaZoomAtual() {
         return cartaZoomAtual;
     }
 
@@ -57,10 +53,9 @@ public class FluxoCarta {
         }
 
         tabuleiro.revelarCarta(linha, coluna);
-        cartaOriginal.remove();
-
         String textura = obterTextura(linha, coluna);
-        cartaZoomAtual = criarCartaZoom(textura);
+        cartaZoomAtual = cartaOriginal;
+        prepararCartaZoom(cartaZoomAtual);
 
         stageCartaZoom.clear();
         stageCartaZoom.addActor(popupManager.criarOverlayBloqueador(0.65f));
@@ -75,32 +70,16 @@ public class FluxoCarta {
         aoRevelar.accept(tipo);
     }
 
-    private CartaExibida criarCartaZoom(String textura) {
-        Texture texturaFrente = GerenciadorTexturas.get(textura);
-        CartaExibida cartaZoom = new CartaExibida(
-            GerenciadorTexturas.get("VERSO"),
-            "VERSO",
-            skin.getFont("default-font")
-        );
-
-        float maxLargura = 300f;
-        float maxAltura = 400f;
-
-        float escala = Math.min(
-            maxLargura / texturaFrente.getWidth(),
-            maxAltura / texturaFrente.getHeight()
-        );
-
-        cartaZoom.setSize(
-            texturaFrente.getWidth() * escala,
-            texturaFrente.getHeight() * escala
-        );
-
-        cartaZoom.setOrigin(Align.center);
-        cartaZoom.setScale(0.01f);
-        cartaZoom.setPosition(640 - cartaZoom.getWidth() / 2f, 360 - 120);
-
-        return cartaZoom;
+    /** Move a carta existente para a camada modal, sem criar outro ator visual. */
+    private void prepararCartaZoom(CartaVisual carta) {
+        carta.remove();
+        carta.clearActions();
+        carta.setSize(300f, 400f);
+        carta.setOrigin(Align.center);
+        carta.setScale(0.01f);
+        carta.setRotation(0f);
+        carta.setPosition(640f - carta.getWidth() / 2f, 360f - 120f);
+        carta.setConteudo(GerenciadorTexturas.get("VERSO"), "VERSO");
     }
 
     private String obterTextura(int linha, int coluna) {
