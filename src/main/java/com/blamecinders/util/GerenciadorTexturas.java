@@ -17,11 +17,16 @@ public class GerenciadorTexturas {
 
         if (!cache.containsKey(identificador)) {
             Texture tex = carregarImagemCarta(identificador);
+            boolean possuiMipmaps = tex != null;
             if (tex == null) {
                 tex = criarFundoCarta(identificador);
             }
-            tex.setFilter(Texture.TextureFilter.Linear,
-                Texture.TextureFilter.Linear);
+            tex.setFilter(
+                possuiMipmaps
+                    ? Texture.TextureFilter.MipMapLinearLinear
+                    : Texture.TextureFilter.Linear,
+                Texture.TextureFilter.Linear
+            );
             cache.put(identificador, tex);
         }
 
@@ -82,7 +87,9 @@ public class GerenciadorTexturas {
         if (caminho == null || Gdx.files == null) return null;
 
         FileHandle arquivo = Gdx.files.internal(caminho);
-        return arquivo.exists() ? new Texture(arquivo) : null;
+        // As cartas de alta resolução são bastante reduzidas no tabuleiro.
+        // Mipmaps preservam os detalhes e evitam aliasing nessa redução.
+        return arquivo.exists() ? new Texture(arquivo, true) : null;
     }
 
     private static String obterCaminhoImagem(String identificador) {
