@@ -1,5 +1,6 @@
 package com.blamecinders;
 
+import com.blamecinders.telas.AcaoTela;
 import com.badlogic.gdx.ApplicationAdapter;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.InputMultiplexer;
@@ -23,17 +24,20 @@ import com.blamecinders.aplicacao.ResultadoEncontroInimigo;
 import com.blamecinders.combate.Jogador;
 import com.blamecinders.fluxo.FluxoCarta;
 import com.blamecinders.fluxo.FluxoCombate;
+import com.blamecinders.tabuleiro.CartaInfo;
+import com.blamecinders.tabuleiro.Tabuleiro;
+import com.blamecinders.tabuleiro.TipoCarta;
+import com.blamecinders.telas.AcaoTela;
+import com.blamecinders.telas.GerenciadorTelas;
+import com.blamecinders.telas.TelaInicial;
 import com.blamecinders.ui.ControladorHUD;
 import com.blamecinders.ui.GerenciadorPopups;
 import com.blamecinders.ui.TemaJogo;
-import com.blamecinders.util.GerenciadorTexturas;
-import com.blamecinders.tabuleiro.TipoCarta;
-import com.blamecinders.tabuleiro.CartaInfo;
-import com.blamecinders.tabuleiro.Tabuleiro;
 import com.blamecinders.ui.carta.CartaExibida;
 import com.blamecinders.ui.tabuleiro.CartaVisual;
 import com.blamecinders.ui.tabuleiro.InteracaoCartaVisual;
 import com.blamecinders.ui.tabuleiro.TelaTabuleiro;
+import com.blamecinders.util.GerenciadorTexturas;
 
 
 /** Coordena o ciclo de vida libGDX e os fluxos visuais da partida. */
@@ -65,6 +69,9 @@ public class BlameCindersGame extends ApplicationAdapter implements InteracaoCar
     private FluxoCombate fluxoCombate;
     private FluxoCarta fluxoCarta;
 
+    private boolean jogoIniciado = false;
+    private GerenciadorTelas gerenciadorTelas;
+
     public boolean isFinalizado() {
         return partida != null && partida.isFinalizada();
     }
@@ -89,62 +96,59 @@ public class BlameCindersGame extends ApplicationAdapter implements InteracaoCar
     @Override
     public void create() {
 
-        stageUI = new Stage(new com.badlogic.gdx.utils.viewport.FitViewport(1280, 720));
-        stageCartaZoom = new Stage(new com.badlogic.gdx.utils.viewport.FitViewport(1280, 720));
-        stageAnimacao = new Stage(new com.badlogic.gdx.utils.viewport.FitViewport(1280, 720));
+        gerenciadorTelas = new GerenciadorTelas();
+
+        stageUI = new Stage(
+            new com.badlogic.gdx.utils.viewport.FitViewport(1280, 720)
+        );
+
+        stageCartaZoom = new Stage(
+            new com.badlogic.gdx.utils.viewport.FitViewport(1280, 720)
+        );
+
+        stageAnimacao = new Stage(
+            new com.badlogic.gdx.utils.viewport.FitViewport(1280, 720)
+        );
 
         tema = TemaJogo.criar();
         skin = tema.getSkin();
         fonte = tema.getFonteInterface();
         fonteCarta = tema.getFonteCarta();
+
         criarMensagemUI();
-
-        partida = new EstadoPartida();
-        controladorTurno = new ControladorTurno(partida);
-        controladorEncontro = new ControladorEncontro(partida);
-        controladorInteracaoCarta = new ControladorInteracaoCarta(partida);
-
-        telaTabuleiro = new TelaTabuleiro(tabuleiro(), fonteCarta, this);
-
-        // A ordem determina qual camada recebe o clique primeiro.
-        InputMultiplexer multiplexer = new InputMultiplexer();
-        multiplexer.addProcessor(stageCartaZoom);
-        multiplexer.addProcessor(stageUI);
-        multiplexer.addProcessor(stageAnimacao);
-        multiplexer.addProcessor(telaTabuleiro.getStage());
-        Gdx.input.setInputProcessor(multiplexer);
 
         animacaoCarta = new AnimacaoCarta();
 
-        popupManager = new GerenciadorPopups(stageUI, stageCartaZoom, skin);
-        hudController = new ControladorHUD(stageUI, skin);
-
-        fluxoCombate = new FluxoCombate(
+        popupManager = new GerenciadorPopups(
+            stageUI,
             stageCartaZoom,
-            skin,
-            animacaoCarta,
-            popupManager,
-            controladorEncontro
-        );
-
-        fluxoCarta = new FluxoCarta(
-            stageCartaZoom,
-            tabuleiro(),
-            animacaoCarta,
-            popupManager,
             skin
         );
 
-        hudController.criarHUD();
-        atualizarHUDCompleto();
+        hudController = new ControladorHUD(
+            stageUI,
+            skin
+        );
 
-        telaTabuleiro.sincronizar();
-        telaTabuleiro.atualizarDestaques();
+        gerenciadorTelas.trocarTela(
+            new TelaInicial(
+                gerenciadorTelas,
+                new AcaoTela() {
+
+                    @Override
+                    public void executar() {
+                        iniciarNovoJogo();
+                    }
+                }
+            )
+        );
     }
 
     @Override
     public void resize(int width, int height) {
-        telaTabuleiro.resize(width, height);
+
+        gerenciadorTelas.redimensionar(width, height);
+
         stageUI.getViewport().update(width, height, true);
         stageCartaZoom.getViewport().update(width, height, true);
         stageAnimacao.getViewport().update(width, height, true);
@@ -152,19 +156,23 @@ public class BlameCindersGame extends ApplicationAdapter implements InteracaoCar
 
     @Override
     public void render() {
+
         float delta = Gdx.graphics.getDeltaTime();
 
         ScreenUtils.clear(0.1f, 0.1f, 0.1f, 1f);
 
-        telaTabuleiro.act(delta);
-        stageUI.act(delta);
-        stageCartaZoom.act(delta);
-        stageAnimacao.act(delta);
+        gerenciadorTelas.render(delta);
 
-        telaTabuleiro.draw();
-        stageUI.draw();
-        stageCartaZoom.draw();
-        stageAnimacao.draw();
+        if (jogoIniciado) {
+
+            stageUI.act(delta);
+            stageCartaZoom.act(delta);
+            stageAnimacao.act(delta);
+
+            stageUI.draw();
+            stageCartaZoom.draw();
+            stageAnimacao.draw();
+        }
     }
 
     @Override
@@ -224,6 +232,56 @@ public class BlameCindersGame extends ApplicationAdapter implements InteracaoCar
             default:
                 throw new IllegalStateException("Ação de clique desconhecida.");
         }
+    }
+
+    private void iniciarNovoJogo() {
+
+        partida = new EstadoPartida();
+
+        controladorTurno = new ControladorTurno(partida);
+        controladorEncontro = new ControladorEncontro(partida);
+        controladorInteracaoCarta = new ControladorInteracaoCarta(partida);
+
+        telaTabuleiro = new TelaTabuleiro(
+            tabuleiro(),
+            fonteCarta,
+            this
+        );
+
+        InputMultiplexer multiplexer = new InputMultiplexer();
+
+        multiplexer.addProcessor(stageCartaZoom);
+        multiplexer.addProcessor(stageUI);
+        multiplexer.addProcessor(stageAnimacao);
+        multiplexer.addProcessor(telaTabuleiro.getStage());
+
+        Gdx.input.setInputProcessor(multiplexer);
+
+        fluxoCombate = new FluxoCombate(
+            stageCartaZoom,
+            skin,
+            animacaoCarta,
+            popupManager,
+            controladorEncontro
+        );
+
+        fluxoCarta = new FluxoCarta(
+            stageCartaZoom,
+            tabuleiro(),
+            animacaoCarta,
+            popupManager,
+            skin
+        );
+
+        hudController.criarHUD();
+        atualizarHUDCompleto();
+
+        telaTabuleiro.sincronizar();
+        telaTabuleiro.atualizarDestaques();
+
+        gerenciadorTelas.trocarTela(telaTabuleiro);
+
+        jogoIniciado = true;
     }
 
     private void coletarChama(int linha, int coluna) {
@@ -455,30 +513,33 @@ public class BlameCindersGame extends ApplicationAdapter implements InteracaoCar
             return "Carta desconhecida.";
         }
 
-        if (cartaInfo.getTipo() == TipoCarta.INIMIGO) {
-            if (cartaInfo.getInimigo() != null) {
-                return cartaInfo.getInimigo().getNome()
-                    + "\nVida: " + cartaInfo.getInimigo().getVida();
-            }
-            return "Inimigo desconhecido.";
-        } else if (cartaInfo.getTipo() == TipoCarta.BAU) {
-            if (cartaInfo.getArmaDentro() != null) {
-                return "Baú"
-                    + "\nArma: " + cartaInfo.getArmaDentro().getNome()
-                    + "\nDurabilidade: " + cartaInfo.getArmaDentro().getDurabilidade();
-            }
-            if (cartaInfo.getComidaDentro() != null) {
-                return "Baú"
-                    + "\nComida: " + cartaInfo.getComidaDentro().getNome()
-                    + "\nCura: " + cartaInfo.getComidaDentro().getCura();
-            }
-            return "Baú vazio.";
-        } else if (cartaInfo.getTipo() == TipoCarta.CHAMA) {
-            return "Chama"
-                + "\nColete 3 para vencer.";
-        } else if (cartaInfo.getTipo() == TipoCarta.PAREDE) {
-            return "Parede"
-                + "\nNão é possível atravessar.";
+        if (null != cartaInfo.getTipo()) switch (cartaInfo.getTipo()) {
+            case INIMIGO:
+                if (cartaInfo.getInimigo() != null) {
+                    return cartaInfo.getInimigo().getNome()
+                            + "\nVida: " + cartaInfo.getInimigo().getVida();
+                }
+                return "Inimigo desconhecido.";
+            case BAU:
+                if (cartaInfo.getArmaDentro() != null) {
+                    return "Baú"
+                            + "\nArma: " + cartaInfo.getArmaDentro().getNome()
+                            + "\nDurabilidade: " + cartaInfo.getArmaDentro().getDurabilidade();
+                }
+                if (cartaInfo.getComidaDentro() != null) {
+                    return "Baú"
+                            + "\nComida: " + cartaInfo.getComidaDentro().getNome()
+                            + "\nCura: " + cartaInfo.getComidaDentro().getCura();
+                }
+                return "Baú vazio.";
+            case CHAMA:
+                return "Chama"
+                        + "\nColete 3 para vencer.";
+            case PAREDE:
+                return "Parede"
+                        + "\nNão é possível atravessar.";
+            default:
+                break;
         }
         return "Carta vazia.";
     }

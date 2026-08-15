@@ -13,12 +13,13 @@ import com.blamecinders.aplicacao.MovimentoTabuleiro;
 import com.blamecinders.tabuleiro.CartaInfo;
 import com.blamecinders.tabuleiro.Tabuleiro;
 import com.blamecinders.tabuleiro.TipoCarta;
+import com.blamecinders.telas.Tela;
 
 /**
  * Dono da representação Scene2D do tabuleiro.
  * Mantém atores, layout, destaques e animações sincronizados com o grid lógico.
  */
-public final class TelaTabuleiro implements Disposable {
+public final class TelaTabuleiro implements Disposable, Tela {
 
     public static final float LARGURA_MUNDO = 1280f;
     public static final float ALTURA_MUNDO = 720f;
@@ -88,6 +89,32 @@ public final class TelaTabuleiro implements Disposable {
 
     public void draw() {
         stage.draw();
+    }
+
+            @Override
+    public void mostrar() {
+        stage.getRoot().setVisible(true);
+    }
+
+    @Override
+    public void render(float delta) {
+        act(delta);
+        draw();
+    }
+
+    @Override
+    public void redimensionar(int largura, int altura) {
+        resize(largura, altura);
+    }
+
+    @Override
+    public void esconder() {
+        stage.getRoot().setVisible(false);
+    }
+
+    @Override
+    public void destruir() {
+        dispose();
     }
 
     @Override
