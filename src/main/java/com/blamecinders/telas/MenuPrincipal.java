@@ -3,9 +3,11 @@ package com.blamecinders.telas;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
+import com.badlogic.gdx.scenes.scene2d.InputEvent;
 import com.badlogic.gdx.scenes.scene2d.Stage;
 import com.badlogic.gdx.scenes.scene2d.ui.Label;
 import com.badlogic.gdx.scenes.scene2d.ui.Label.LabelStyle;
+import com.badlogic.gdx.scenes.scene2d.utils.ClickListener;
 import com.badlogic.gdx.utils.Align;
 import com.badlogic.gdx.utils.viewport.FitViewport;
 
@@ -53,10 +55,10 @@ public class MenuPrincipal implements Tela {
 
         opcoes = new Label[4];
 
-        opcoes[0] = criarOpcao("NOVO JOGO", 360f);
-        opcoes[1] = criarOpcao("CONTINUAR", 300f);
-        opcoes[2] = criarOpcao("OPÇÕES", 240f);
-        opcoes[3] = criarOpcao("SAIR", 180f);
+        opcoes[0] = criarOpcao("NOVO JOGO", 360f, 0);
+        opcoes[1] = criarOpcao("CONTINUAR", 300f, 1);
+        opcoes[2] = criarOpcao("OPÇÕES", 240f, 2);
+        opcoes[3] = criarOpcao("SAIR", 180f, 3);
 
         for (Label opcao : opcoes) {
             stage.addActor(opcao);
@@ -67,7 +69,7 @@ public class MenuPrincipal implements Tela {
         atualizarSelecao();
     }
 
-    private Label criarOpcao(String texto, float y) {
+    private Label criarOpcao(String texto, float y, int indice) {
 
         LabelStyle estilo = new LabelStyle();
         estilo.font = fonte;
@@ -78,6 +80,32 @@ public class MenuPrincipal implements Tela {
         opcao.setAlignment(Align.center);
         opcao.setSize(LARGURA_MUNDO, 50f);
         opcao.setPosition(0f, y);
+
+        opcao.addListener(new ClickListener() {
+
+            @Override
+            public void enter(
+                InputEvent event,
+                float x,
+                float y,
+                int pointer,
+                com.badlogic.gdx.scenes.scene2d.Actor fromActor
+            ) {
+                opcaoSelecionada = indice;
+                atualizarSelecao();
+            }
+
+            @Override
+            public void clicked(
+                InputEvent event,
+                float x,
+                float y
+            ) {
+                opcaoSelecionada = indice;
+                atualizarSelecao();
+                executarOpcao();
+            }
+        });
 
         return opcao;
     }
