@@ -2,7 +2,9 @@ package com.blamecinders.telas;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
+import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
+import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.scenes.scene2d.InputEvent;
 import com.badlogic.gdx.scenes.scene2d.Stage;
 import com.badlogic.gdx.scenes.scene2d.ui.Label;
@@ -10,6 +12,7 @@ import com.badlogic.gdx.scenes.scene2d.ui.Label.LabelStyle;
 import com.badlogic.gdx.scenes.scene2d.utils.ClickListener;
 import com.badlogic.gdx.utils.Align;
 import com.badlogic.gdx.utils.viewport.FitViewport;
+import com.blamecinders.audio.GerenciadorAudio;
 
 public class MenuPrincipal implements Tela {
 
@@ -21,6 +24,11 @@ public class MenuPrincipal implements Tela {
 
     private final GerenciadorTelas gerenciadorTelas;
     private final AcaoTela acaoNovoJogo;
+    private final GerenciadorAudio gerenciadorAudio;
+
+    private ShapeRenderer fadeRenderer;
+    private float tempoFade = 0f;
+    private static final float DURACAO_FADE = 0.9f;
 
     private Stage stage;
     private BitmapFont fonte;
@@ -29,10 +37,12 @@ public class MenuPrincipal implements Tela {
 
     public MenuPrincipal(
         GerenciadorTelas gerenciadorTelas,
-        AcaoTela acaoNovoJogo
+        AcaoTela acaoNovoJogo,
+        GerenciadorAudio gerenciadorAudio
     ) {
         this.gerenciadorTelas = gerenciadorTelas;
         this.acaoNovoJogo = acaoNovoJogo;
+        this.gerenciadorAudio = gerenciadorAudio;
     }
 
     @Override
@@ -67,6 +77,11 @@ public class MenuPrincipal implements Tela {
         Gdx.input.setInputProcessor(stage);
 
         atualizarSelecao();
+
+        fadeRenderer = new ShapeRenderer();
+
+        gerenciadorAudio.iniciarMusicaMenu();
+
     }
 
     private Label criarOpcao(String texto, float y, int indice) {
@@ -93,6 +108,7 @@ public class MenuPrincipal implements Tela {
             ) {
                 opcaoSelecionada = indice;
                 atualizarSelecao();
+                gerenciadorAudio.tocarTrocaOpcao();
             }
 
             @Override
@@ -103,6 +119,7 @@ public class MenuPrincipal implements Tela {
             ) {
                 opcaoSelecionada = indice;
                 atualizarSelecao();
+                gerenciadorAudio.tocarSelecionarOpcao();
                 executarOpcao();
             }
         });
@@ -116,6 +133,16 @@ public class MenuPrincipal implements Tela {
         stage.act(delta);
         stage.draw();
 
+        if (tempoFade < DURACAO_FADE) {
+
+            tempoFade += delta;
+
+            float progresso =
+                Math.min(tempoFade / DURACAO_FADE, 1f);
+
+            desenharFade(progresso);
+        }
+
         if (Gdx.input.isKeyJustPressed(Input.Keys.DOWN)) {
 
             opcaoSelecionada++;
@@ -125,6 +152,8 @@ public class MenuPrincipal implements Tela {
             }
 
             atualizarSelecao();
+
+            gerenciadorAudio.tocarTrocaOpcao();
         }
 
         if (Gdx.input.isKeyJustPressed(Input.Keys.UP)) {
@@ -136,11 +165,20 @@ public class MenuPrincipal implements Tela {
             }
 
             atualizarSelecao();
+
+            gerenciadorAudio.tocarTrocaOpcao();
         }
 
         if (Gdx.input.isKeyJustPressed(Input.Keys.ENTER)) {
 
             executarOpcao();
+
+            if (Gdx.input.isKeyJustPressed(Input.Keys.ENTER)) {
+
+                gerenciadorAudio.tocarSelecionarOpcao();
+
+                executarOpcao();
+            }
         }
     }
 
@@ -163,6 +201,8 @@ public class MenuPrincipal implements Tela {
     @Override
     public void destruir() {
 
+        gerenciadorAudio.pararMusicaMenu();
+
         if (stage != null) {
             stage.dispose();
             stage = null;
@@ -171,6 +211,11 @@ public class MenuPrincipal implements Tela {
         if (fonte != null) {
             fonte.dispose();
             fonte = null;
+        }
+
+        if (fadeRenderer != null) {
+            fadeRenderer.dispose();
+            fadeRenderer = null;
         }
     }
 
@@ -188,27 +233,52 @@ public class MenuPrincipal implements Tela {
 
     private void executarOpcao() {
 
-    switch (opcaoSelecionada) {
+        switch (opcaoSelecionada) {
 
-        case 0:
-            acaoNovoJogo.executar();
-            break;
+            case 0:
+                acaoNovoJogo.executar();
+                break;
 
-        case 1:
-            // CONTINUAR
-            System.out.println("Continuar");
-            break;
+            case 1:
+                // CONTINUAR
+                System.out.println("Continuar");
+                break;
 
-        case 2:
-            // OPÇÕES
-            System.out.println("Opções");
-            break;
+            case 2:
+                // OPÇÕES
+                System.out.println("Opções");
+                break;
 
-        case 3:
-            // SAIR
-            Gdx.app.exit();
-            break;
+            case 3:
+                // SAIR
+                Gdx.app.exit();
+                break;
+        }
     }
-}
+    
+    private void desenharFade(float progresso) {
+
+        Gdx.gl.glEnable(GL20.GL_BLEND);
+
+        fadeRenderer.begin(ShapeRenderer.ShapeType.Filled);
+
+        fadeRenderer.setColor(
+            0f,
+            0f,
+            0f,
+            1f - progresso
+        );
+
+        fadeRenderer.rect(
+            0f,
+            0f,
+            LARGURA_MUNDO,
+            ALTURA_MUNDO
+        );
+
+        fadeRenderer.end();
+
+        Gdx.gl.glDisable(GL20.GL_BLEND);
+    }
 
 }

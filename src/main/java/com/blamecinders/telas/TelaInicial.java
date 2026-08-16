@@ -2,12 +2,15 @@ package com.blamecinders.telas;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
+import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
+import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.scenes.scene2d.Stage;
 import com.badlogic.gdx.scenes.scene2d.ui.Label;
 import com.badlogic.gdx.scenes.scene2d.ui.Label.LabelStyle;
 import com.badlogic.gdx.utils.Align;
 import com.badlogic.gdx.utils.viewport.FitViewport;
+import com.blamecinders.audio.GerenciadorAudio;
 
 public class TelaInicial implements Tela {
 
@@ -20,12 +23,23 @@ public class TelaInicial implements Tela {
     private Stage stage;
     private BitmapFont fonte;
 
+    private final GerenciadorAudio gerenciadorAudio;
+
+    private ShapeRenderer fadeRenderer;
+
+    private boolean transicionando = false;
+    private float tempoTransicao = 0f;
+
+    private static final float DURACAO_TRANSICAO = 1.83f;
+
     public TelaInicial(
         GerenciadorTelas gerenciadorTelas,
-        AcaoTela acaoNovoJogo
+        AcaoTela acaoNovoJogo,
+        GerenciadorAudio gerenciadorAudio
     ) {
         this.gerenciadorTelas = gerenciadorTelas;
         this.acaoNovoJogo = acaoNovoJogo;
+        this.gerenciadorAudio = gerenciadorAudio;
     }
 
     @Override
@@ -55,6 +69,7 @@ public class TelaInicial implements Tela {
         stage.addActor(titulo);
         stage.addActor(pressionarEnter);
 
+        fadeRenderer = new ShapeRenderer();
 
     }
     
@@ -64,12 +79,33 @@ public class TelaInicial implements Tela {
         stage.act(delta);
         stage.draw();
 
-        if (Gdx.input.isKeyJustPressed(Input.Keys.ENTER)) {
+        if (!transicionando) {
+
+            if (Gdx.input.isKeyJustPressed(Input.Keys.ENTER)) {
+
+                transicionando = true;
+                tempoTransicao = 0f;
+
+                gerenciadorAudio.tocarPressEnter();
+            }
+
+            return;
+        }
+
+        tempoTransicao += delta;
+
+        float progresso =
+            Math.min(tempoTransicao / DURACAO_TRANSICAO, 1f);
+
+        desenharFade(progresso);
+
+        if (tempoTransicao >= DURACAO_TRANSICAO) {
 
             gerenciadorTelas.trocarTela(
                 new MenuPrincipal(
                     gerenciadorTelas,
-                    acaoNovoJogo
+                    acaoNovoJogo,
+                    gerenciadorAudio
                 )
             );
         }
@@ -103,5 +139,30 @@ public class TelaInicial implements Tela {
             fonte.dispose();
             fonte = null;
         }
+    }
+
+    private void desenharFade(float progresso) {
+
+        Gdx.gl.glEnable(GL20.GL_BLEND);
+
+        fadeRenderer.begin(ShapeRenderer.ShapeType.Filled);
+
+        fadeRenderer.setColor(
+            0f,
+            0f,
+            0f,
+            progresso
+        );
+
+        fadeRenderer.rect(
+            0f,
+            0f,
+            LARGURA_MUNDO,
+            ALTURA_MUNDO
+        );
+
+        fadeRenderer.end();
+
+        Gdx.gl.glDisable(GL20.GL_BLEND);
     }
 }

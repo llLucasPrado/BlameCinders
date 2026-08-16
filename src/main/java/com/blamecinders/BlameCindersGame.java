@@ -1,6 +1,5 @@
 package com.blamecinders;
 
-import com.blamecinders.telas.AcaoTela;
 import com.badlogic.gdx.ApplicationAdapter;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.InputMultiplexer;
@@ -21,6 +20,7 @@ import com.blamecinders.aplicacao.MovimentoTabuleiro;
 import com.blamecinders.aplicacao.ResultadoColetaBau;
 import com.blamecinders.aplicacao.ResultadoColetaChama;
 import com.blamecinders.aplicacao.ResultadoEncontroInimigo;
+import com.blamecinders.audio.GerenciadorAudio;
 import com.blamecinders.combate.Jogador;
 import com.blamecinders.fluxo.FluxoCarta;
 import com.blamecinders.fluxo.FluxoCombate;
@@ -71,6 +71,7 @@ public class BlameCindersGame extends ApplicationAdapter implements InteracaoCar
 
     private boolean jogoIniciado = false;
     private GerenciadorTelas gerenciadorTelas;
+    private GerenciadorAudio gerenciadorAudio;
 
     public boolean isFinalizado() {
         return partida != null && partida.isFinalizada();
@@ -117,6 +118,8 @@ public class BlameCindersGame extends ApplicationAdapter implements InteracaoCar
 
         criarMensagemUI();
 
+        gerenciadorAudio = new GerenciadorAudio();
+
         animacaoCarta = new AnimacaoCarta();
 
         popupManager = new GerenciadorPopups(
@@ -139,7 +142,8 @@ public class BlameCindersGame extends ApplicationAdapter implements InteracaoCar
                     public void executar() {
                         iniciarNovoJogo();
                     }
-                }
+                },
+                gerenciadorAudio
             )
         );
     }
@@ -183,6 +187,9 @@ public class BlameCindersGame extends ApplicationAdapter implements InteracaoCar
         stageAnimacao.dispose();
         tema.dispose();
         GerenciadorTexturas.disposeAll();
+        if (gerenciadorAudio != null) {
+            gerenciadorAudio.dispose();
+        }
     }
 
     private void criarMensagemUI() {
