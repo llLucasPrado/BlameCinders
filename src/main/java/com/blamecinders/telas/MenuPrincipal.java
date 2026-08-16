@@ -260,6 +260,8 @@ public class MenuPrincipal implements Tela {
 
         Gdx.gl.glEnable(GL20.GL_BLEND);
 
+        fadeRenderer.setProjectionMatrix(stage.getCamera().combined);
+
         fadeRenderer.begin(ShapeRenderer.ShapeType.Filled);
 
         fadeRenderer.setColor(

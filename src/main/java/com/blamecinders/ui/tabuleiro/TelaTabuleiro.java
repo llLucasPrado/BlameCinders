@@ -33,6 +33,7 @@ public final class TelaTabuleiro implements Disposable, Tela {
     private final CartaVisual[][] cartas;
     private final LayoutTabuleiro layout;
     private final AnimacaoTabuleiro animacao;
+    private boolean destruida = false;
 
     public TelaTabuleiro(
         Tabuleiro tabuleiro,
@@ -119,6 +120,11 @@ public final class TelaTabuleiro implements Disposable, Tela {
 
     @Override
     public void dispose() {
+        if (destruida) {
+            return;
+        }
+
+        destruida = true;
         stage.dispose();
     }
 

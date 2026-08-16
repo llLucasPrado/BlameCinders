@@ -2,6 +2,7 @@ package com.blamecinders;
 
 import com.badlogic.gdx.ApplicationAdapter;
 import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.Input;
 import com.badlogic.gdx.InputMultiplexer;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.scenes.scene2d.Stage;
@@ -29,9 +30,11 @@ import com.blamecinders.tabuleiro.Tabuleiro;
 import com.blamecinders.tabuleiro.TipoCarta;
 import com.blamecinders.telas.AcaoTela;
 import com.blamecinders.telas.GerenciadorTelas;
+import com.blamecinders.telas.MenuPrincipal;
 import com.blamecinders.telas.TelaInicial;
 import com.blamecinders.ui.ControladorHUD;
 import com.blamecinders.ui.GerenciadorPopups;
+import com.blamecinders.ui.PopupPause;
 import com.blamecinders.ui.TemaJogo;
 import com.blamecinders.ui.carta.CartaExibida;
 import com.blamecinders.ui.tabuleiro.CartaVisual;
@@ -83,7 +86,9 @@ public class BlameCindersGame extends ApplicationAdapter implements InteracaoCar
 
     @Override
     public boolean estaBloqueada() {
-        return isFinalizado() || animandoTabuleiro || telaModalAberta;
+        return isFinalizado()
+            || animandoTabuleiro
+            || telaModalAberta;
     }
 
     private Tabuleiro tabuleiro() {
@@ -165,17 +170,33 @@ public class BlameCindersGame extends ApplicationAdapter implements InteracaoCar
 
         ScreenUtils.clear(0.1f, 0.1f, 0.1f, 1f);
 
-        gerenciadorTelas.render(delta);
+        if (telaTabuleiro != null) {
 
-        if (jogoIniciado) {
+            // ESC controla o pause somente durante o jogo
+            if (Gdx.input.isKeyJustPressed(Input.Keys.ESCAPE)) {
+
+                if (telaModalAberta) {
+                    fecharPause();
+                } else {
+                    abrirPause();
+                }
+            }
+
+            telaTabuleiro.act(delta);
 
             stageUI.act(delta);
             stageCartaZoom.act(delta);
             stageAnimacao.act(delta);
 
+            telaTabuleiro.draw();
             stageUI.draw();
             stageCartaZoom.draw();
             stageAnimacao.draw();
+
+        } else {
+
+            // Menus
+            gerenciadorTelas.render(delta);
         }
     }
 
@@ -790,6 +811,79 @@ public class BlameCindersGame extends ApplicationAdapter implements InteracaoCar
             stageCartaZoom.getViewport().getWorldHeight() / 2f - 120f
         );
         return carta;
+    }
+
+
+    private void abrirPause() {
+
+        if (telaModalAberta) {
+            return;
+        }
+
+        telaModalAberta = true;
+
+        popupManager.mostrarPause(
+
+            // CONTINUAR
+            () -> fecharPause(),
+
+            // OPÇÕES
+            () -> {
+                System.out.println("Opções do pause");
+            },
+
+            // VOLTAR AO MENU
+            () -> {
+                voltarAoMenuPrincipal();
+            }
+        );
+    }
+
+    private void fecharPause() {
+
+        if (!telaModalAberta) {
+            return;
+        }
+
+        popupManager.fecharPause(() -> {
+            telaModalAberta = false;
+        });
+    }
+
+    private void voltarAoMenuPrincipal() {
+
+        telaModalAberta = false;
+
+        // Remove o tabuleiro atual
+        if (telaTabuleiro != null) {
+            telaTabuleiro.destruir();
+            telaTabuleiro = null;
+        }
+
+        // Limpa os elementos da partida
+        if (stageUI != null) {
+            stageUI.clear();
+        }
+
+        if (stageCartaZoom != null) {
+            stageCartaZoom.clear();
+        }
+
+        if (stageAnimacao != null) {
+            stageAnimacao.clear();
+        }
+
+        // A partida deixa de estar ativa
+        jogoIniciado = false;
+
+        // Volta para o menu principal
+        gerenciadorTelas.trocarTela(
+            new MenuPrincipal(
+                gerenciadorTelas,
+                this::iniciarNovoJogo,
+                gerenciadorAudio
+            )
+        );
     }
 
 }

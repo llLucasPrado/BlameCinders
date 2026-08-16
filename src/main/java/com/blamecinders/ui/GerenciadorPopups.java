@@ -1,6 +1,8 @@
 package com.blamecinders.ui;
 
+import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.Color;
+import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.math.Interpolation;
 import com.badlogic.gdx.scenes.scene2d.Actor;
 import com.badlogic.gdx.scenes.scene2d.InputEvent;
@@ -14,12 +16,11 @@ import com.badlogic.gdx.scenes.scene2d.ui.Window;
 import com.badlogic.gdx.scenes.scene2d.utils.ClickListener;
 import com.badlogic.gdx.scenes.scene2d.utils.TextureRegionDrawable;
 import com.badlogic.gdx.utils.Align;
+import com.blamecinders.animacao.AnimacaoCarta;
 import com.blamecinders.item.Arma;
 import com.blamecinders.item.Comida;
 import com.blamecinders.item.ItemBau;
 import com.blamecinders.tabuleiro.CartaInfo;
-import com.badlogic.gdx.graphics.g2d.TextureRegion;
-import com.blamecinders.animacao.AnimacaoCarta;
 import com.blamecinders.util.GerenciadorTexturas;
 
 /** Cria e anima os popups e overlays da partida. */
@@ -427,6 +428,184 @@ public class GerenciadorPopups {
                     }
                 })
             )
+        );
+    }
+
+    private void animarFechamentoPause(
+    Actor popup,
+    Actor overlay,
+    Runnable aoFinalizar
+    ) {
+
+        popup.clearActions();
+        overlay.clearActions();
+
+        popup.setOrigin(Align.center);
+
+        popup.addAction(
+            Actions.parallel(
+                Actions.scaleTo(
+                    1f,
+                    0.01f,
+                    0.16f,
+                    Interpolation.fade
+                ),
+                Actions.fadeOut(
+                    0.12f,
+                    Interpolation.fade
+                )
+            )
+        );
+
+        overlay.addAction(
+            Actions.sequence(
+                Actions.fadeOut(
+                    0.12f,
+                    Interpolation.fade
+                ),
+                Actions.run(() -> {
+
+                    popup.remove();
+                    overlay.remove();
+
+                    if (aoFinalizar != null) {
+                        Gdx.app.postRunnable(aoFinalizar);
+                    }
+                })
+            )
+        );
+    }
+
+    public void mostrarPause(
+    Runnable continuar,
+    Runnable opcoes,
+    Runnable voltarMenu
+    ) {
+
+        if (stageUI.getRoot().findActor("popupPause") != null) {
+            return;
+        }
+
+        Image overlay = criarOverlayBloqueador(0.75f);
+        overlay.setName("overlayPause");
+
+        stageUI.addActor(overlay);
+
+        Window popup = new Window("", skin);
+        popup.setName("popupPause");
+
+        Label titulo = new Label("PAUSADO", skin);
+        titulo.setAlignment(Align.center);
+        titulo.setFontScale(2.2f);
+
+        TextButton btnContinuar =
+            new TextButton("Continuar", skin);
+
+        TextButton btnOpcoes =
+            new TextButton("Opções", skin);
+
+        TextButton btnVoltar =
+            new TextButton("Voltar ao menu principal", skin);
+
+        btnContinuar.addListener(new ClickListener() {
+
+            @Override
+            public void clicked(
+                InputEvent event,
+                float x,
+                float y
+            ) {
+
+                animarFechamentoPause(
+                    popup,
+                    overlay,
+                    continuar
+                );
+            }
+        });
+
+        btnOpcoes.addListener(new ClickListener() {
+
+            @Override
+            public void clicked(
+                InputEvent event,
+                float x,
+                float y
+            ) {
+
+                opcoes.run();
+            }
+        });
+
+        btnVoltar.addListener(new ClickListener() {
+
+            @Override
+            public void clicked(
+                InputEvent event,
+                float x,
+                float y
+            ) {
+
+                animarFechamentoPause(
+                    popup,
+                    overlay,
+                    voltarMenu
+                );
+            }
+        });
+
+        popup.add(titulo)
+            .colspan(1)
+            .width(420)
+            .pad(20);
+
+        popup.row();
+
+        popup.add(btnContinuar)
+            .width(220)
+            .pad(8);
+
+        popup.row();
+
+        popup.add(btnOpcoes)
+            .width(220)
+            .pad(8);
+
+        popup.row();
+
+        popup.add(btnVoltar)
+            .width(220)
+            .pad(8);
+
+        popup.pack();
+
+        centralizar(stageUI, popup);
+
+        stageUI.addActor(popup);
+
+        animarAberturaPopup(overlay);
+        animarAberturaPopup(popup);
+
+        overlay.toFront();
+        popup.toFront();
+    }
+
+    public void fecharPause(Runnable aoFinalizar) {
+
+        Actor popup = stageUI.getRoot().findActor("popupPause");
+        Actor overlay = stageUI.getRoot().findActor("overlayPause");
+
+        if (popup == null) {
+            if (aoFinalizar != null) {
+                aoFinalizar.run();
+            }
+            return;
+        }
+
+        animarFechamentoPause(
+            popup,
+            overlay,
+            aoFinalizar
         );
     }
 

@@ -139,11 +139,18 @@ public class TelaInicial implements Tela {
             fonte.dispose();
             fonte = null;
         }
+
+        if (fadeRenderer != null) {
+            fadeRenderer.dispose();
+            fadeRenderer = null;
+        }
     }
 
     private void desenharFade(float progresso) {
 
         Gdx.gl.glEnable(GL20.GL_BLEND);
+
+        fadeRenderer.setProjectionMatrix(stage.getCamera().combined);
 
         fadeRenderer.begin(ShapeRenderer.ShapeType.Filled);
 
