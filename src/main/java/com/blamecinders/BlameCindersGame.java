@@ -34,7 +34,6 @@ import com.blamecinders.telas.MenuPrincipal;
 import com.blamecinders.telas.TelaInicial;
 import com.blamecinders.ui.ControladorHUD;
 import com.blamecinders.ui.GerenciadorPopups;
-import com.blamecinders.ui.PopupPause;
 import com.blamecinders.ui.TemaJogo;
 import com.blamecinders.ui.carta.CartaExibida;
 import com.blamecinders.ui.tabuleiro.CartaVisual;
@@ -71,6 +70,7 @@ public class BlameCindersGame extends ApplicationAdapter implements InteracaoCar
     private ControladorHUD hudController;
     private FluxoCombate fluxoCombate;
     private FluxoCarta fluxoCarta;
+    private InputMultiplexer multiplexer;
 
     private boolean jogoIniciado = false;
     private GerenciadorTelas gerenciadorTelas;
@@ -188,10 +188,23 @@ public class BlameCindersGame extends ApplicationAdapter implements InteracaoCar
             stageCartaZoom.act(delta);
             stageAnimacao.act(delta);
 
-            telaTabuleiro.draw();
-            stageUI.draw();
-            stageCartaZoom.draw();
-            stageAnimacao.draw();
+            if (telaModalAberta) {
+
+                // Durante o pause, o stageUI fica por último
+                // para manter o pause acima de tudo.
+                telaTabuleiro.draw();
+                stageCartaZoom.draw();
+                stageAnimacao.draw();
+                stageUI.draw();
+
+            } else {
+
+                // Ordem normal da partida
+                telaTabuleiro.draw();
+                stageUI.draw();
+                stageCartaZoom.draw();
+                stageAnimacao.draw();
+            }
 
         } else {
 
@@ -276,7 +289,7 @@ public class BlameCindersGame extends ApplicationAdapter implements InteracaoCar
             this
         );
 
-        InputMultiplexer multiplexer = new InputMultiplexer();
+        multiplexer = new InputMultiplexer();
 
         multiplexer.addProcessor(stageCartaZoom);
         multiplexer.addProcessor(stageUI);
@@ -822,6 +835,8 @@ public class BlameCindersGame extends ApplicationAdapter implements InteracaoCar
 
         telaModalAberta = true;
 
+        priorizarPause();
+
         popupManager.mostrarPause(
 
             // CONTINUAR
@@ -847,6 +862,7 @@ public class BlameCindersGame extends ApplicationAdapter implements InteracaoCar
 
         popupManager.fecharPause(() -> {
             telaModalAberta = false;
+            restaurarInputJogo();
         });
     }
 
@@ -884,6 +900,26 @@ public class BlameCindersGame extends ApplicationAdapter implements InteracaoCar
                 gerenciadorAudio
             )
         );
+    }
+
+    private void priorizarPause() {
+
+        multiplexer.clear();
+
+        multiplexer.addProcessor(stageUI);
+        multiplexer.addProcessor(stageCartaZoom);
+        multiplexer.addProcessor(stageAnimacao);
+        multiplexer.addProcessor(telaTabuleiro.getStage());
+    }
+
+    private void restaurarInputJogo() {
+
+        multiplexer.clear();
+
+        multiplexer.addProcessor(stageCartaZoom);
+        multiplexer.addProcessor(stageUI);
+        multiplexer.addProcessor(stageAnimacao);
+        multiplexer.addProcessor(telaTabuleiro.getStage());
     }
 
 }
