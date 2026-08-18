@@ -29,8 +29,8 @@ public final class TemaJogo implements Disposable {
     }
 
     public static TemaJogo criar() {
-        BitmapFont fonteInterface = criarFonte(28);
-        BitmapFont fonteCarta = criarFonte(18);
+        BitmapFont fonteInterface = criarFonte(20);
+        BitmapFont fonteCarta = criarFonte(10);
         return new TemaJogo(criarSkin(fonteInterface), fonteCarta);
     }
 

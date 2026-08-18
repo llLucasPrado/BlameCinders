@@ -505,7 +505,7 @@ public class GerenciadorPopups {
             new TextButton("Opções", skin);
 
         TextButton btnVoltar =
-            new TextButton("Voltar ao menu principal", skin);
+            new TextButton("Menu Principal", skin);
 
         btnContinuar.addListener(new ClickListener() {
 
