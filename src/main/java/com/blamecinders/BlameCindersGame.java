@@ -59,6 +59,8 @@ public class BlameCindersGame extends ApplicationAdapter implements InteracaoCar
 
     private boolean animandoTabuleiro = false;
     private boolean telaModalAberta = false;
+    private boolean pauseAberto = false;
+    private boolean modalAbertaAntesDoPause = false;
 
     private EstadoPartida partida;
     private ControladorTurno controladorTurno;
@@ -174,8 +176,7 @@ public class BlameCindersGame extends ApplicationAdapter implements InteracaoCar
 
             // ESC controla o pause somente durante o jogo
             if (Gdx.input.isKeyJustPressed(Input.Keys.ESCAPE)) {
-
-                if (telaModalAberta) {
+                if (pauseAberto) {
                     fecharPause();
                 } else {
                     abrirPause();
@@ -828,26 +829,18 @@ public class BlameCindersGame extends ApplicationAdapter implements InteracaoCar
 
 
     private void abrirPause() {
-
-        if (telaModalAberta) {
+        if (pauseAberto) {
             return;
         }
-
+        modalAbertaAntesDoPause = telaModalAberta;
         telaModalAberta = true;
-
+        pauseAberto = true;
         priorizarPause();
-
         popupManager.mostrarPause(
-
-            // CONTINUAR
             () -> fecharPause(),
-
-            // OPÇÕES
             () -> {
                 System.out.println("Opções do pause");
             },
-
-            // VOLTAR AO MENU
             () -> {
                 voltarAoMenuPrincipal();
             }
@@ -855,13 +848,12 @@ public class BlameCindersGame extends ApplicationAdapter implements InteracaoCar
     }
 
     private void fecharPause() {
-
-        if (!telaModalAberta) {
+        if (!pauseAberto) {
             return;
         }
-
         popupManager.fecharPause(() -> {
-            telaModalAberta = false;
+            pauseAberto = false;
+            telaModalAberta = modalAbertaAntesDoPause;
             restaurarInputJogo();
         });
     }
