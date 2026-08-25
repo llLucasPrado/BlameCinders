@@ -469,17 +469,17 @@ public class BlameCindersGame extends ApplicationAdapter implements InteracaoCar
         );
     }
 
-    private void concluirRevelacao(
-        int linha,
-        int coluna,
-        CartaVisual cartaOriginal,
-        TipoCarta tipo
-    ) {
+    private void concluirRevelacao(int linha, int coluna, CartaVisual cartaOriginal, TipoCarta tipo) {
         if (tipo == TipoCarta.VAZIO) {
             stageCartaZoom.clear();
             telaModalAberta = false;
             restaurarCartaOriginal(linha, coluna, cartaOriginal);
             mostrarMensagem("Não há nada nesta posição.");
+            return;
+        }
+
+        if (tipo == TipoCarta.INIMIGO) {
+            mostrarOpcoesCartaReveladaAdjacente(linha, coluna, cartaOriginal);
             return;
         }
 
@@ -498,7 +498,6 @@ public class BlameCindersGame extends ApplicationAdapter implements InteracaoCar
                 atualizarDestaqueCartas();
                 mostrarMensagem("Carta revelada. Clique novamente para interagir.");
             };
-
             if (cartaZoomAtual != null) {
                 animacaoCarta.dissolverCartaZoom(cartaZoomAtual, finalizar);
             } else {
