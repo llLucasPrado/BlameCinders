@@ -12,6 +12,7 @@ public class CartaInfo {
     private Inimigo inimigo;
     private ItemBau itemDentro;
     private boolean furtividadeTentada;
+    private boolean bauAberto;
 
     public CartaInfo(TipoCarta tipo) {
         this.tipo = tipo;
@@ -62,7 +63,15 @@ public class CartaInfo {
         return furtividadeTentada;
     }
 
+    public boolean isBauAberto() {
+        return bauAberto;
+    }
+
     public void registrarTentativaFurtividade() {
         this.furtividadeTentada = true;
+    }
+
+    public void registrarAberturaBau() {
+        this.bauAberto = true;
     }
 }

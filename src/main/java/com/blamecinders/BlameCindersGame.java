@@ -478,12 +478,93 @@ public class BlameCindersGame extends ApplicationAdapter implements InteracaoCar
             return;
         }
 
+        CartaInfo cartaInfo = tabuleiro().getCartaInfo(linha, coluna);
+
         if (tipo == TipoCarta.INIMIGO) {
-            mostrarOpcoesCartaReveladaAdjacente(linha, coluna, cartaOriginal);
+            popupManager.mostrarPopupCartaReveladaComAcao(
+                montarTextoInformacoesCarta(cartaInfo),
+                "Combater",
+                () -> abrirCombate(linha, coluna, cartaOriginal),
+                () -> {
+                    CartaExibida cartaZoomAtual = fluxoCarta.getCartaZoomAtual();
+                    Runnable finalizar = () -> {
+                        stageCartaZoom.clear();
+                        telaModalAberta = false;
+                        restaurarCartaOriginal(linha, coluna, cartaOriginal);
+                        sincronizarTabuleiroVisual();
+                        atualizarDestaqueCartas();
+                    };
+                    if (cartaZoomAtual != null) {
+                        animacaoCarta.dissolverCartaZoom(cartaZoomAtual, finalizar);
+                    } else {
+                        finalizar.run();
+                    }
+                }
+            );
             return;
         }
 
-        CartaInfo cartaInfo = tabuleiro().getCartaInfo(linha, coluna);
+        if (tipo == TipoCarta.CHAMA) {
+            popupManager.mostrarPopupCartaReveladaComAcao(
+                montarTextoInformacoesCarta(cartaInfo),
+                "Coletar",
+                () -> {
+                    CartaExibida cartaZoomAtual = fluxoCarta.getCartaZoomAtual();
+                    Runnable coletar = () -> {
+                        stageCartaZoom.clear();
+                        telaModalAberta = false;
+                        recolocarCartaConsumidaComoPlaceholder(linha, coluna, cartaOriginal);
+                        coletarChama(linha, coluna);
+                    };
+                    if (cartaZoomAtual != null) {
+                        animacaoCarta.dissolverCartaZoom(cartaZoomAtual, coletar);
+                    } else {
+                        coletar.run();
+                    }
+                },
+                () -> {
+                    CartaExibida cartaZoomAtual = fluxoCarta.getCartaZoomAtual();
+                    Runnable finalizar = () -> {
+                        stageCartaZoom.clear();
+                        telaModalAberta = false;
+                        restaurarCartaOriginal(linha, coluna, cartaOriginal);
+                        sincronizarTabuleiroVisual();
+                        atualizarDestaqueCartas();
+                    };
+                    if (cartaZoomAtual != null) {
+                        animacaoCarta.dissolverCartaZoom(cartaZoomAtual, finalizar);
+                    } else {
+                        finalizar.run();
+                    }
+                }
+            );
+            return;
+        }
+
+        if (tipo == TipoCarta.BAU) {
+            popupManager.mostrarPopupCartaReveladaComAcao(
+                montarTextoInformacoesCarta(cartaInfo),
+                "Abrir baú",
+                () -> executarFluxoBauJaRevelado(linha, coluna, cartaOriginal, fluxoCarta.getCartaZoomAtual()),
+                () -> {
+                    CartaExibida cartaZoomAtual = fluxoCarta.getCartaZoomAtual();
+                    Runnable finalizar = () -> {
+                        stageCartaZoom.clear();
+                        telaModalAberta = false;
+                        restaurarCartaOriginal(linha, coluna, cartaOriginal);
+                        sincronizarTabuleiroVisual();
+                        atualizarDestaqueCartas();
+                    };
+                    if (cartaZoomAtual != null) {
+                        animacaoCarta.dissolverCartaZoom(cartaZoomAtual, finalizar);
+                    } else {
+                        finalizar.run();
+                    }
+                }
+            );
+            return;
+        }
+
         String informacoes = tipo == TipoCarta.PAREDE
             ? "Parede encontrada.\nNão é possível avançar."
             : montarTextoInformacoesCarta(cartaInfo);
@@ -561,18 +642,24 @@ public class BlameCindersGame extends ApplicationAdapter implements InteracaoCar
                             + "\nVida: " + cartaInfo.getInimigo().getVida();
                 }
                 return "Inimigo desconhecido.";
+                
             case BAU:
+            if (cartaInfo.isBauAberto()) {
                 if (cartaInfo.getArmaDentro() != null) {
-                    return "Baú"
-                            + "\nArma: " + cartaInfo.getArmaDentro().getNome()
-                            + "\nDurabilidade: " + cartaInfo.getArmaDentro().getDurabilidade();
+                    return "Baú já aberto."
+                        + "\nArma: " + cartaInfo.getArmaDentro().getNome()
+                        + "\nDurabilidade: " + cartaInfo.getArmaDentro().getDurabilidade();
                 }
                 if (cartaInfo.getComidaDentro() != null) {
-                    return "Baú"
-                            + "\nComida: " + cartaInfo.getComidaDentro().getNome()
-                            + "\nCura: " + cartaInfo.getComidaDentro().getCura();
+                    return "Baú já aberto."
+                        + "\nComida: " + cartaInfo.getComidaDentro().getNome()
+                        + "\nCura: " + cartaInfo.getComidaDentro().getCura();
                 }
-                return "Baú vazio.";
+                return "Baú já aberto e vazio.";
+            }
+            return "Baú fechado."
+                + "\nAbra para descobrir o que há dentro.";
+
             case CHAMA:
                 return "Chama"
                         + "\nColete 3 para vencer.";
@@ -770,6 +857,8 @@ public class BlameCindersGame extends ApplicationAdapter implements InteracaoCar
             return;
         }
 
+        cartaInfo.registrarAberturaBau(); 
+
         String identificadorItem = cartaInfo.getItemDentro().getIdentificadorVisual();
         animacaoCarta.aplicarFlip(
             cartaZoom,
@@ -810,7 +899,6 @@ public class BlameCindersGame extends ApplicationAdapter implements InteracaoCar
         }, 0.26f);
     }
 
-    /** Reaproveita a carta clicada na camada de zoom, evitando sobreposições. */
     private CartaVisual prepararCartaZoom(CartaVisual carta) {
         carta.remove();
         carta.clearActions();
@@ -825,7 +913,6 @@ public class BlameCindersGame extends ApplicationAdapter implements InteracaoCar
         );
         return carta;
     }
-
 
     private void abrirPause() {
         if (pauseAberto) {
