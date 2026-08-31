@@ -1,9 +1,9 @@
 package com.blamecinders.aplicacao;
 
+import java.util.Objects;
+
 import com.blamecinders.combate.ResultadoCombate;
 import com.blamecinders.combate.ResultadoFurtividade;
-
-import java.util.Objects;
 
 public final class ResultadoEncontroInimigo {
 
@@ -33,15 +33,15 @@ public final class ResultadoEncontroInimigo {
         );
     }
 
-    static ResultadoEncontroInimigo furtividade(ResultadoFurtividade resultado) {
+    static ResultadoEncontroInimigo furtividade(ResultadoFurtividade resultado, int dano) {
         DesfechoInimigo desfecho = resultado.isSucesso()
             ? DesfechoInimigo.FURTIVIDADE_SUCESSO
             : DesfechoInimigo.FURTIVIDADE_FALHOU;
         String mensagem = resultado.isSucesso()
             ? "Furtividade bem-sucedida (" + resultado.getChancePercentual()
-                + "% de chance). Você evitou o combate."
+                + "% de chance). Você sofreu " + dano + " de dano."
             : "Furtividade falhou (" + resultado.getChancePercentual()
-                + "% de chance). Lute ou recue.";
+                + "% de chance). Você sofreu " + dano + " de dano. Lute ou recue.";
         return new ResultadoEncontroInimigo(desfecho, mensagem, null, resultado);
     }
 
@@ -53,6 +53,16 @@ public final class ResultadoEncontroInimigo {
             resultado.getMensagemResultado(),
             resultado,
             null
+        );
+    }
+
+    static ResultadoEncontroInimigo derrotaPorFurtividade(ResultadoFurtividade resultado, int dano) {
+        return new ResultadoEncontroInimigo(
+            DesfechoInimigo.JOGADOR_DERROTADO,
+            "Furtividade falhou (" + resultado.getChancePercentual()
+                + "% de chance). Você sofreu " + dano + " de dano e foi derrotado.",
+            null,
+            resultado
         );
     }
 

@@ -1,8 +1,12 @@
 package com.blamecinders.fluxo;
 
+import java.util.Objects;
+import java.util.function.Consumer;
+
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.scenes.scene2d.InputEvent;
 import com.badlogic.gdx.scenes.scene2d.Stage;
+import com.badlogic.gdx.scenes.scene2d.Touchable;
 import com.badlogic.gdx.scenes.scene2d.ui.Image;
 import com.badlogic.gdx.scenes.scene2d.ui.Label;
 import com.badlogic.gdx.scenes.scene2d.ui.Skin;
@@ -22,10 +26,6 @@ import com.blamecinders.tabuleiro.CartaInfo;
 import com.blamecinders.ui.GerenciadorPopups;
 import com.blamecinders.ui.carta.CartaExibida;
 import com.blamecinders.util.GerenciadorTexturas;
-import com.badlogic.gdx.scenes.scene2d.Touchable;
-
-import java.util.Objects;
-import java.util.function.Consumer;
 
 /** Monta a apresentação do combate e encaminha seu resultado ao jogo. */
 public class FluxoCombate {
@@ -186,12 +186,22 @@ public class FluxoCombate {
                     event.stop();
                     return;
                 }
-
                 ResultadoEncontroInimigo resultado = controladorEncontro.tentarFurtividade(cartaInfo);
                 btnFurtividade.setDisabled(true);
                 btnFurtividade.setTouchable(Touchable.disabled);
 
-                if (resultado.getDesfecho() == DesfechoInimigo.FURTIVIDADE_SUCESSO) {
+                labelVidaJogador.setText(
+                    montarTextoStatusJogadorCombate(
+                        jogadorCombate,
+                        jogadorCombate.getVida(),
+                        jogadorCombate.getArmaEquipada() != null
+                            ? jogadorCombate.getArmaEquipada().getDurabilidade()
+                            : null
+                    )
+                );
+
+                if (resultado.getDesfecho() == DesfechoInimigo.FURTIVIDADE_SUCESSO
+                    || resultado.getDesfecho() == DesfechoInimigo.JOGADOR_DERROTADO) {
                     combateEmAndamento[0] = true;
                     btnLutar.setDisabled(true);
                     btnVoltar.setDisabled(true);

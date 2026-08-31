@@ -1,5 +1,8 @@
 package com.blamecinders.aplicacao;
 
+import java.util.Objects;
+
+import com.blamecinders.combate.Jogador;
 import com.blamecinders.combate.ResultadoCombate;
 import com.blamecinders.combate.ResultadoFurtividade;
 import com.blamecinders.combate.SistemaCombate;
@@ -10,8 +13,6 @@ import com.blamecinders.item.ItemBau;
 import com.blamecinders.tabuleiro.CartaInfo;
 import com.blamecinders.tabuleiro.Tabuleiro;
 import com.blamecinders.tabuleiro.TipoCarta;
-
-import java.util.Objects;
 
 /** Resolve regras de encontros sem conhecer atores, estágios ou animações. */
 public final class ControladorEncontro {
@@ -77,10 +78,19 @@ public final class ControladorEncontro {
         if (carta.isFurtividadeTentada()) {
             throw new IllegalStateException("A furtividade já foi tentada nesta carta.");
         }
-
         carta.registrarTentativaFurtividade();
         ResultadoFurtividade resultado = sistemaFurtividade.tentar(carta.getInimigo());
-        return ResultadoEncontroInimigo.furtividade(resultado);
+
+        int dano = resultado.isSucesso()
+            ? carta.getInimigo().getVida() / 2
+            : carta.getInimigo().getVida();
+        Jogador jogador = partida.getJogador();
+        jogador.setVida(jogador.getVida() - dano);
+
+        if (!jogador.estaVivo()) {
+            return ResultadoEncontroInimigo.derrotaPorFurtividade(resultado, dano);
+        }
+        return ResultadoEncontroInimigo.furtividade(resultado, dano);
     }
 
     public ResultadoEncontroInimigo lutar(CartaInfo carta) {
