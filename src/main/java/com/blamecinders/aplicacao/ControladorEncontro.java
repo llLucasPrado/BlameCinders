@@ -110,6 +110,7 @@ public final class ControladorEncontro {
         Objects.requireNonNull(resultado, "resultado");
         switch (resultado.getDesfecho()) {
             case FURTIVIDADE_SUCESSO:
+            case FURTIVIDADE_FALHOU:
             case COMBATE_VENCIDO:
                 validarDestino(linha, coluna, TipoCarta.INIMIGO);
                 partida.getTabuleiro().consumirCarta(linha, coluna);
@@ -118,7 +119,6 @@ public final class ControladorEncontro {
                 partida.registrarDerrota();
                 break;
             case RECUO:
-            case FURTIVIDADE_FALHOU:
                 break;
             default:
                 throw new IllegalStateException("Desfecho de inimigo desconhecido.");

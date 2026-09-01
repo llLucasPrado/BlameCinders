@@ -190,27 +190,28 @@ public class FluxoCombate {
                 btnFurtividade.setDisabled(true);
                 btnFurtividade.setTouchable(Touchable.disabled);
 
-                labelVidaJogador.setText(
-                    montarTextoStatusJogadorCombate(
-                        jogadorCombate,
-                        jogadorCombate.getVida(),
-                        jogadorCombate.getArmaEquipada() != null
-                            ? jogadorCombate.getArmaEquipada().getDurabilidade()
-                            : null
-                    )
-                );
+                boolean sucesso = resultado.getDesfecho() == DesfechoInimigo.FURTIVIDADE_SUCESSO;
 
-                if (resultado.getDesfecho() == DesfechoInimigo.FURTIVIDADE_SUCESSO
-                    || resultado.getDesfecho() == DesfechoInimigo.JOGADOR_DERROTADO) {
-                    combateEmAndamento[0] = true;
-                    btnLutar.setDisabled(true);
-                    btnVoltar.setDisabled(true);
-                    btnLutar.setTouchable(Touchable.disabled);
-                    btnVoltar.setTouchable(Touchable.disabled);
-                    onResultado.accept(resultado);
-                } else {
-                    onMensagem.accept(resultado.getMensagem());
-                }
+                combateEmAndamento[0] = true;
+                btnLutar.setDisabled(true);
+                btnVoltar.setDisabled(true);
+                btnLutar.setTouchable(Touchable.disabled);
+                btnVoltar.setTouchable(Touchable.disabled);
+
+                animacaoCarta.animarFurtividade(cartaJogador, cartaInimigo, sucesso, () -> {
+                    labelVidaJogador.setText(
+                        montarTextoStatusJogadorCombate(
+                            jogadorCombate,
+                            jogadorCombate.getVida(),
+                            jogadorCombate.getArmaEquipada() != null
+                                ? jogadorCombate.getArmaEquipada().getDurabilidade()
+                                : null
+                        )
+                    );
+                    popupManager.mostrarPopupMensagem(resultado.getMensagem(), () -> {
+                        onResultado.accept(resultado);
+                    });
+                });
             }
         });
 

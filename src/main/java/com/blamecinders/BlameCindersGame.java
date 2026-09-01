@@ -693,9 +693,9 @@ public class BlameCindersGame extends ApplicationAdapter implements InteracaoCar
         ResultadoEncontroInimigo resultado
     ) {
         controladorEncontro.concluirInimigo(linha, coluna, resultado);
-
         switch (resultado.getDesfecho()) {
             case FURTIVIDADE_SUCESSO:
+            case FURTIVIDADE_FALHOU:
             case COMBATE_VENCIDO:
                 stageCartaZoom.clear();
                 telaModalAberta = false;
@@ -719,10 +719,6 @@ public class BlameCindersGame extends ApplicationAdapter implements InteracaoCar
                 restaurarCartaOriginal(linha, coluna, cartaOriginal);
                 sincronizarTabuleiroVisual();
                 atualizarDestaqueCartas();
-                mostrarMensagem(resultado.getMensagem());
-                break;
-
-            case FURTIVIDADE_FALHOU:
                 mostrarMensagem(resultado.getMensagem());
                 break;
 

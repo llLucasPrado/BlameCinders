@@ -41,7 +41,7 @@ public final class ResultadoEncontroInimigo {
             ? "Furtividade bem-sucedida (" + resultado.getChancePercentual()
                 + "% de chance). Você sofreu " + dano + " de dano."
             : "Furtividade falhou (" + resultado.getChancePercentual()
-                + "% de chance). Você sofreu " + dano + " de dano. Lute ou recue.";
+                + "% de chance). Você sofreu " + dano + " de dano.";
         return new ResultadoEncontroInimigo(desfecho, mensagem, null, resultado);
     }
 

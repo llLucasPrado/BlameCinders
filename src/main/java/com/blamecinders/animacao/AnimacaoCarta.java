@@ -1,14 +1,15 @@
 package com.blamecinders.animacao;
 
+import com.badlogic.gdx.graphics.Color;
+import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.math.Interpolation;
+import com.badlogic.gdx.scenes.scene2d.Action;
 import com.badlogic.gdx.scenes.scene2d.Actor;
+import com.badlogic.gdx.scenes.scene2d.Stage;
 import com.badlogic.gdx.scenes.scene2d.actions.Actions;
 import com.badlogic.gdx.scenes.scene2d.ui.Image;
-import com.badlogic.gdx.utils.Align;
-import com.badlogic.gdx.graphics.Color;
-import com.badlogic.gdx.scenes.scene2d.Stage;
 import com.badlogic.gdx.scenes.scene2d.utils.TextureRegionDrawable;
-import com.badlogic.gdx.graphics.g2d.TextureRegion;
+import com.badlogic.gdx.utils.Align;
 import com.badlogic.gdx.utils.Timer;
 import com.blamecinders.util.GerenciadorTexturas;
 
@@ -266,4 +267,68 @@ public class AnimacaoCarta {
             )
         );
     }
+
+    public void animarFurtividade(Actor cartaJogador, Actor cartaInimigo, boolean sucesso, Runnable aoFinalizar) {
+        cartaJogador.clearActions();
+        cartaJogador.setOrigin(Align.center);
+
+        Action faseComum = Actions.parallel(
+            Actions.moveBy(-25f, 0f, 1.8f, Interpolation.fade),
+            Actions.scaleTo(0.9f, 0.9f, 1.8f, Interpolation.fade),
+            Actions.alpha(0.7f, 1.8f, Interpolation.fade)
+        );
+
+        Action faseSucesso = Actions.sequence(
+            Actions.parallel(
+                Actions.moveBy(-35f, 0f, 2.0f, Interpolation.fade),
+                Actions.alpha(1f, 2.0f, Interpolation.fade),
+                Actions.scaleTo(1f, 1f, 2.0f, Interpolation.swingOut)
+            ),
+            Actions.moveBy(60f, 0f, 1.2f, Interpolation.fade)
+        );
+
+        Action faseFalha = Actions.sequence(
+            Actions.parallel(
+                Actions.moveBy(20f, 0f, 1.0f, Interpolation.fade),
+                Actions.scaleTo(1.05f, 1.05f, 1.0f, Interpolation.fade),
+                Actions.alpha(1f, 1.0f, Interpolation.fade)
+            ),
+            Actions.parallel(
+                Actions.moveBy(-20f, 0f, 1.0f, Interpolation.fade),
+                Actions.scaleTo(1f, 1f, 1.0f, Interpolation.fade)
+            ),
+            Actions.moveBy(25f, 0f, 1.2f, Interpolation.fade)
+        );
+
+        if (cartaInimigo != null) {
+            cartaInimigo.clearActions();
+            cartaInimigo.setOrigin(Align.center);
+            cartaInimigo.addAction(
+                Actions.delay(1.8f,
+                    sucesso
+                        ? Actions.sequence(
+                            Actions.moveBy(15f, 0f, 1.0f, Interpolation.fade),
+                            Actions.moveBy(-15f, 0f, 1.0f, Interpolation.fade)
+                        )
+                        : Actions.sequence(
+                            Actions.scaleTo(1.12f, 1.12f, 0.5f, Interpolation.fade),
+                            Actions.scaleTo(1f, 1f, 0.5f, Interpolation.fade)
+                        )
+                )
+            );
+        }
+
+        cartaJogador.addAction(
+            Actions.sequence(
+                faseComum,
+                sucesso ? faseSucesso : faseFalha,
+                Actions.run(() -> {
+                    if (aoFinalizar != null) {
+                        aoFinalizar.run();
+                    }
+                })
+            )
+        );
+    }
+
 }
