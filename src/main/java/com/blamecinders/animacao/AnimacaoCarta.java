@@ -8,6 +8,7 @@ import com.badlogic.gdx.scenes.scene2d.Actor;
 import com.badlogic.gdx.scenes.scene2d.Stage;
 import com.badlogic.gdx.scenes.scene2d.actions.Actions;
 import com.badlogic.gdx.scenes.scene2d.ui.Image;
+import com.badlogic.gdx.scenes.scene2d.ui.Label;
 import com.badlogic.gdx.scenes.scene2d.utils.TextureRegionDrawable;
 import com.badlogic.gdx.utils.Align;
 import com.badlogic.gdx.utils.Timer;
@@ -268,9 +269,35 @@ public class AnimacaoCarta {
         );
     }
 
-    public void animarFurtividade(Actor cartaJogador, Actor cartaInimigo, boolean sucesso, Runnable aoFinalizar) {
+    public void animarFurtividade(
+        Actor cartaJogador,
+        Actor cartaInimigo,
+        Stage stage,
+        Label labelProcesso,
+        boolean sucesso,
+        Runnable aoFinalizar
+    ) {
         cartaJogador.clearActions();
         cartaJogador.setOrigin(Align.center);
+
+        if (labelProcesso != null) {
+            labelProcesso.getColor().a = 0f;
+            labelProcesso.addAction(
+                Actions.sequence(
+                    Actions.fadeIn(0.25f, Interpolation.fade),
+                    Actions.forever(
+                        Actions.sequence(
+                            Actions.run(() -> labelProcesso.setText("Tentando passar com furtividade.")),
+                            Actions.delay(0.4f),
+                            Actions.run(() -> labelProcesso.setText("Tentando passar com furtividade..")),
+                            Actions.delay(0.4f),
+                            Actions.run(() -> labelProcesso.setText("Tentando passar com furtividade...")),
+                            Actions.delay(0.4f)
+                        )
+                    )
+                )
+            );
+        }
 
         Action faseComum = Actions.parallel(
             Actions.moveBy(-25f, 0f, 1.8f, Interpolation.fade),
@@ -280,29 +307,26 @@ public class AnimacaoCarta {
 
         Action faseSucesso = Actions.sequence(
             Actions.parallel(
-                Actions.moveBy(-35f, 0f, 2.0f, Interpolation.fade),
                 Actions.alpha(1f, 2.0f, Interpolation.fade),
                 Actions.scaleTo(1f, 1f, 2.0f, Interpolation.swingOut)
             ),
-            Actions.moveBy(60f, 0f, 1.2f, Interpolation.fade)
+            Actions.fadeOut(1.2f, Interpolation.fade),
+            Actions.run(() -> {
+                if (aoFinalizar != null) {
+                    aoFinalizar.run();
+                }
+            })
         );
 
         Action faseFalha = Actions.sequence(
-            Actions.parallel(
-                Actions.moveBy(20f, 0f, 1.0f, Interpolation.fade),
-                Actions.scaleTo(1.05f, 1.05f, 1.0f, Interpolation.fade),
-                Actions.alpha(1f, 1.0f, Interpolation.fade)
-            ),
-            Actions.parallel(
-                Actions.moveBy(-20f, 0f, 1.0f, Interpolation.fade),
-                Actions.scaleTo(1f, 1f, 1.0f, Interpolation.fade)
-            ),
-            Actions.moveBy(25f, 0f, 1.2f, Interpolation.fade)
+            Actions.delay(1.2f),
+            Actions.run(() -> animarDerrotaInimigo(cartaJogador, stage, aoFinalizar))
         );
 
         if (cartaInimigo != null) {
             cartaInimigo.clearActions();
             cartaInimigo.setOrigin(Align.center);
+            cartaInimigo.getColor().set(Color.WHITE);
             cartaInimigo.addAction(
                 Actions.delay(1.8f,
                     sucesso
@@ -311,8 +335,14 @@ public class AnimacaoCarta {
                             Actions.moveBy(-15f, 0f, 1.0f, Interpolation.fade)
                         )
                         : Actions.sequence(
-                            Actions.scaleTo(1.12f, 1.12f, 0.5f, Interpolation.fade),
-                            Actions.scaleTo(1f, 1f, 0.5f, Interpolation.fade)
+                            Actions.parallel(
+                                Actions.scaleTo(1.12f, 1.12f, 0.4f, Interpolation.sine),
+                                Actions.color(new Color(1f, 0.35f, 0.35f, 1f), 0.4f, Interpolation.sine)
+                            ),
+                            Actions.parallel(
+                                Actions.scaleTo(1f, 1f, 0.4f, Interpolation.sine),
+                                Actions.color(Color.WHITE, 0.4f, Interpolation.sine)
+                            )
                         )
                 )
             );
@@ -321,12 +351,7 @@ public class AnimacaoCarta {
         cartaJogador.addAction(
             Actions.sequence(
                 faseComum,
-                sucesso ? faseSucesso : faseFalha,
-                Actions.run(() -> {
-                    if (aoFinalizar != null) {
-                        aoFinalizar.run();
-                    }
-                })
+                sucesso ? faseSucesso : faseFalha
             )
         );
     }

@@ -198,7 +198,15 @@ public class FluxoCombate {
                 btnLutar.setTouchable(Touchable.disabled);
                 btnVoltar.setTouchable(Touchable.disabled);
 
-                animacaoCarta.animarFurtividade(cartaJogador, cartaInimigo, sucesso, () -> {
+                Label labelProcesso = new Label("", skin);
+                labelProcesso.setPosition(
+                    cartaJogador.getX() + cartaJogador.getWidth() / 2f - labelProcesso.getPrefWidth() / 2f,
+                    cartaJogador.getY() + cartaJogador.getHeight() + 12f
+                );
+                stageCartaZoom.addActor(labelProcesso);
+
+                animacaoCarta.animarFurtividade(cartaJogador, cartaInimigo, stageCartaZoom, labelProcesso, sucesso, () -> {
+                    labelProcesso.remove();
                     labelVidaJogador.setText(
                         montarTextoStatusJogadorCombate(
                             jogadorCombate,
