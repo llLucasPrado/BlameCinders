@@ -11,7 +11,6 @@ import com.blamecinders.persistencia.DadosPartida.InimigoSalvo;
 import com.blamecinders.persistencia.DadosPartida.ItemSalvo;
 import com.blamecinders.persistencia.DadosPartida.TipoItemSalvo;
 import com.blamecinders.tabuleiro.CartaInfo;
-import com.blamecinders.tabuleiro.EstadoCarta;
 import com.blamecinders.tabuleiro.Tabuleiro;
 import com.blamecinders.tabuleiro.TipoCarta;
 
