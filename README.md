@@ -1,12 +1,12 @@
 # Blame Cinders
 
-Protótipo de jogo em Java com libGDX. O projeto atualmente possui a lógica de
-tabuleiro, combate, cartas, animações e interface para desktop.
+Protótipo de jogo de tabuleiro em Java com libGDX. A aplicação possui tela
+inicial, menu, opções de áudio, save local, partida, cartas, combate, baús,
+chamas, animações e interface para desktop.
 
 ## Executar
 
-Requisitos: JDK 17. O Gradle é fornecido pelo wrapper e não precisa ser instalado
-separadamente.
+Requisito: JDK 17. O Gradle é fornecido pelo wrapper.
 
 No Windows:
 
@@ -14,22 +14,31 @@ No Windows:
 .\gradlew.bat run
 ```
 
-Para apenas compilar:
+Para validar o projeto:
 
 ```powershell
-.\gradlew.bat build
+.\gradlew.bat clean test build
 ```
+
+O launcher abre o jogo em tela cheia. Os `FitViewport` mantêm o canvas lógico
+de 1280x720 e preservam a proporção das cartas.
 
 ## Estado atual
 
-O código Java compila com libGDX 1.14.1. As cartas são provisoriamente desenhadas
-em código e identificadas por texto, sem depender de imagens externas. A fonte e
-seu fallback estão documentados em [`assets/README.md`](assets/README.md).
+- o primeiro clique em uma carta adjacente apenas a revela;
+- o segundo clique permite interagir com inimigo, chama, baú ou parede;
+- o herói não atravessa paredes;
+- a esteira move somente o segmento necessário para preencher o espaço vazio;
+- baús podem conter armas ou comida;
+- três chamas encerram a fase;
+- o menu de pause congela tabuleiro, animações e timers da partida;
+- a partida é salva localmente e pode ser retomada por `Continuar`;
+- música e efeitos podem ser ligados ou desligados no menu e no pause;
+- a furtividade sempre troca o herói e o inimigo de posição, sem acionar a
+  esteira; no sucesso não há dano e, na falha, metade do dano vai direto à vida;
+- texturas de cartas são carregadas sob demanda e possuem fallback procedural
+  identificado por texto.
 
-A furtividade possui uma primeira regra funcional e os baús podem gerar armas ou
-comidas. As regras de tabuleiro, combate, cura e furtividade possuem testes em
-`src/test/java`.
-
-O mapeamento e as próximas extrações do controlador principal estão em
-[`docs/ARQUITETURA.md`](docs/ARQUITETURA.md) e
-[`docs/PLANO_DE_REFATORACAO.md`](docs/PLANO_DE_REFATORACAO.md).
+O mapeamento técnico está em [`docs/ARQUITETURA.md`](docs/ARQUITETURA.md), e as
+sugestões de commits ficam em
+[`docs/COMMITS_PENDENTES.md`](docs/COMMITS_PENDENTES.md).

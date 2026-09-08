@@ -14,8 +14,6 @@ public final class DesktopLauncher {
     public static void main(String[] args) {
         Lwjgl3ApplicationConfiguration configuracao = new Lwjgl3ApplicationConfiguration();
         configuracao.setTitle("Blame Cinders");
-        // Usa a resolução nativa do monitor. Os FitViewports do jogo preservam
-        // o canvas lógico de 16:9 sem deformar as cartas.
         configuracao.setFullscreenMode(Lwjgl3ApplicationConfiguration.getDisplayMode());
         configuracao.setHdpiMode(HdpiMode.Pixels);
         configuracao.useVsync(true);

@@ -2,6 +2,7 @@ package com.blamecinders.tabuleiro;
 
 import com.blamecinders.combate.CatalogoInimigos;
 import com.blamecinders.combate.Inimigo;
+import com.blamecinders.configuracao.BalanceamentoJogo;
 import com.blamecinders.item.CatalogoItens;
 import com.blamecinders.item.ItemBau;
 import java.util.Objects;
@@ -16,7 +17,7 @@ public class Tabuleiro {
 
     public static final int LINHAS = 4;
     public static final int COLUNAS = 5;
-    public static final int OBJETIVO_CHAMAS = 3;
+    public static final int OBJETIVO_CHAMAS = BalanceamentoJogo.OBJETIVO_CHAMAS;
 
     private final CartaInfo[][] grid;
     private final Random random;
@@ -36,6 +37,16 @@ public class Tabuleiro {
     }
 
     Tabuleiro(CartaInfo[][] grid, int jogadorLinha, int jogadorColuna, Random random) {
+        this(grid, jogadorLinha, jogadorColuna, 0, random);
+    }
+
+    private Tabuleiro(
+        CartaInfo[][] grid,
+        int jogadorLinha,
+        int jogadorColuna,
+        int chamasColetadas,
+        Random random
+    ) {
         if (grid == null || grid.length != LINHAS) {
             throw new IllegalArgumentException("Grid deve possuir " + LINHAS + " linhas.");
         }
@@ -47,12 +58,31 @@ public class Tabuleiro {
         if (!estaDentro(jogadorLinha, jogadorColuna)) {
             throw new IllegalArgumentException("Posição inicial do jogador fora do tabuleiro.");
         }
+        if (chamasColetadas < 0 || chamasColetadas >= OBJETIVO_CHAMAS) {
+            throw new IllegalArgumentException("Quantidade de chamas inválida.");
+        }
 
         this.grid = grid;
         this.jogadorLinha = jogadorLinha;
         this.jogadorColuna = jogadorColuna;
+        this.chamasColetadas = chamasColetadas;
         this.random = Objects.requireNonNull(random, "random");
         this.grid[jogadorLinha][jogadorColuna] = null;
+    }
+
+    public static Tabuleiro restaurar(
+        CartaInfo[][] grid,
+        int jogadorLinha,
+        int jogadorColuna,
+        int chamasColetadas
+    ) {
+        return new Tabuleiro(
+            grid,
+            jogadorLinha,
+            jogadorColuna,
+            chamasColetadas,
+            new Random()
+        );
     }
 
     private void inicializar() {
@@ -104,15 +134,16 @@ public class Tabuleiro {
 
     private TipoCarta gerarTipoCartaAleatoria() {
 
-        int r = random.nextInt(100);
+        int r = random.nextInt(BalanceamentoJogo.TOTAL_PERCENTUAL);
 
-        if (r >= 10 && r < 30) {
-            if (contarBausNoTabuleiro() < 3) {
-                return TipoCarta.BAU;
-            }
+        if (r < BalanceamentoJogo.CHANCE_BAU_TABULEIRO) {
+            return contarBausNoTabuleiro() < BalanceamentoJogo.LIMITE_BAUS_TABULEIRO
+                ? TipoCarta.BAU
+                : TipoCarta.INIMIGO;
         }
 
-        if (r >= 30 && r < 40) {
+        if (r < BalanceamentoJogo.CHANCE_BAU_TABULEIRO
+            + BalanceamentoJogo.CHANCE_PAREDE_TABULEIRO) {
             return TipoCarta.PAREDE;
         }
 
@@ -169,6 +200,22 @@ public class Tabuleiro {
         if (!podeMover(novaLinha, novaColuna))
             return;
 
+        jogadorLinha = novaLinha;
+        jogadorColuna = novaColuna;
+        grid[jogadorLinha][jogadorColuna] = null;
+    }
+
+    public void trocarJogadorComCarta(int novaLinha, int novaColuna) {
+        if (!podeMover(novaLinha, novaColuna)) {
+            throw new IllegalArgumentException("A troca exige uma carta adjacente acessível.");
+        }
+
+        CartaInfo cartaDestino = grid[novaLinha][novaColuna];
+        if (cartaDestino == null) {
+            throw new IllegalArgumentException("Não há carta para trocar de posição com o jogador.");
+        }
+
+        grid[jogadorLinha][jogadorColuna] = cartaDestino;
         jogadorLinha = novaLinha;
         jogadorColuna = novaColuna;
         grid[jogadorLinha][jogadorColuna] = null;

@@ -1,5 +1,7 @@
 package com.blamecinders.combate;
 
+import com.blamecinders.configuracao.BalanceamentoJogo;
+
 import java.util.Objects;
 
 public class Inimigo {
@@ -10,14 +12,25 @@ public class Inimigo {
     private int vida;
 
     public Inimigo(String nome, int vida, String identificadorVisual) {
-        this(nome, vida, identificadorVisual, Math.min(40, 10 + vida));
+        this(
+            nome,
+            vida,
+            identificadorVisual,
+            Math.min(
+                BalanceamentoJogo.DIFICULDADE_PADRAO_MAXIMA,
+                BalanceamentoJogo.DIFICULDADE_BASE_FURTIVIDADE + vida
+            )
+        );
     }
 
     public Inimigo(String nome, int vida, String identificadorVisual, int dificuldadeFurtividade) {
         this.nome = Objects.requireNonNull(nome, "nome");
         this.identificadorVisual = Objects.requireNonNull(identificadorVisual, "identificadorVisual");
         this.vida = Math.max(0, vida);
-        this.dificuldadeFurtividade = Math.max(0, Math.min(60, dificuldadeFurtividade));
+        this.dificuldadeFurtividade = Math.max(
+            0,
+            Math.min(BalanceamentoJogo.DIFICULDADE_ABSOLUTA_MAXIMA, dificuldadeFurtividade)
+        );
     }
 
     public String getNome() {

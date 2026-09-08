@@ -31,7 +31,6 @@ public class CartaExibida extends Group {
         rotulo.setAlignment(Align.center);
         rotulo.setWrap(true);
         rotulo.setTouchable(Touchable.disabled);
-        rotulo.setVisible(false);
 
         addActor(imagem);
         addActor(rotulo);
@@ -74,5 +73,9 @@ public class CartaExibida extends Group {
 
     public String getTexto() {
         return rotulo.getText().toString();
+    }
+
+    public void setRotuloVisivel(boolean visivel) {
+        rotulo.setVisible(visivel);
     }
 }

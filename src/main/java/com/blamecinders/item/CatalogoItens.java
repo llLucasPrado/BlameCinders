@@ -1,5 +1,7 @@
 package com.blamecinders.item;
 
+import com.blamecinders.configuracao.BalanceamentoJogo;
+
 import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
@@ -17,7 +19,8 @@ public final class CatalogoItens {
 
     public static ItemBau gerarItemAleatorio(Random random) {
         // Distribuição inicial para balanceamento: 55% arma, 45% comida.
-        if (random.nextInt(100) < 55) {
+        if (random.nextInt(BalanceamentoJogo.TOTAL_PERCENTUAL)
+            < BalanceamentoJogo.CHANCE_ARMA_NO_BAU) {
             Arma arma = CatalogoArmas.gerarArmaAleatoria(random);
             return arma;
         }

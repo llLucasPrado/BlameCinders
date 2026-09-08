@@ -8,7 +8,6 @@ import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.scenes.scene2d.Stage;
 import com.badlogic.gdx.scenes.scene2d.ui.Label;
 import com.badlogic.gdx.scenes.scene2d.ui.Skin;
-import com.badlogic.gdx.utils.Align;
 import com.badlogic.gdx.utils.ScreenUtils;
 import com.badlogic.gdx.utils.Timer;
 import com.blamecinders.animacao.AnimacaoCarta;
@@ -16,6 +15,7 @@ import com.blamecinders.aplicacao.AcaoCliqueCarta;
 import com.blamecinders.aplicacao.ControladorEncontro;
 import com.blamecinders.aplicacao.ControladorInteracaoCarta;
 import com.blamecinders.aplicacao.ControladorTurno;
+import com.blamecinders.aplicacao.DesfechoInimigo;
 import com.blamecinders.aplicacao.EstadoPartida;
 import com.blamecinders.aplicacao.MovimentoTabuleiro;
 import com.blamecinders.aplicacao.ResultadoColetaBau;
@@ -23,19 +23,19 @@ import com.blamecinders.aplicacao.ResultadoColetaChama;
 import com.blamecinders.aplicacao.ResultadoEncontroInimigo;
 import com.blamecinders.audio.GerenciadorAudio;
 import com.blamecinders.combate.Jogador;
+import com.blamecinders.configuracao.BalanceamentoJogo;
 import com.blamecinders.fluxo.FluxoCarta;
 import com.blamecinders.fluxo.FluxoCombate;
-import com.blamecinders.tabuleiro.CartaInfo;
+import com.blamecinders.fluxo.FluxoInteracaoCarta;
+import com.blamecinders.persistencia.RepositorioPartida;
 import com.blamecinders.tabuleiro.Tabuleiro;
-import com.blamecinders.tabuleiro.TipoCarta;
-import com.blamecinders.telas.AcaoTela;
 import com.blamecinders.telas.GerenciadorTelas;
 import com.blamecinders.telas.MenuPrincipal;
 import com.blamecinders.telas.TelaInicial;
+import com.blamecinders.telas.TelaOpcoes;
 import com.blamecinders.ui.ControladorHUD;
 import com.blamecinders.ui.GerenciadorPopups;
 import com.blamecinders.ui.TemaJogo;
-import com.blamecinders.ui.carta.CartaExibida;
 import com.blamecinders.ui.tabuleiro.CartaVisual;
 import com.blamecinders.ui.tabuleiro.InteracaoCartaVisual;
 import com.blamecinders.ui.tabuleiro.TelaTabuleiro;
@@ -50,7 +50,6 @@ public class BlameCindersGame extends ApplicationAdapter implements InteracaoCar
     private Stage stageUI;
     private Stage stageAnimacao;
 
-    private BitmapFont fonte;
     private BitmapFont fonteCarta;
     private Label labelMensagem;
     private Skin skin;
@@ -72,11 +71,12 @@ public class BlameCindersGame extends ApplicationAdapter implements InteracaoCar
     private ControladorHUD hudController;
     private FluxoCombate fluxoCombate;
     private FluxoCarta fluxoCarta;
+    private FluxoInteracaoCarta fluxoInteracaoCarta;
     private InputMultiplexer multiplexer;
 
-    private boolean jogoIniciado = false;
     private GerenciadorTelas gerenciadorTelas;
     private GerenciadorAudio gerenciadorAudio;
+    private RepositorioPartida repositorioPartida;
 
     public boolean isFinalizado() {
         return partida != null && partida.isFinalizada();
@@ -120,19 +120,18 @@ public class BlameCindersGame extends ApplicationAdapter implements InteracaoCar
 
         tema = TemaJogo.criar();
         skin = tema.getSkin();
-        fonte = tema.getFonteInterface();
         fonteCarta = tema.getFonteCarta();
 
-        criarMensagemUI();
-
         gerenciadorAudio = new GerenciadorAudio();
+        repositorioPartida = new RepositorioPartida();
 
         animacaoCarta = new AnimacaoCarta();
 
         popupManager = new GerenciadorPopups(
             stageUI,
             stageCartaZoom,
-            skin
+            skin,
+            gerenciadorAudio
         );
 
         hudController = new ControladorHUD(
@@ -143,14 +142,12 @@ public class BlameCindersGame extends ApplicationAdapter implements InteracaoCar
         gerenciadorTelas.trocarTela(
             new TelaInicial(
                 gerenciadorTelas,
-                new AcaoTela() {
-
-                    @Override
-                    public void executar() {
-                        iniciarNovoJogo();
-                    }
-                },
-                gerenciadorAudio
+                this::iniciarNovoJogo,
+                this::continuarPartida,
+                this::abrirOpcoes,
+                repositorioPartida::existe,
+                gerenciadorAudio,
+                skin
             )
         );
     }
@@ -159,6 +156,10 @@ public class BlameCindersGame extends ApplicationAdapter implements InteracaoCar
     public void resize(int width, int height) {
 
         gerenciadorTelas.redimensionar(width, height);
+
+        if (telaTabuleiro != null) {
+            telaTabuleiro.resize(width, height);
+        }
 
         stageUI.getViewport().update(width, height, true);
         stageCartaZoom.getViewport().update(width, height, true);
@@ -173,8 +174,6 @@ public class BlameCindersGame extends ApplicationAdapter implements InteracaoCar
         ScreenUtils.clear(0.1f, 0.1f, 0.1f, 1f);
 
         if (telaTabuleiro != null) {
-
-            // ESC controla o pause somente durante o jogo
             if (Gdx.input.isKeyJustPressed(Input.Keys.ESCAPE)) {
                 if (pauseAberto) {
                     fecharPause();
@@ -183,16 +182,17 @@ public class BlameCindersGame extends ApplicationAdapter implements InteracaoCar
                 }
             }
 
-            telaTabuleiro.act(delta);
-
-            stageUI.act(delta);
-            stageCartaZoom.act(delta);
-            stageAnimacao.act(delta);
+            if (pauseAberto) {
+                stageUI.act(delta);
+            } else {
+                telaTabuleiro.act(delta);
+                stageUI.act(delta);
+                stageCartaZoom.act(delta);
+                stageAnimacao.act(delta);
+            }
 
             if (telaModalAberta) {
 
-                // Durante o pause, o stageUI fica por último
-                // para manter o pause acima de tudo.
                 telaTabuleiro.draw();
                 stageCartaZoom.draw();
                 stageAnimacao.draw();
@@ -200,7 +200,6 @@ public class BlameCindersGame extends ApplicationAdapter implements InteracaoCar
 
             } else {
 
-                // Ordem normal da partida
                 telaTabuleiro.draw();
                 stageUI.draw();
                 stageCartaZoom.draw();
@@ -209,18 +208,26 @@ public class BlameCindersGame extends ApplicationAdapter implements InteracaoCar
 
         } else {
 
-            // Menus
             gerenciadorTelas.render(delta);
         }
     }
 
     @Override
     public void dispose() {
-        telaTabuleiro.dispose();
-        stageUI.dispose();
-        stageCartaZoom.dispose();
-        stageAnimacao.dispose();
-        tema.dispose();
+        salvarPartidaAtual();
+        cancelarLimpezaMensagem();
+        Timer.instance().clear();
+        if (gerenciadorTelas != null) {
+            gerenciadorTelas.encerrarTelaAtual();
+        }
+        if (telaTabuleiro != null) {
+            telaTabuleiro.dispose();
+            telaTabuleiro = null;
+        }
+        if (stageUI != null) stageUI.dispose();
+        if (stageCartaZoom != null) stageCartaZoom.dispose();
+        if (stageAnimacao != null) stageAnimacao.dispose();
+        if (tema != null) tema.dispose();
         GerenciadorTexturas.disposeAll();
         if (gerenciadorAudio != null) {
             gerenciadorAudio.dispose();
@@ -245,7 +252,7 @@ public class BlameCindersGame extends ApplicationAdapter implements InteracaoCar
             case INTERAGIR:
                 telaModalAberta = true;
                 popupManager.mostrarConfirmacaoVisualizarCarta(
-                    () -> mostrarOpcoesCartaReveladaAdjacente(linha, coluna, cartaOriginal),
+                    () -> fluxoInteracaoCarta.mostrarOpcoes(linha, coluna, cartaOriginal),
                     () -> telaModalAberta = false
                 );
                 break;
@@ -253,7 +260,7 @@ public class BlameCindersGame extends ApplicationAdapter implements InteracaoCar
             case VISUALIZAR:
                 telaModalAberta = true;
                 popupManager.mostrarConfirmacaoVisualizarCarta(
-                    () -> visualizarInformacoesCarta(linha, coluna),
+                    () -> fluxoInteracaoCarta.visualizar(linha, coluna),
                     () -> telaModalAberta = false
                 );
                 break;
@@ -266,7 +273,7 @@ public class BlameCindersGame extends ApplicationAdapter implements InteracaoCar
             case REVELAR:
                 telaModalAberta = true;
                 popupManager.mostrarConfirmacaoCarta(
-                    () -> executarFluxoCarta(linha, coluna, cartaOriginal),
+                    () -> fluxoInteracaoCarta.revelar(linha, coluna, cartaOriginal),
                     () -> telaModalAberta = false
                 );
                 break;
@@ -277,8 +284,25 @@ public class BlameCindersGame extends ApplicationAdapter implements InteracaoCar
     }
 
     private void iniciarNovoJogo() {
+        repositorioPartida.remover();
+        prepararPartida(new EstadoPartida());
+    }
 
-        partida = new EstadoPartida();
+    private void continuarPartida() {
+        EstadoPartida partidaSalva = repositorioPartida.carregar();
+        if (partidaSalva != null) prepararPartida(partidaSalva);
+    }
+
+    private void prepararPartida(EstadoPartida partidaInicial) {
+        gerenciadorTelas.encerrarTelaAtual();
+        limparCamadasPartida();
+        criarMensagemUI();
+        pauseAberto = false;
+        modalAbertaAntesDoPause = false;
+        telaModalAberta = false;
+        animandoTabuleiro = false;
+
+        partida = partidaInicial;
 
         controladorTurno = new ControladorTurno(partida);
         controladorEncontro = new ControladorEncontro(partida);
@@ -311,8 +335,23 @@ public class BlameCindersGame extends ApplicationAdapter implements InteracaoCar
             stageCartaZoom,
             tabuleiro(),
             animacaoCarta,
+            popupManager
+        );
+
+        fluxoInteracaoCarta = new FluxoInteracaoCarta(
+            stageCartaZoom,
+            tabuleiro(),
+            jogador(),
+            telaTabuleiro,
+            animacaoCarta,
             popupManager,
-            skin
+            fluxoCarta,
+            this::abrirCombate,
+            (linha, coluna, carta) -> coletarChama(linha, coluna),
+            (linha, coluna, carta) -> coletarBau(linha, coluna),
+            this::mostrarMensagem,
+            () -> telaModalAberta = false,
+            this::salvarPartidaAtual
         );
 
         hudController.criarHUD();
@@ -320,10 +359,7 @@ public class BlameCindersGame extends ApplicationAdapter implements InteracaoCar
 
         telaTabuleiro.sincronizar();
         telaTabuleiro.atualizarDestaques();
-
-        gerenciadorTelas.trocarTela(telaTabuleiro);
-
-        jogoIniciado = true;
+        salvarPartidaAtual();
     }
 
     private void coletarChama(int linha, int coluna) {
@@ -332,7 +368,10 @@ public class BlameCindersGame extends ApplicationAdapter implements InteracaoCar
         atualizarHUDCompleto();
         moverJogadorPara(linha, coluna, () -> {
             if (resultado.isObjetivoConcluido()) {
-                mostrarMensagemFinal("Você venceu! 3/3 chamas coletadas.");
+                int objetivo = BalanceamentoJogo.OBJETIVO_CHAMAS;
+                mostrarMensagemFinal(
+                    "Você venceu! " + objetivo + "/" + objetivo + " chamas coletadas."
+                );
             }
         });
     }
@@ -416,6 +455,8 @@ public class BlameCindersGame extends ApplicationAdapter implements InteracaoCar
             () -> {
                 controladorTurno.concluirMovimento(movimento);
                 telaTabuleiro.remapearAposEsteira(movimento);
+                animandoTabuleiro = false;
+                salvarPartidaAtual();
 
                 sincronizarTabuleiroVisual();
 
@@ -427,7 +468,6 @@ public class BlameCindersGame extends ApplicationAdapter implements InteracaoCar
                     }
                 }, 0.12f);
 
-                animandoTabuleiro = false;
                 if (aoFinalizar != null) {
                     aoFinalizar.run();
                 }
@@ -460,218 +500,6 @@ public class BlameCindersGame extends ApplicationAdapter implements InteracaoCar
         return telaModalAberta;
     }
 
-    private void executarFluxoCarta(int linha, int coluna, CartaVisual cartaOriginal) {
-        fluxoCarta.revelarCarta(
-            linha,
-            coluna,
-            cartaOriginal,
-            tipo -> concluirRevelacao(linha, coluna, cartaOriginal, tipo)
-        );
-    }
-
-    private void concluirRevelacao(int linha, int coluna, CartaVisual cartaOriginal, TipoCarta tipo) {
-        if (tipo == TipoCarta.VAZIO) {
-            stageCartaZoom.clear();
-            telaModalAberta = false;
-            restaurarCartaOriginal(linha, coluna, cartaOriginal);
-            mostrarMensagem("Não há nada nesta posição.");
-            return;
-        }
-
-        CartaInfo cartaInfo = tabuleiro().getCartaInfo(linha, coluna);
-
-        if (tipo == TipoCarta.INIMIGO) {
-            popupManager.mostrarPopupCartaReveladaComAcao(
-                montarTextoInformacoesCarta(cartaInfo),
-                "Combater",
-                () -> abrirCombate(linha, coluna, cartaOriginal),
-                () -> {
-                    CartaExibida cartaZoomAtual = fluxoCarta.getCartaZoomAtual();
-                    Runnable finalizar = () -> {
-                        stageCartaZoom.clear();
-                        telaModalAberta = false;
-                        restaurarCartaOriginal(linha, coluna, cartaOriginal);
-                        sincronizarTabuleiroVisual();
-                        atualizarDestaqueCartas();
-                    };
-                    if (cartaZoomAtual != null) {
-                        animacaoCarta.dissolverCartaZoom(cartaZoomAtual, finalizar);
-                    } else {
-                        finalizar.run();
-                    }
-                }
-            );
-            return;
-        }
-
-        if (tipo == TipoCarta.CHAMA) {
-            popupManager.mostrarPopupCartaReveladaComAcao(
-                montarTextoInformacoesCarta(cartaInfo),
-                "Coletar",
-                () -> {
-                    CartaExibida cartaZoomAtual = fluxoCarta.getCartaZoomAtual();
-                    Runnable coletar = () -> {
-                        stageCartaZoom.clear();
-                        telaModalAberta = false;
-                        recolocarCartaConsumidaComoPlaceholder(linha, coluna, cartaOriginal);
-                        coletarChama(linha, coluna);
-                    };
-                    if (cartaZoomAtual != null) {
-                        animacaoCarta.dissolverCartaZoom(cartaZoomAtual, coletar);
-                    } else {
-                        coletar.run();
-                    }
-                },
-                () -> {
-                    CartaExibida cartaZoomAtual = fluxoCarta.getCartaZoomAtual();
-                    Runnable finalizar = () -> {
-                        stageCartaZoom.clear();
-                        telaModalAberta = false;
-                        restaurarCartaOriginal(linha, coluna, cartaOriginal);
-                        sincronizarTabuleiroVisual();
-                        atualizarDestaqueCartas();
-                    };
-                    if (cartaZoomAtual != null) {
-                        animacaoCarta.dissolverCartaZoom(cartaZoomAtual, finalizar);
-                    } else {
-                        finalizar.run();
-                    }
-                }
-            );
-            return;
-        }
-
-        if (tipo == TipoCarta.BAU) {
-            popupManager.mostrarPopupCartaReveladaComAcao(
-                montarTextoInformacoesCarta(cartaInfo),
-                "Abrir baú",
-                () -> executarFluxoBauJaRevelado(linha, coluna, cartaOriginal, fluxoCarta.getCartaZoomAtual()),
-                () -> {
-                    CartaExibida cartaZoomAtual = fluxoCarta.getCartaZoomAtual();
-                    Runnable finalizar = () -> {
-                        stageCartaZoom.clear();
-                        telaModalAberta = false;
-                        restaurarCartaOriginal(linha, coluna, cartaOriginal);
-                        sincronizarTabuleiroVisual();
-                        atualizarDestaqueCartas();
-                    };
-                    if (cartaZoomAtual != null) {
-                        animacaoCarta.dissolverCartaZoom(cartaZoomAtual, finalizar);
-                    } else {
-                        finalizar.run();
-                    }
-                }
-            );
-            return;
-        }
-
-        String informacoes = tipo == TipoCarta.PAREDE
-            ? "Parede encontrada.\nNão é possível avançar."
-            : montarTextoInformacoesCarta(cartaInfo);
-
-        popupManager.mostrarPopupMensagem(informacoes, () -> {
-            CartaExibida cartaZoomAtual = fluxoCarta.getCartaZoomAtual();
-            Runnable finalizar = () -> {
-                stageCartaZoom.clear();
-                telaModalAberta = false;
-                restaurarCartaOriginal(linha, coluna, cartaOriginal);
-                sincronizarTabuleiroVisual();
-                atualizarDestaqueCartas();
-                mostrarMensagem("Carta revelada. Clique novamente para interagir.");
-            };
-            if (cartaZoomAtual != null) {
-                animacaoCarta.dissolverCartaZoom(cartaZoomAtual, finalizar);
-            } else {
-                finalizar.run();
-            }
-        });
-    }
-
-    private void visualizarInformacoesCarta(int linha, int coluna) {
-        CartaInfo cartaInfo = tabuleiro().getCartaInfo(linha, coluna);
-
-        if (cartaInfo == null) {
-            telaModalAberta = false;
-            mostrarMensagem("Não há carta nesta posição.");
-            return;
-        }
-
-        CartaVisual cartaOriginal = telaTabuleiro.getCarta(linha, coluna);
-
-        if (cartaOriginal == null) {
-            telaModalAberta = false;
-            return;
-        }
-
-        String textura = telaTabuleiro.getIdentificador(linha, coluna);
-
-        CartaVisual cartaZoom = prepararCartaZoom(cartaOriginal);
-
-        stageCartaZoom.clear();
-        stageCartaZoom.addActor(popupManager.criarOverlayBloqueador(0.65f));
-        stageCartaZoom.addActor(cartaZoom);
-
-        animacaoCarta.aplicarFlip(
-            cartaZoom,
-            () -> cartaZoom.setConteudo(GerenciadorTexturas.get(textura), textura)
-        );
-
-        animacaoCarta.aplicarIdleFlutuacao(cartaZoom);
-
-        popupManager.mostrarPopupMensagem(
-            montarTextoInformacoesCarta(cartaInfo),
-            () -> animacaoCarta.dissolverCartaZoom(cartaZoom, () -> {
-                stageCartaZoom.clear();
-                telaModalAberta = false;
-                restaurarCartaOriginal(linha, coluna, cartaOriginal);
-                sincronizarTabuleiroVisual();
-                atualizarDestaqueCartas();
-            })
-        );
-    }
-
-    private String montarTextoInformacoesCarta(CartaInfo cartaInfo) {
-        if (cartaInfo == null) {
-            return "Carta desconhecida.";
-        }
-
-        if (null != cartaInfo.getTipo()) switch (cartaInfo.getTipo()) {
-            case INIMIGO:
-                if (cartaInfo.getInimigo() != null) {
-                    return cartaInfo.getInimigo().getNome()
-                            + "\nVida: " + cartaInfo.getInimigo().getVida();
-                }
-                return "Inimigo desconhecido.";
-                
-            case BAU:
-            if (cartaInfo.isBauAberto()) {
-                if (cartaInfo.getArmaDentro() != null) {
-                    return "Baú já aberto."
-                        + "\nArma: " + cartaInfo.getArmaDentro().getNome()
-                        + "\nDurabilidade: " + cartaInfo.getArmaDentro().getDurabilidade();
-                }
-                if (cartaInfo.getComidaDentro() != null) {
-                    return "Baú já aberto."
-                        + "\nComida: " + cartaInfo.getComidaDentro().getNome()
-                        + "\nCura: " + cartaInfo.getComidaDentro().getCura();
-                }
-                return "Baú já aberto e vazio.";
-            }
-            return "Baú fechado."
-                + "\nAbra para descobrir o que há dentro.";
-
-            case CHAMA:
-                return "Chama"
-                        + "\nColete 3 para vencer.";
-            case PAREDE:
-                return "Parede"
-                        + "\nNão é possível atravessar.";
-            default:
-                break;
-        }
-        return "Carta vazia.";
-    }
-
     private void abrirCombate(int linha, int coluna, CartaVisual cartaOriginal) {
         fluxoCombate.mostrarTelaCombate(
             tabuleiro().getCartaInfo(linha, coluna),
@@ -692,10 +520,13 @@ public class BlameCindersGame extends ApplicationAdapter implements InteracaoCar
         CartaVisual cartaOriginal,
         ResultadoEncontroInimigo resultado
     ) {
+        if (resultado.isFurtividade()) {
+            finalizarFurtividade(linha, coluna, cartaOriginal, resultado);
+            return;
+        }
+
         controladorEncontro.concluirInimigo(linha, coluna, resultado);
         switch (resultado.getDesfecho()) {
-            case FURTIVIDADE_SUCESSO:
-            case FURTIVIDADE_FALHOU:
             case COMBATE_VENCIDO:
                 stageCartaZoom.clear();
                 telaModalAberta = false;
@@ -710,6 +541,7 @@ public class BlameCindersGame extends ApplicationAdapter implements InteracaoCar
                 telaModalAberta = false;
                 restaurarCartaOriginal(linha, coluna, cartaOriginal);
                 mostrarMensagem(resultado.getMensagem());
+                salvarPartidaAtual();
                 popupManager.mostrarGameOver();
                 break;
 
@@ -727,187 +559,38 @@ public class BlameCindersGame extends ApplicationAdapter implements InteracaoCar
         }
     }
 
-    private void mostrarOpcoesCartaReveladaAdjacente(int linha, int coluna, CartaVisual cartaOriginal) {
-        CartaInfo cartaInfo = tabuleiro().getCartaInfo(linha, coluna);
-
-        if (cartaInfo == null) {
-            telaModalAberta = false;
-            mostrarMensagem("Não há carta nesta posição.");
-            return;
-        }
-
-        if (cartaOriginal == null) {
-            telaModalAberta = false;
-            return;
-        }
-
-        String textura = telaTabuleiro.getIdentificador(linha, coluna);
-
-        CartaVisual cartaZoom = prepararCartaZoom(cartaOriginal);
-
+    private void finalizarFurtividade(
+        int linha,
+        int coluna,
+        CartaVisual cartaOriginal,
+        ResultadoEncontroInimigo resultado
+    ) {
         stageCartaZoom.clear();
-        stageCartaZoom.addActor(popupManager.criarOverlayBloqueador(0.65f));
-        stageCartaZoom.addActor(cartaZoom);
+        telaModalAberta = false;
+        restaurarCartaOriginal(linha, coluna, cartaOriginal);
 
-        animacaoCarta.aplicarFlip(
-            cartaZoom,
-            () -> cartaZoom.setConteudo(GerenciadorTexturas.get(textura), textura)
-        );
-
-        animacaoCarta.aplicarIdleFlutuacao(cartaZoom);
-
-        switch (cartaInfo.getTipo()) {
-
-            case INIMIGO:
-                popupManager.mostrarPopupCartaReveladaComAcao(
-                    montarTextoInformacoesCarta(cartaInfo),
-                    "Combater",
-
-                    () -> abrirCombate(linha, coluna, cartaOriginal),
-
-                    () -> animacaoCarta.dissolverCartaZoom(cartaZoom, () -> {
-                        stageCartaZoom.clear();
-                        telaModalAberta = false;
-                        restaurarCartaOriginal(linha, coluna, cartaOriginal);
-                        sincronizarTabuleiroVisual();
-                        atualizarDestaqueCartas();
-                    })
-                );
-                break;
-
-            case BAU:
-                popupManager.mostrarPopupCartaReveladaComAcao(
-                    montarTextoInformacoesCarta(cartaInfo),
-                    "Abrir baú",
-
-                    () -> executarFluxoBauJaRevelado(linha, coluna, cartaOriginal, cartaZoom),
-
-                    () -> animacaoCarta.dissolverCartaZoom(cartaZoom, () -> {
-                        stageCartaZoom.clear();
-                        telaModalAberta = false;
-                        restaurarCartaOriginal(linha, coluna, cartaOriginal);
-                        sincronizarTabuleiroVisual();
-                        atualizarDestaqueCartas();
-                    })
-                );
-                break;
-
-            case CHAMA:
-                popupManager.mostrarPopupCartaReveladaComAcao(
-                    montarTextoInformacoesCarta(cartaInfo),
-                    "Coletar",
-                    () -> animacaoCarta.dissolverCartaZoom(cartaZoom, () -> {
-                        stageCartaZoom.clear();
-                        telaModalAberta = false;
-                        recolocarCartaConsumidaComoPlaceholder(linha, coluna, cartaOriginal);
-                        coletarChama(linha, coluna);
-                    }),
-                    () -> animacaoCarta.dissolverCartaZoom(cartaZoom, () -> {
-                        stageCartaZoom.clear();
-                        telaModalAberta = false;
-                        restaurarCartaOriginal(linha, coluna, cartaOriginal);
-                        sincronizarTabuleiroVisual();
-                        atualizarDestaqueCartas();
-                    })
-                );
-                break;
-
-            case PAREDE:
-                popupManager.mostrarPopupMensagem(
-                    montarTextoInformacoesCarta(cartaInfo),
-                    () -> animacaoCarta.dissolverCartaZoom(cartaZoom, () -> {
-                        stageCartaZoom.clear();
-                        telaModalAberta = false;
-                        restaurarCartaOriginal(linha, coluna, cartaOriginal);
-                        sincronizarTabuleiroVisual();
-                        atualizarDestaqueCartas();
-                    })
-                );
-                break;
-
-            case VAZIO:
-            default:
-                popupManager.mostrarPopupMensagem(
-                    "Carta vazia.",
-                    () -> animacaoCarta.dissolverCartaZoom(cartaZoom, () -> {
-                        stageCartaZoom.clear();
-                        telaModalAberta = false;
-                        restaurarCartaOriginal(linha, coluna, cartaOriginal);
-                    })
-                );
-                break;
+        MovimentoTabuleiro movimento = controladorTurno.prepararMovimento(linha, coluna);
+        if (!movimento.isValido()) {
+            throw new IllegalStateException("A furtividade terminou com uma troca inválida.");
         }
-    }
 
-    private void executarFluxoBauJaRevelado(int linha, int coluna, CartaVisual cartaOriginal, CartaExibida cartaZoom) {
-        CartaInfo cartaInfo = tabuleiro().getCartaInfo(linha, coluna);
+        animandoTabuleiro = true;
+        telaTabuleiro.animarTroca(movimento, () -> {
+            controladorEncontro.concluirInimigo(linha, coluna, resultado);
+            telaTabuleiro.remapearAposTroca(movimento);
+            animandoTabuleiro = false;
 
-        if (cartaInfo == null || cartaInfo.getItemDentro() == null) {
-            popupManager.mostrarPopupMensagem("Baú vazio.", () -> animacaoCarta.dissolverCartaZoom(cartaZoom, () -> {
-                stageCartaZoom.clear();
-                telaModalAberta = false;
-                restaurarCartaOriginal(linha, coluna, cartaOriginal);
-                sincronizarTabuleiroVisual();
+            sincronizarTabuleiroVisual();
+            atualizarHUDCompleto();
+            salvarPartidaAtual();
+            mostrarMensagem(resultado.getMensagem());
+
+            if (resultado.getDesfecho() == DesfechoInimigo.JOGADOR_DERROTADO) {
+                popupManager.mostrarGameOver();
+            } else {
                 atualizarDestaqueCartas();
-            }));
-            return;
-        }
-
-        cartaInfo.registrarAberturaBau(); 
-
-        String identificadorItem = cartaInfo.getItemDentro().getIdentificadorVisual();
-        animacaoCarta.aplicarFlip(
-            cartaZoom,
-            () -> cartaZoom.setConteudo(
-                GerenciadorTexturas.get(identificadorItem),
-                identificadorItem
-            )
-        );
-
-        Timer.schedule(new Timer.Task() {
-            @Override
-            public void run() {
-                boolean jogadorJaTemArma =
-                    jogador() != null && jogador().getArmaEquipada() != null;
-
-                popupManager.mostrarDecisaoItemBau(
-                    cartaInfo,
-                    jogadorJaTemArma,
-
-                    () -> animacaoCarta.dissolverCartaZoom(cartaZoom, () -> {
-                        stageCartaZoom.clear();
-                        telaModalAberta = false;
-                        recolocarCartaConsumidaComoPlaceholder(linha, coluna, cartaOriginal);
-                        coletarBau(linha, coluna);
-                    }),
-
-                    () -> animacaoCarta.dissolverCartaZoom(cartaZoom, () -> {
-                        stageCartaZoom.clear();
-                        telaModalAberta = false;
-
-                        restaurarCartaOriginal(linha, coluna, cartaOriginal);
-                        sincronizarTabuleiroVisual();
-                        atualizarDestaqueCartas();
-                        mostrarMensagem("Você deixou o item no baú.");
-                    })
-                );
             }
-        }, 0.26f);
-    }
-
-    private CartaVisual prepararCartaZoom(CartaVisual carta) {
-        carta.remove();
-        carta.clearActions();
-        carta.setSize(300f, 400f);
-        carta.setOrigin(Align.center);
-        carta.setScale(0.01f);
-        carta.setRotation(0f);
-        carta.setConteudo(GerenciadorTexturas.get("VERSO"), "VERSO");
-        carta.setPosition(
-            stageCartaZoom.getViewport().getWorldWidth() / 2f - carta.getWidth() / 2f,
-            stageCartaZoom.getViewport().getWorldHeight() / 2f - 120f
-        );
-        return carta;
+        });
     }
 
     private void abrirPause() {
@@ -917,15 +600,11 @@ public class BlameCindersGame extends ApplicationAdapter implements InteracaoCar
         modalAbertaAntesDoPause = telaModalAberta;
         telaModalAberta = true;
         pauseAberto = true;
+        Timer.instance().stop();
         priorizarPause();
         popupManager.mostrarPause(
-            () -> fecharPause(),
-            () -> {
-                System.out.println("Opções do pause");
-            },
-            () -> {
-                voltarAoMenuPrincipal();
-            }
+            this::concluirFechamentoPause,
+            this::voltarAoMenuPrincipal
         );
     }
 
@@ -933,47 +612,72 @@ public class BlameCindersGame extends ApplicationAdapter implements InteracaoCar
         if (!pauseAberto) {
             return;
         }
-        popupManager.fecharPause(() -> {
-            pauseAberto = false;
-            telaModalAberta = modalAbertaAntesDoPause;
-            restaurarInputJogo();
-        });
+        popupManager.fecharPause(this::concluirFechamentoPause);
+    }
+
+    private void concluirFechamentoPause() {
+        pauseAberto = false;
+        telaModalAberta = modalAbertaAntesDoPause;
+        Timer.instance().start();
+        restaurarInputJogo();
     }
 
     private void voltarAoMenuPrincipal() {
-
+        salvarPartidaAtual();
+        cancelarLimpezaMensagem();
+        Timer.instance().clear();
+        Timer.instance().start();
         telaModalAberta = false;
+        pauseAberto = false;
+        modalAbertaAntesDoPause = false;
+        animandoTabuleiro = false;
 
-        // Remove o tabuleiro atual
         if (telaTabuleiro != null) {
-            telaTabuleiro.destruir();
+            telaTabuleiro.dispose();
             telaTabuleiro = null;
         }
 
-        // Limpa os elementos da partida
-        if (stageUI != null) {
-            stageUI.clear();
-        }
+        limparCamadasPartida();
+        partida = null;
+        controladorTurno = null;
+        controladorEncontro = null;
+        controladorInteracaoCarta = null;
+        fluxoCombate = null;
+        fluxoCarta = null;
+        fluxoInteracaoCarta = null;
+        multiplexer = null;
 
-        if (stageCartaZoom != null) {
-            stageCartaZoom.clear();
-        }
+        abrirMenuPrincipal();
+    }
 
-        if (stageAnimacao != null) {
-            stageAnimacao.clear();
-        }
-
-        // A partida deixa de estar ativa
-        jogoIniciado = false;
-
-        // Volta para o menu principal
+    private void abrirOpcoes() {
         gerenciadorTelas.trocarTela(
-            new MenuPrincipal(
-                gerenciadorTelas,
-                this::iniciarNovoJogo,
-                gerenciadorAudio
-            )
+            new TelaOpcoes(this::abrirMenuPrincipal, gerenciadorAudio, skin)
         );
+    }
+
+    private void abrirMenuPrincipal() {
+        gerenciadorTelas.trocarTela(new MenuPrincipal(
+            this::iniciarNovoJogo,
+            this::continuarPartida,
+            this::abrirOpcoes,
+            repositorioPartida::existe,
+            gerenciadorAudio,
+            skin
+        ));
+    }
+
+    private void limparCamadasPartida() {
+        stageUI.clear();
+        stageCartaZoom.clear();
+        stageAnimacao.clear();
+        labelMensagem = null;
+    }
+
+    private void salvarPartidaAtual() {
+        if (!animandoTabuleiro && repositorioPartida != null && partida != null) {
+            repositorioPartida.salvar(partida);
+        }
     }
 
     private void priorizarPause() {

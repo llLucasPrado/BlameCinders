@@ -7,6 +7,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class SistemaCombateTest {
@@ -72,5 +73,14 @@ class SistemaCombateTest {
 
         assertFalse(resultado.isJogadorVenceu());
         assertEquals(0, jogador.getVida());
+    }
+
+    @Test
+    void rejeitaParticipantesNulos() {
+        Jogador jogador = new Jogador(50);
+        Inimigo inimigo = new Inimigo("Lobo", 12, "INIMIGO_LOBO");
+
+        assertThrows(NullPointerException.class, () -> sistema.resolverCombate(null, inimigo));
+        assertThrows(NullPointerException.class, () -> sistema.resolverCombate(jogador, null));
     }
 }

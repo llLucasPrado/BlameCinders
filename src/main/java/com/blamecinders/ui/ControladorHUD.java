@@ -9,7 +9,10 @@ import com.badlogic.gdx.scenes.scene2d.ui.Skin;
 import com.badlogic.gdx.scenes.scene2d.utils.ClickListener;
 import com.badlogic.gdx.scenes.scene2d.utils.TextureRegionDrawable;
 import com.blamecinders.combate.Jogador;
+import com.blamecinders.configuracao.BalanceamentoJogo;
 import com.blamecinders.util.GerenciadorTexturas;
+
+import java.util.Objects;
 
 /** Apresenta vida, chamas e arma equipada durante a partida. */
 public class ControladorHUD {
@@ -19,14 +22,16 @@ public class ControladorHUD {
 
     private Label labelHUD;
     private Image imagemArmaHUD;
+    private String identificadorArmaAtual;
 
     public ControladorHUD(Stage stageUI, Skin skin) {
-        this.stageUI = stageUI;
-        this.skin = skin;
+        this.stageUI = Objects.requireNonNull(stageUI, "stageUI");
+        this.skin = Objects.requireNonNull(skin, "skin");
     }
 
     public void criarHUD() {
-
+        imagemArmaHUD = null;
+        identificadorArmaAtual = null;
         labelHUD = new Label("", skin);
         labelHUD.setPosition(20, stageUI.getViewport().getWorldHeight() - 25);
 
@@ -46,7 +51,7 @@ public class ControladorHUD {
 
         if (jogador != null) {
             labelHUD.setText(
-                "Chamas: " + chamasColetadas + " / 3"
+                "Chamas: " + chamasColetadas + " / " + BalanceamentoJogo.OBJETIVO_CHAMAS
                     + "    Vida: " + jogador.getVida()
                     + "    Arma: " + textoArma
             );
@@ -55,38 +60,39 @@ public class ControladorHUD {
         atualizarMiniaturaArma(jogador);
     }
 
-    /** Reposiciona os elementos presos Ã s bordas apÃ³s alterar o viewport. */
     private void atualizarMiniaturaArma(Jogador jogador) {
 
         if (imagemArmaHUD != null) {
-            imagemArmaHUD.remove();
-            imagemArmaHUD = null;
+            imagemArmaHUD.setVisible(jogador != null && jogador.getArmaEquipada() != null);
         }
-
         if (jogador == null || jogador.getArmaEquipada() == null) {
+            identificadorArmaAtual = null;
             return;
         }
 
         String textura = jogador.getArmaEquipada().getIdentificadorVisual();
-
-        imagemArmaHUD = new Image(
-            new TextureRegionDrawable(
+        if (imagemArmaHUD == null) {
+            imagemArmaHUD = new Image();
+            imagemArmaHUD.setSize(64, 86);
+            stageUI.addActor(imagemArmaHUD);
+        }
+        if (!textura.equals(identificadorArmaAtual)) {
+            imagemArmaHUD.setDrawable(new TextureRegionDrawable(
                 new TextureRegion(GerenciadorTexturas.get(textura))
-            )
-        );
-
-        imagemArmaHUD.setSize(64, 86);
+            ));
+            identificadorArmaAtual = textura;
+        }
+        imagemArmaHUD.setVisible(true);
         imagemArmaHUD.setPosition(
             stageUI.getViewport().getWorldWidth() - 90,
             stageUI.getViewport().getWorldHeight() - 110
         );
-
-        stageUI.addActor(imagemArmaHUD);
     }
 
     public void setClickArmaListener(Runnable aoClicar) {
 
         if (imagemArmaHUD == null) return;
+        Objects.requireNonNull(aoClicar, "aoClicar");
 
         imagemArmaHUD.clearListeners();
 

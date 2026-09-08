@@ -4,6 +4,7 @@ import com.blamecinders.combate.Jogador;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class ComidaTest {
 
@@ -18,5 +19,19 @@ class ComidaTest {
         assertEquals(2, comida.consumir(jogador));
         assertEquals(50, jogador.getVida());
         assertEquals(50, jogador.getVidaMaxima());
+    }
+
+    @Test
+    void rejeitaDadosInvalidos() {
+        assertThrows(NullPointerException.class, () -> new Comida(null, 8, "COMIDA"));
+        assertThrows(NullPointerException.class, () -> new Comida("Ração", 8, null));
+        assertThrows(IllegalArgumentException.class, () -> new Comida("Ração", 0, "COMIDA"));
+    }
+
+    @Test
+    void rejeitaJogadorNuloAoConsumir() {
+        Comida comida = new Comida("Ração", 8, "COMIDA");
+
+        assertThrows(NullPointerException.class, () -> comida.consumir(null));
     }
 }

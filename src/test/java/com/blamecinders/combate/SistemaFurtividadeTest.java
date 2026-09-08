@@ -5,6 +5,7 @@ import org.junit.jupiter.api.Test;
 import java.util.Random;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class SistemaFurtividadeTest {
@@ -29,6 +30,13 @@ class SistemaFurtividadeTest {
 
         assertFalse(resultado.isSucesso());
         assertTrue(resultado.getRolagem() > resultado.getChancePercentual());
+    }
+
+    @Test
+    void rejeitaInimigoNulo() {
+        SistemaFurtividade sistema = new SistemaFurtividade(new Random(1));
+
+        assertThrows(NullPointerException.class, () -> sistema.tentar(null));
     }
 
     private static Random randomQueRetorna(final int valor) {

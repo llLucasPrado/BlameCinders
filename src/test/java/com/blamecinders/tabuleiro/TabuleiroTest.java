@@ -87,6 +87,23 @@ class TabuleiroTest {
         assertNull(tabuleiro.getCartaInfo(0, 1));
     }
 
+    @Test
+    void trocaHeroiComCartaSemAcionarEsteira() {
+        CartaInfo[][] grid = gridPreenchido();
+        CartaInfo alvo = grid[1][3];
+        CartaInfo cartaDistante = grid[1][0];
+        Tabuleiro tabuleiro = new Tabuleiro(grid, 1, 2, new Random(23));
+
+        tabuleiro.trocarJogadorComCarta(1, 3);
+
+        assertEquals(1, tabuleiro.getJogadorLinha());
+        assertEquals(3, tabuleiro.getJogadorColuna());
+        assertSame(alvo, tabuleiro.getCartaInfo(1, 2));
+        assertSame(cartaDistante, tabuleiro.getCartaInfo(1, 0));
+        assertNull(tabuleiro.getCartaInfo(1, 3));
+        assertEquals(1, contarCelulasVazias(tabuleiro));
+    }
+
     private static CartaInfo[][] gridPreenchido() {
         CartaInfo[][] grid = new CartaInfo[Tabuleiro.LINHAS][Tabuleiro.COLUNAS];
         for (int linha = 0; linha < Tabuleiro.LINHAS; linha++) {

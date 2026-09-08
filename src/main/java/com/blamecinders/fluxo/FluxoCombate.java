@@ -43,11 +43,11 @@ public class FluxoCombate {
         GerenciadorPopups popupManager,
         ControladorEncontro controladorEncontro
     ) {
-        this.stageCartaZoom = stageCartaZoom;
-        this.skin = skin;
-        this.animacaoCarta = animacaoCarta;
-        this.popupManager = popupManager;
-        this.controladorEncontro = controladorEncontro;
+        this.stageCartaZoom = Objects.requireNonNull(stageCartaZoom, "stageCartaZoom");
+        this.skin = Objects.requireNonNull(skin, "skin");
+        this.animacaoCarta = Objects.requireNonNull(animacaoCarta, "animacaoCarta");
+        this.popupManager = Objects.requireNonNull(popupManager, "popupManager");
+        this.controladorEncontro = Objects.requireNonNull(controladorEncontro, "controladorEncontro");
     }
 
     public void mostrarTelaCombate(
@@ -58,6 +58,7 @@ public class FluxoCombate {
     ) {
         Objects.requireNonNull(onResultado, "onResultado");
         Objects.requireNonNull(onMensagem, "onMensagem");
+        Objects.requireNonNull(jogadorCombate, "jogadorCombate");
         if (cartaInfo == null || cartaInfo.getInimigo() == null) {
             onMensagem.accept("Erro: inimigo não encontrado.");
             onResultado.accept(ResultadoEncontroInimigo.recuo());
@@ -76,6 +77,9 @@ public class FluxoCombate {
             inimigo.getIdentificadorVisual(),
             skin.getFont("default-font")
         );
+        cartaInimigo.setRotuloVisivel(
+            !GerenciadorTexturas.possuiImagem(inimigo.getIdentificadorVisual())
+        );
         cartaInimigo.setSize(280, 380);
         cartaInimigo.setPosition(300, 300);
         stageCartaZoom.addActor(cartaInimigo);
@@ -85,6 +89,7 @@ public class FluxoCombate {
             "HERÓI-TESTE",
             skin.getFont("default-font")
         );
+        cartaJogador.setRotuloVisivel(!GerenciadorTexturas.possuiImagem("HERÓI-TESTE"));
         cartaJogador.setSize(280, 380);
         cartaJogador.setPosition(700, 300);
         stageCartaZoom.addActor(cartaJogador);
@@ -210,7 +215,10 @@ public class FluxoCombate {
                     labelVidaJogador.setText(
                         montarTextoStatusJogadorCombate(
                             jogadorCombate,
-                            jogadorCombate.getVida(),
+                            Math.max(
+                                0,
+                                jogadorCombate.getVida() - resultado.getDanoRecebido()
+                            ),
                             jogadorCombate.getArmaEquipada() != null
                                 ? jogadorCombate.getArmaEquipada().getDurabilidade()
                                 : null

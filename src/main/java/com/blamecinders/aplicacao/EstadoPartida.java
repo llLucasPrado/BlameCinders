@@ -1,6 +1,7 @@
 package com.blamecinders.aplicacao;
 
 import com.blamecinders.combate.Jogador;
+import com.blamecinders.configuracao.BalanceamentoJogo;
 import com.blamecinders.tabuleiro.Tabuleiro;
 
 import java.util.Objects;
@@ -8,7 +9,7 @@ import java.util.Objects;
 /** Mantém o estado persistente de uma partida, sem depender do libGDX. */
 public final class EstadoPartida {
 
-    public static final int VIDA_INICIAL_HEROI = 50;
+    public static final int VIDA_INICIAL_HEROI = BalanceamentoJogo.VIDA_INICIAL_HEROI;
 
     private final Tabuleiro tabuleiro;
     private final Jogador jogador;

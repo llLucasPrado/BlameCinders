@@ -19,6 +19,8 @@ public final class TemaJogo implements Disposable {
 
     public static final String FONTE_DARK_FANTASY = "Cinzel Decorative Bold";
     public static final String ARQUIVO_FONTE = "Fonts/CinzelDecorative-Bold.ttf";
+    private static final String CARACTERES_PORTUGUES =
+        "ÁÀÂÃÉÊÍÓÔÕÚÇáàâãéêíóôõúç";
 
     private final Skin skin;
     private final BitmapFont fonteCarta;
@@ -91,6 +93,7 @@ public final class TemaJogo implements Disposable {
             new FreeTypeFontGenerator.FreeTypeFontParameter();
         parametros.size = tamanho;
         parametros.color = Color.WHITE;
+        parametros.characters = FreeTypeFontGenerator.DEFAULT_CHARS + CARACTERES_PORTUGUES;
 
         BitmapFont fonte = gerador.generateFont(parametros);
         gerador.dispose();

@@ -2,9 +2,10 @@ package com.blamecinders.item;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Random;
 
-public class CatalogoArmas {
+public final class CatalogoArmas {
 
     private static final List<Arma> armas = new ArrayList<>();
     private static final Random random = new Random();
@@ -28,7 +29,11 @@ public class CatalogoArmas {
         return gerarArmaAleatoria(random);
     }
 
+    private CatalogoArmas() {
+    }
+
     public static Arma gerarArmaAleatoria(Random fonteAleatoria) {
+        Objects.requireNonNull(fonteAleatoria, "fonteAleatoria");
         Arma modelo = armas.get(fonteAleatoria.nextInt(armas.size()));
         return modelo.copiar();
     }

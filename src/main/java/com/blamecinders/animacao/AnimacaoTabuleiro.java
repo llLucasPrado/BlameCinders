@@ -8,6 +8,7 @@ import com.badlogic.gdx.utils.Align;
 import com.badlogic.gdx.math.Interpolation;
 import com.blamecinders.tabuleiro.Tabuleiro;
 import com.blamecinders.ui.carta.CartaExibida;
+import com.blamecinders.util.GerenciadorTexturas;
 import com.blamecinders.util.ProvedorPosicaoCarta;
 import com.blamecinders.ui.tabuleiro.CartaVisual;
 
@@ -124,6 +125,68 @@ public class AnimacaoTabuleiro {
                 })
             )
         );
+    }
+
+    public void animarTrocaJogadorComCarta(
+        int linhaOrigem,
+        int colunaOrigem,
+        int linhaDestino,
+        int colunaDestino,
+        Runnable aoFinalizar
+    ) {
+        CartaVisual jogador = cartasVisuais[linhaOrigem][colunaOrigem];
+        CartaVisual alvo = cartasVisuais[linhaDestino][colunaDestino];
+        if (jogador == null || alvo == null) {
+            if (aoFinalizar != null) aoFinalizar.run();
+            return;
+        }
+
+        float origemX = getCartaX(colunaOrigem);
+        float origemY = getCartaY(linhaOrigem);
+        float destinoX = getCartaX(colunaDestino);
+        float destinoY = getCartaY(linhaDestino);
+        float desvioX = linhaOrigem == linhaDestino ? 0f : 18f;
+        float desvioY = linhaOrigem == linhaDestino ? 18f : 0f;
+
+        prepararParaTroca(jogador, origemX, origemY);
+        prepararParaTroca(alvo, destinoX, destinoY);
+
+        alvo.addAction(Actions.parallel(
+            Actions.moveTo(origemX, origemY, 0.38f, Interpolation.sine),
+            Actions.sequence(
+                Actions.scaleTo(0.94f, 0.94f, 0.19f, Interpolation.sineOut),
+                Actions.scaleTo(1f, 1f, 0.19f, Interpolation.sineIn)
+            )
+        ));
+
+        jogador.toFront();
+        jogador.addAction(Actions.sequence(
+            Actions.parallel(
+                Actions.moveTo(
+                    (origemX + destinoX) / 2f + desvioX,
+                    (origemY + destinoY) / 2f + desvioY,
+                    0.19f,
+                    Interpolation.sineOut
+                ),
+                Actions.scaleTo(1.08f, 1.08f, 0.19f, Interpolation.sineOut)
+            ),
+            Actions.parallel(
+                Actions.moveTo(destinoX, destinoY, 0.19f, Interpolation.sineIn),
+                Actions.scaleTo(1f, 1f, 0.19f, Interpolation.sineIn)
+            ),
+            Actions.run(() -> {
+                if (aoFinalizar != null) aoFinalizar.run();
+            })
+        ));
+    }
+
+    private void prepararParaTroca(CartaVisual carta, float x, float y) {
+        carta.clearActions();
+        carta.setOrigin(Align.center);
+        carta.setPosition(x, y);
+        carta.setScale(1f, 1f);
+        carta.setVisible(true);
+        carta.getColor().a = 1f;
     }
 
     private void animarDeslizamentoEsteira(int antigaLinha, int antigaColuna, int novaLinha, int novaColuna) {
@@ -319,6 +382,7 @@ public class AnimacaoTabuleiro {
             "VERSO",
             cartaReferencia.getFonte()
         );
+        cartaTemp.setRotuloVisivel(!GerenciadorTexturas.possuiImagem("VERSO"));
 
         cartaTemp.setSize(cartaReferencia.getWidth(), cartaReferencia.getHeight());
         cartaTemp.setOrigin(Align.center);

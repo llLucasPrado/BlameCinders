@@ -18,13 +18,20 @@ import com.blamecinders.util.GerenciadorTexturas;
 public class AnimacaoCarta {
 
     public void aplicarFlip(Actor carta, Runnable aposFlip) {
+        aplicarFlip(carta, aposFlip, null);
+    }
+
+    public void aplicarFlip(Actor carta, Runnable aposFlip, Runnable aoFinalizar) {
         carta.setOrigin(Align.center);
 
         carta.addAction(
             Actions.sequence(
                 Actions.scaleTo(0.05f, 1f, 0.12f, Interpolation.fade),
                 Actions.run(aposFlip),
-                Actions.scaleTo(1f, 1f, 0.12f, Interpolation.fade)
+                Actions.scaleTo(1f, 1f, 0.12f, Interpolation.fade),
+                Actions.run(() -> {
+                    if (aoFinalizar != null) aoFinalizar.run();
+                })
             )
         );
     }
@@ -319,8 +326,25 @@ public class AnimacaoCarta {
         );
 
         Action faseFalha = Actions.sequence(
-            Actions.delay(1.2f),
-            Actions.run(() -> animarDerrotaInimigo(cartaJogador, stage, aoFinalizar))
+            Actions.delay(0.7f),
+            Actions.parallel(
+                Actions.sequence(
+                    Actions.moveBy(-14f, 0f, 0.05f),
+                    Actions.moveBy(28f, 0f, 0.08f),
+                    Actions.moveBy(-14f, 0f, 0.05f)
+                ),
+                Actions.sequence(
+                    Actions.color(new Color(1f, 0.25f, 0.25f, 1f), 0.10f),
+                    Actions.color(Color.WHITE, 0.18f)
+                ),
+                Actions.alpha(1f, 0.28f),
+                Actions.scaleTo(1f, 1f, 0.28f, Interpolation.swingOut)
+            ),
+            Actions.run(() -> {
+                if (aoFinalizar != null) {
+                    aoFinalizar.run();
+                }
+            })
         );
 
         if (cartaInimigo != null) {

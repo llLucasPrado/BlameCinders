@@ -2,6 +2,8 @@ package com.blamecinders.item;
 
 import com.blamecinders.combate.Jogador;
 
+import java.util.Objects;
+
 public class Comida implements ItemBau {
 
     private final String nome;
@@ -12,9 +14,9 @@ public class Comida implements ItemBau {
         if (cura <= 0) {
             throw new IllegalArgumentException("A cura da comida deve ser positiva.");
         }
-        this.nome = nome;
+        this.nome = Objects.requireNonNull(nome, "nome");
         this.cura = cura;
-        this.identificadorVisual = identificadorVisual;
+        this.identificadorVisual = Objects.requireNonNull(identificadorVisual, "identificadorVisual");
     }
 
     @Override
@@ -32,7 +34,7 @@ public class Comida implements ItemBau {
     }
 
     public int consumir(Jogador jogador) {
-        return jogador.curar(cura);
+        return Objects.requireNonNull(jogador, "jogador").curar(cura);
     }
 
     public Comida copiar() {

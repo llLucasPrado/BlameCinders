@@ -1,13 +1,8 @@
 package com.blamecinders.ui;
 
-import com.badlogic.gdx.Gdx;
-import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
-import com.badlogic.gdx.math.Interpolation;
-import com.badlogic.gdx.scenes.scene2d.Actor;
 import com.badlogic.gdx.scenes.scene2d.InputEvent;
 import com.badlogic.gdx.scenes.scene2d.Stage;
-import com.badlogic.gdx.scenes.scene2d.actions.Actions;
 import com.badlogic.gdx.scenes.scene2d.ui.Image;
 import com.badlogic.gdx.scenes.scene2d.ui.Label;
 import com.badlogic.gdx.scenes.scene2d.ui.Skin;
@@ -17,11 +12,14 @@ import com.badlogic.gdx.scenes.scene2d.utils.ClickListener;
 import com.badlogic.gdx.scenes.scene2d.utils.TextureRegionDrawable;
 import com.badlogic.gdx.utils.Align;
 import com.blamecinders.animacao.AnimacaoCarta;
+import com.blamecinders.audio.GerenciadorAudio;
 import com.blamecinders.item.Arma;
 import com.blamecinders.item.Comida;
 import com.blamecinders.item.ItemBau;
 import com.blamecinders.tabuleiro.CartaInfo;
 import com.blamecinders.util.GerenciadorTexturas;
+
+import java.util.Objects;
 
 /** Cria e anima os popups e overlays da partida. */
 public class GerenciadorPopups {
@@ -29,11 +27,18 @@ public class GerenciadorPopups {
     private final Stage stageUI;
     private final Stage stageCartaZoom;
     private final Skin skin;
+    private final PopupPause popupPause;
 
-    public GerenciadorPopups(Stage stageUI, Stage stageCartaZoom, Skin skin) {
-        this.stageUI = stageUI;
-        this.stageCartaZoom = stageCartaZoom;
-        this.skin = skin;
+    public GerenciadorPopups(
+        Stage stageUI,
+        Stage stageCartaZoom,
+        Skin skin,
+        GerenciadorAudio audio
+    ) {
+        this.stageUI = Objects.requireNonNull(stageUI, "stageUI");
+        this.stageCartaZoom = Objects.requireNonNull(stageCartaZoom, "stageCartaZoom");
+        this.skin = Objects.requireNonNull(skin, "skin");
+        this.popupPause = new PopupPause(stageUI, skin, audio);
     }
 
     public void mostrarConfirmacaoCarta(Runnable confirmar, Runnable cancelar) {
@@ -51,14 +56,14 @@ public class GerenciadorPopups {
         btnConfirmar.addListener(new ClickListener() {
             @Override
             public void clicked(InputEvent event, float x, float y) {
-                animarFechamentoPopup(popup, confirmar);
+                AnimadorPopup.fechar(popup, confirmar);
             }
         });
 
         btnCancelar.addListener(new ClickListener() {
             @Override
             public void clicked(InputEvent event, float x, float y) {
-                animarFechamentoPopup(popup, cancelar);
+                AnimadorPopup.fechar(popup, cancelar);
             }
         });
 
@@ -68,9 +73,9 @@ public class GerenciadorPopups {
         popup.add(btnCancelar).width(140).pad(10);
 
         popup.pack();
-        centralizar(stageUI, popup);
+        ElementosPopup.centralizar(stageUI, popup);
         stageUI.addActor(popup);
-        animarAberturaPopup(popup);
+        AnimadorPopup.abrir(popup);
         popup.toFront();
     }
 
@@ -85,7 +90,7 @@ public class GerenciadorPopups {
         btn.addListener(new ClickListener() {
             @Override
             public void clicked(InputEvent event, float x, float y) {
-                animarFechamentoPopup(popup, confirmar);
+                AnimadorPopup.fechar(popup, confirmar);
             }
         });
 
@@ -96,7 +101,7 @@ public class GerenciadorPopups {
         popup.pack();
         centralizarZoom(popup);
         stageCartaZoom.addActor(popup);
-        animarAberturaPopup(popup);
+        AnimadorPopup.abrir(popup);
         popup.toFront();
     }
 
@@ -137,30 +142,7 @@ public class GerenciadorPopups {
     }
 
     public Image criarOverlayBloqueador(float alpha) {
-        Image overlay = new Image(new TextureRegionDrawable(
-            GerenciadorTexturas.getSolid(Color.BLACK)
-        ));
-        overlay.setSize(
-            stageCartaZoom.getViewport().getWorldWidth(),
-            stageCartaZoom.getViewport().getWorldHeight()
-        );
-        overlay.setColor(0f, 0f, 0f, alpha);
-
-        overlay.addListener(new ClickListener() {
-            @Override
-            public void clicked(InputEvent event, float x, float y) {
-                event.stop();
-            }
-        });
-
-        return overlay;
-    }
-
-    private void centralizar(Stage stage, Window popup) {
-        popup.setPosition(
-            stage.getViewport().getWorldWidth() / 2f - popup.getWidth() / 2f,
-            stage.getViewport().getWorldHeight() / 2f - popup.getHeight() / 2f
-        );
+        return ElementosPopup.criarOverlay(stageCartaZoom, alpha);
     }
 
     private void centralizarZoom(Window popup) {
@@ -185,14 +167,14 @@ public class GerenciadorPopups {
         btnVisualizar.addListener(new ClickListener() {
             @Override
             public void clicked(InputEvent event, float x, float y) {
-                animarFechamentoPopup(popup, visualizar);
+                AnimadorPopup.fechar(popup, visualizar);
             }
         });
 
         btnCancelar.addListener(new ClickListener() {
             @Override
             public void clicked(InputEvent event, float x, float y) {
-                animarFechamentoPopup(popup, cancelar);
+                AnimadorPopup.fechar(popup, cancelar);
             }
         });
 
@@ -209,7 +191,7 @@ public class GerenciadorPopups {
         );
 
         stageUI.addActor(popup);
-        animarAberturaPopup(popup);
+        AnimadorPopup.abrir(popup);
         popup.toFront();
     }
 
@@ -226,14 +208,14 @@ public class GerenciadorPopups {
         btnAcao.addListener(new ClickListener() {
             @Override
             public void clicked(InputEvent event, float x, float y) {
-                animarFechamentoPopup(popup, acaoPrincipal);
+                AnimadorPopup.fechar(popup, acaoPrincipal);
             }
         });
 
         btnCancelar.addListener(new ClickListener() {
             @Override
             public void clicked(InputEvent event, float x, float y) {
-                animarFechamentoPopup(popup, cancelar);
+                AnimadorPopup.fechar(popup, cancelar);
             }
         });
 
@@ -250,7 +232,7 @@ public class GerenciadorPopups {
         );
 
         stageCartaZoom.addActor(popup);
-        animarAberturaPopup(popup);
+        AnimadorPopup.abrir(popup);
         popup.toFront();
     }
 
@@ -361,14 +343,14 @@ public class GerenciadorPopups {
         btn1.addListener(new ClickListener() {
             @Override
             public void clicked(InputEvent event, float x, float y) {
-                animarFechamentoPopup(popup, aoUsar);
+                AnimadorPopup.fechar(popup, aoUsar);
             }
         });
 
         btn2.addListener(new ClickListener() {
             @Override
             public void clicked(InputEvent event, float x, float y) {
-                animarFechamentoPopup(popup, aoDeixar);
+                AnimadorPopup.fechar(popup, aoDeixar);
             }
         });
 
@@ -385,228 +367,19 @@ public class GerenciadorPopups {
         );
 
         stageCartaZoom.addActor(popup);
-        animarAberturaPopup(popup);
+        AnimadorPopup.abrir(popup);
         popup.toFront();
-    }
-
-    private void animarAberturaPopup(Actor actor) {
-        if (actor == null) return;
-
-        actor.clearActions();
-        actor.setOrigin(Align.center);
-        actor.setScale(0.01f, 1f);
-        actor.getColor().a = 0f;
-
-        actor.addAction(
-            Actions.parallel(
-                Actions.scaleTo(1f, 1f, 0.18f, Interpolation.fade),
-                Actions.fadeIn(0.14f, Interpolation.fade)
-            )
-        );
-    }
-
-    private void animarFechamentoPopup(Actor actor, Runnable aoFinalizar) {
-        if (actor == null) {
-            if (aoFinalizar != null) aoFinalizar.run();
-            return;
-        }
-
-        actor.clearActions();
-        actor.setOrigin(Align.center);
-
-        actor.addAction(
-            Actions.sequence(
-                Actions.parallel(
-                    Actions.scaleTo(1f, 0.01f, 0.16f, Interpolation.fade),
-                    Actions.fadeOut(0.12f, Interpolation.fade)
-                ),
-                Actions.run(() -> {
-                    actor.remove();
-
-                    if (aoFinalizar != null) {
-                        aoFinalizar.run();
-                    }
-                })
-            )
-        );
-    }
-
-    private void animarFechamentoPause(
-    Actor popup,
-    Actor overlay,
-    Runnable aoFinalizar
-    ) {
-
-        popup.clearActions();
-        overlay.clearActions();
-
-        popup.setOrigin(Align.center);
-
-        popup.addAction(
-            Actions.parallel(
-                Actions.scaleTo(
-                    1f,
-                    0.01f,
-                    0.16f,
-                    Interpolation.fade
-                ),
-                Actions.fadeOut(
-                    0.12f,
-                    Interpolation.fade
-                )
-            )
-        );
-
-        overlay.addAction(
-            Actions.sequence(
-                Actions.fadeOut(
-                    0.12f,
-                    Interpolation.fade
-                ),
-                Actions.run(() -> {
-
-                    popup.remove();
-                    overlay.remove();
-
-                    if (aoFinalizar != null) {
-                        Gdx.app.postRunnable(aoFinalizar);
-                    }
-                })
-            )
-        );
     }
 
     public void mostrarPause(
-    Runnable continuar,
-    Runnable opcoes,
-    Runnable voltarMenu
+        Runnable continuar,
+        Runnable voltarMenu
     ) {
-
-        if (stageUI.getRoot().findActor("popupPause") != null) {
-            return;
-        }
-
-        Image overlay = criarOverlayBloqueador(0.75f);
-        overlay.setName("overlayPause");
-
-        stageUI.addActor(overlay);
-
-        Window popup = new Window("", skin);
-        popup.setName("popupPause");
-
-        Label titulo = new Label("PAUSADO", skin);
-        titulo.setAlignment(Align.center);
-        titulo.setFontScale(2.2f);
-
-        TextButton btnContinuar =
-            new TextButton("Continuar", skin);
-
-        TextButton btnOpcoes =
-            new TextButton("Opções", skin);
-
-        TextButton btnVoltar =
-            new TextButton("Menu Principal", skin);
-
-        btnContinuar.addListener(new ClickListener() {
-
-            @Override
-            public void clicked(
-                InputEvent event,
-                float x,
-                float y
-            ) {
-
-                animarFechamentoPause(
-                    popup,
-                    overlay,
-                    continuar
-                );
-            }
-        });
-
-        btnOpcoes.addListener(new ClickListener() {
-
-            @Override
-            public void clicked(
-                InputEvent event,
-                float x,
-                float y
-            ) {
-
-                opcoes.run();
-            }
-        });
-
-        btnVoltar.addListener(new ClickListener() {
-
-            @Override
-            public void clicked(
-                InputEvent event,
-                float x,
-                float y
-            ) {
-
-                animarFechamentoPause(
-                    popup,
-                    overlay,
-                    voltarMenu
-                );
-            }
-        });
-
-        popup.add(titulo)
-            .colspan(1)
-            .width(420)
-            .pad(20);
-
-        popup.row();
-
-        popup.add(btnContinuar)
-            .width(220)
-            .pad(8);
-
-        popup.row();
-
-        popup.add(btnOpcoes)
-            .width(220)
-            .pad(8);
-
-        popup.row();
-
-        popup.add(btnVoltar)
-            .width(220)
-            .pad(8);
-
-        popup.pack();
-
-        centralizar(stageUI, popup);
-
-        stageUI.addActor(popup);
-
-        animarAberturaPopup(overlay);
-        animarAberturaPopup(popup);
-
-        overlay.toFront();
-        popup.toFront();
+        popupPause.mostrar(continuar, voltarMenu);
     }
 
     public void fecharPause(Runnable aoFinalizar) {
-
-        Actor popup = stageUI.getRoot().findActor("popupPause");
-        Actor overlay = stageUI.getRoot().findActor("overlayPause");
-
-        if (popup == null) {
-            if (aoFinalizar != null) {
-                aoFinalizar.run();
-            }
-            return;
-        }
-
-        animarFechamentoPause(
-            popup,
-            overlay,
-            aoFinalizar
-        );
+        popupPause.fechar(aoFinalizar);
     }
 
 }

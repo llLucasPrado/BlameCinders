@@ -5,6 +5,8 @@ import com.blamecinders.item.Arma;
 import com.blamecinders.item.Comida;
 import com.blamecinders.item.ItemBau;
 
+import java.util.Objects;
+
 public class CartaInfo {
 
     private final TipoCarta tipo;
@@ -15,7 +17,7 @@ public class CartaInfo {
     private boolean bauAberto;
 
     public CartaInfo(TipoCarta tipo) {
-        this.tipo = tipo;
+        this.tipo = Objects.requireNonNull(tipo, "tipo");
         this.estado = EstadoCarta.FECHADA;
     }
 
@@ -28,7 +30,7 @@ public class CartaInfo {
     }
 
     public void setEstado(EstadoCarta estado) {
-        this.estado = estado;
+        this.estado = Objects.requireNonNull(estado, "estado");
     }
 
     public Inimigo getInimigo() {

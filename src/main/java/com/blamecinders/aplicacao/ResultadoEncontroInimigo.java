@@ -11,17 +11,20 @@ public final class ResultadoEncontroInimigo {
     private final String mensagem;
     private final ResultadoCombate combate;
     private final ResultadoFurtividade furtividade;
+    private final int danoRecebido;
 
     private ResultadoEncontroInimigo(
         DesfechoInimigo desfecho,
         String mensagem,
         ResultadoCombate combate,
-        ResultadoFurtividade furtividade
+        ResultadoFurtividade furtividade,
+        int danoRecebido
     ) {
         this.desfecho = Objects.requireNonNull(desfecho, "desfecho");
         this.mensagem = Objects.requireNonNull(mensagem, "mensagem");
         this.combate = combate;
         this.furtividade = furtividade;
+        this.danoRecebido = Math.max(0, danoRecebido);
     }
 
     public static ResultadoEncontroInimigo recuo() {
@@ -29,7 +32,8 @@ public final class ResultadoEncontroInimigo {
             DesfechoInimigo.RECUO,
             "Você recuou.",
             null,
-            null
+            null,
+            0
         );
     }
 
@@ -39,10 +43,11 @@ public final class ResultadoEncontroInimigo {
             : DesfechoInimigo.FURTIVIDADE_FALHOU;
         String mensagem = resultado.isSucesso()
             ? "Furtividade bem-sucedida (" + resultado.getChancePercentual()
-                + "% de chance). Você sofreu " + dano + " de dano."
+                + "% de chance). Você trocou de posição sem sofrer dano."
             : "Furtividade falhou (" + resultado.getChancePercentual()
-                + "% de chance). Você sofreu " + dano + " de dano.";
-        return new ResultadoEncontroInimigo(desfecho, mensagem, null, resultado);
+                + "% de chance). Você trocou de posição e sofreu " + dano
+                + " de dano direto.";
+        return new ResultadoEncontroInimigo(desfecho, mensagem, null, resultado, dano);
     }
 
     static ResultadoEncontroInimigo combate(ResultadoCombate resultado) {
@@ -52,7 +57,8 @@ public final class ResultadoEncontroInimigo {
                 : DesfechoInimigo.JOGADOR_DERROTADO,
             resultado.getMensagemResultado(),
             resultado,
-            null
+            null,
+            resultado.getVidaInicialJogador() - resultado.getVidaFinalJogador()
         );
     }
 
@@ -60,9 +66,11 @@ public final class ResultadoEncontroInimigo {
         return new ResultadoEncontroInimigo(
             DesfechoInimigo.JOGADOR_DERROTADO,
             "Furtividade falhou (" + resultado.getChancePercentual()
-                + "% de chance). Você sofreu " + dano + " de dano e foi derrotado.",
+                + "% de chance). Você trocou de posição, sofreu " + dano
+                + " de dano direto e foi derrotado.",
             null,
-            resultado
+            resultado,
+            dano
         );
     }
 
@@ -82,7 +90,15 @@ public final class ResultadoEncontroInimigo {
         return furtividade;
     }
 
+    public int getDanoRecebido() {
+        return danoRecebido;
+    }
+
+    public boolean isFurtividade() {
+        return furtividade != null;
+    }
+
     public boolean isTerminal() {
-        return desfecho != DesfechoInimigo.FURTIVIDADE_FALHOU;
+        return true;
     }
 }

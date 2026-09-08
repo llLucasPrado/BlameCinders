@@ -2,85 +2,78 @@
 
 ## Regras confirmadas
 
-- O tabuleiro possui 4 linhas e 5 colunas.
-- O herói ocupa uma célula vazia; nunca existe outra carta sob ele.
-- Apenas cartas ortogonalmente adjacentes podem ser reveladas.
-- O primeiro clique revela a carta; o segundo permite interagir com ela.
-- Paredes bloqueiam movimento.
-- Inimigos oferecem combate, furtividade ou recuo.
-- O dano consome primeiro a durabilidade da arma e depois a vida do herói.
-- Baús podem conter arma ou comida.
-- Três chamas coletadas encerram a fase.
-- Ao mover, somente o segmento entre a borda de entrada e a antiga posição do
-  herói desliza para preencher o espaço.
+- o tabuleiro possui 4 linhas e 5 colunas;
+- o herói ocupa uma célula vazia e nunca fica sobre outra carta;
+- apenas cartas ortogonalmente adjacentes podem ser reveladas;
+- o primeiro clique revela e o segundo permite interagir;
+- paredes bloqueiam movimento;
+- inimigos oferecem combate, furtividade ou recuo;
+- dano de combate consome primeiro a arma e depois a vida do herói;
+- furtividade troca as posições do herói e do inimigo sem acionar a esteira;
+- sucesso furtivo não causa dano; falha causa metade do dano diretamente na
+  vida, ignorando arma e qualquer proteção;
+- baús podem conter arma ou comida;
+- três chamas coletadas encerram a fase;
+- somente o segmento entre a borda de entrada e a posição anterior do herói
+  desliza para preencher o espaço vazio.
 
-## Estrutura atual
+## Estrutura
 
 ```text
 com.blamecinders
-├── BlameCindersGame       ciclo de vida libGDX e composição da apresentação
-├── aplicacao              estado, turnos, interações e encontros
-├── tabuleiro              grid, cartas, tipos e estado de revelação
-├── combate                herói, inimigos, combate e furtividade
-├── item                   armas, comidas e geração de itens de baú
-├── fluxo                  coordenação das telas de carta e combate
-├── ui                     tema, HUD, popups e atores visuais compostos
-│   └── tabuleiro          tela, layout e atores do grid
-├── animacao               animações Scene2D
-├── util                   texturas procedurais e cálculo de posições
-└── desktop                DesktopLauncher
+├── BlameCindersGame    composição e coordenação dos fluxos da partida
+├── aplicacao           estado, turnos, interações e encontros
+├── tabuleiro           grid, cartas, tipos e revelação
+├── combate             herói, inimigos, combate e furtividade
+├── configuracao        valores centralizados de balanceamento
+├── item                armas, comidas e geração de itens
+├── fluxo               revelação, interação de cartas e combate
+├── persistencia        conversão, validação e armazenamento do save
+├── telas               tela inicial, menu, opções e ciclo de vida
+├── audio               música e efeitos sonoros
+├── ui                  tema, HUD, pop-ups e componentes visuais
+│   └── tabuleiro       stage, layout, atores e remapeamento do grid
+├── animacao            animações Scene2D
+├── util                cache, fallback e carga de texturas
+└── desktop             inicialização LWJGL3
 ```
 
-O código de domínio (`aplicacao`, `tabuleiro`, `combate` e `item`) não depende
-do libGDX. A camada visual depende do domínio, nunca o contrário.
+O domínio (`aplicacao`, `tabuleiro`, `combate` e `item`) não depende do libGDX.
+As telas de entrada são administradas por `GerenciadorTelas`. Durante uma
+partida, `BlameCindersGame` compõe os controladores e delega as interações
+visuais a `FluxoInteracaoCarta`. `ui.tabuleiro.TelaTabuleiro` é somente a
+representação Scene2D do grid; não existe uma segunda classe de tabuleiro no
+pacote `telas`.
 
-## Problemas já corrigidos
+## Recursos visuais
 
-1. Projeto convertido para o layout Java/Gradle padrão e inicialização desktop.
-2. Pacote provisório `com.root.game` e nomes `TCC_0_01`/`Cartas` removidos.
-3. Herói mantido em uma única célula vazia, sem carta sobreposta.
-4. Esteira limitada ao segmento que preenche a antiga célula do herói.
-5. Referências dos atores remapeadas junto com a esteira, evitando teleporte.
-6. Fundo e rótulo agrupados; texto acompanha flip, escala e movimento.
-7. Cartas procedurais identificadas por texto, sem imagens externas obrigatórias.
-8. Armas separadas de entidades de combate; caminhos viraram identificadores visuais.
-9. Estado da partida e conclusão do turno extraídos da aplicação libGDX.
-10. Encontros de chama, baú e inimigo resolvidos fora da camada Scene2D.
-11. Combate, furtividade e recuo retornam desfechos explícitos.
-12. Primeiro clique apenas revela; o segundo clique abre a interação.
-13. Cartas visuais desacopladas da classe principal por uma porta de interação.
-14. Tema, fontes e respectivos recursos extraídos para `TemaJogo`.
-15. Stage, grid, layout e animações do tabuleiro encapsulados em `TelaTabuleiro`.
-16. Recursos das cartas abstraídos como `Drawable`, permitindo testes sem OpenGL.
-17. Revelação, ação, clique e movimento/esteira cobertos por testes Scene2D.
-18. Terceira chama conclui a animação antes da mensagem permanente de vitória.
-19. Regras, layout e apresentação cobertos por 41 testes automatizados.
+`GerenciadorTexturas` mantém um cache por identificador. Imagens de alta
+resolução são reduzidas em memória para até 600x800 antes da criação da textura.
+Cartas fechadas carregam apenas o verso; a frente é resolvida quando necessária.
+Se o arquivo não existir, um fundo procedural com rótulo visível é usado.
 
-## Pendências conhecidas
+Fonte dark fantasy registrada: **Cinzel Decorative Bold** em
+`assets/Fonts/CinzelDecorative-Bold.ttf`.
 
-- `BlameCindersGame` ainda coordena popups e decisões visuais dos encontros; caiu
-  de mais de 1.300 para cerca de 700 linhas.
-- A montagem das janelas e decisões de encontro ainda pode ser extraída dos fluxos.
-- O balanceamento atual é provisório e precisa de sessões de jogo/simulações.
-- O smoke test desktop complementa os testes Scene2D confirmando a inicialização
-  real da janela e dos recursos OpenGL.
+## Estado técnico
 
-## Identidade visual temporária
+- ciclo de telas encerra cada tela uma única vez;
+- fechar a aplicação antes de iniciar uma partida é seguro;
+- Enter executa somente uma opção do menu;
+- `Continuar` só inicia quando existe um save local válido;
+- música e efeitos possuem configuração persistente no menu e no pause;
+- pause preserva a modal anterior e congela tabuleiro, zoom, animações e timers;
+- reiniciar após voltar ao menu recria HUD e mensagens;
+- revelação aguarda o flip terminar antes de abrir a informação;
+- existe um único mapeamento entre o tipo lógico e o identificador visual da carta;
+- modelos e serviços rejeitam dependências e estados nulos na entrada;
+- regras numéricas estão reunidas em `BalanceamentoJogo`;
+- consultas de existência de imagens e atores do HUD são reutilizadas;
+- existem 67 testes automatizados no código-fonte.
 
-As cartas são desenhadas em código e identificadas por texto (`VERSO`,
-`HERÓI-TESTE`, `INIMIGO`, `CHAMA`, `PAREDE`, `BAÚ`, armas e comidas).
+## Pendências deliberadas
 
-Fonte dark fantasy: **Cinzel Decorative Bold**, armazenada em
-`assets/Fonts/CinzelDecorative-Bold.ttf`, com a licença em `assets/Fonts/OFL.txt`.
-O jogo mantém a fonte padrão do libGDX como fallback.
-
-## Balanceamento provisório
-
-- Vida inicial/máxima do herói: 50.
-- Armas: 5 e 15 de durabilidade.
-- Comidas: 8, 12 e 18 de cura.
-- Baús: 55% de chance de arma e 45% de comida.
-- Furtividade: `70% - dificuldade do inimigo`, limitada entre 25% e 80%.
-- Falha de furtividade fica registrada na carta; o jogador deve lutar ou recuar.
-
-Esses números são uma linha de base testável, não o balanceamento final.
+- simular o balanceamento de furtividade em partidas completas;
+- adicionar resolução, modo de tela e controles de volume às opções;
+- medir memória e FPS durante uma partida completa, além do menu;
+- adicionar testes de integração para os fluxos Scene2D extraídos.

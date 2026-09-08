@@ -51,6 +51,36 @@ class AnimacaoTabuleiroScene2DTest {
         assertEquals(1, temporarios.size());
     }
 
+    @Test
+    void trocaHeroiEAlvoSemAnimarEsteira() {
+        BitmapFont fonte = FonteTesteScene2D.criar();
+        CartaVisual[][] cartas = criarGrid(fonte);
+        List<Actor> temporarios = new ArrayList<>();
+        AtomicBoolean concluida = new AtomicBoolean();
+        AnimacaoTabuleiro animacao = new AnimacaoTabuleiro(
+            temporarios::add,
+            cartas,
+            CartaVisual.LARGURA,
+            CartaVisual.ALTURA,
+            8f,
+            provedorPosicoes()
+        );
+
+        CartaVisual heroi = cartas[0][2];
+        CartaVisual alvo = cartas[0][3];
+        CartaVisual cartaDistante = cartas[0][1];
+        float posicaoDistante = cartaDistante.getX();
+
+        animacao.animarTrocaJogadorComCarta(0, 2, 0, 3, () -> concluida.set(true));
+        avancar(cartas, 10, 0.05f);
+
+        assertTrue(concluida.get());
+        assertEquals(PASSO_X * 3f, heroi.getX(), 0.01f);
+        assertEquals(PASSO_X * 2f, alvo.getX(), 0.01f);
+        assertEquals(posicaoDistante, cartaDistante.getX(), 0.01f);
+        assertTrue(temporarios.isEmpty());
+    }
+
     private CartaVisual[][] criarGrid(BitmapFont fonte) {
         CartaVisual[][] cartas = new CartaVisual[Tabuleiro.LINHAS][Tabuleiro.COLUNAS];
         InteracaoCartaVisual interacao = new InteracaoCartaVisual() {

@@ -7,11 +7,17 @@ import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.files.FileHandle;
 import java.util.HashMap;
 import java.util.Locale;
+import java.util.Objects;
 
-public class GerenciadorTexturas {
+public final class GerenciadorTexturas {
 
-
+    private static final int LARGURA_MAXIMA_CARTA = 600;
+    private static final int ALTURA_MAXIMA_CARTA = 800;
     private static final HashMap<String, Texture> cache = new HashMap<>();
+    private static final HashMap<String, Boolean> cacheDisponibilidade = new HashMap<>();
+
+    private GerenciadorTexturas() {
+    }
 
     public static Texture get(String identificador) {
 
@@ -39,9 +45,11 @@ public class GerenciadorTexturas {
             tex.dispose();
         }
         cache.clear();
+        cacheDisponibilidade.clear();
     }
 
     public static Texture getSolid(Color cor) {
+        Objects.requireNonNull(cor, "cor");
         String chave = String.format(
             Locale.ROOT,
             "SOLID:%.3f:%.3f:%.3f:%.3f",
@@ -57,6 +65,18 @@ public class GerenciadorTexturas {
         pixmap.dispose();
         cache.put(chave, textura);
         return textura;
+    }
+
+    public static boolean possuiImagem(String identificador) {
+        Boolean resultadoEmCache = cacheDisponibilidade.get(identificador);
+        if (resultadoEmCache != null) return resultadoEmCache;
+
+        String caminho = obterCaminhoImagem(identificador);
+        boolean possuiImagem = caminho != null
+            && Gdx.files != null
+            && Gdx.files.internal(caminho).exists();
+        cacheDisponibilidade.put(identificador, possuiImagem);
+        return possuiImagem;
     }
 
     private static Texture criarFundoCarta(String identificador) {
@@ -81,15 +101,41 @@ public class GerenciadorTexturas {
         return textura;
     }
 
-    /** Carrega a imagem correspondente em assets/Cartas, quando disponÃ­vel. */
     private static Texture carregarImagemCarta(String identificador) {
         String caminho = obterCaminhoImagem(identificador);
         if (caminho == null || Gdx.files == null) return null;
 
         FileHandle arquivo = Gdx.files.internal(caminho);
-        // As cartas de alta resolução são bastante reduzidas no tabuleiro.
-        // Mipmaps preservam os detalhes e evitam aliasing nessa redução.
-        return arquivo.exists() ? new Texture(arquivo, true) : null;
+        if (!arquivo.exists()) return null;
+
+        Pixmap original = new Pixmap(arquivo);
+        Pixmap texturaPixmap = original;
+        try {
+            float escala = Math.min(
+                1f,
+                Math.min(
+                    (float) LARGURA_MAXIMA_CARTA / original.getWidth(),
+                    (float) ALTURA_MAXIMA_CARTA / original.getHeight()
+                )
+            );
+
+            if (escala < 1f) {
+                int largura = Math.max(1, Math.round(original.getWidth() * escala));
+                int altura = Math.max(1, Math.round(original.getHeight() * escala));
+                texturaPixmap = new Pixmap(largura, altura, Pixmap.Format.RGBA8888);
+                texturaPixmap.setFilter(Pixmap.Filter.BiLinear);
+                texturaPixmap.drawPixmap(
+                    original,
+                    0, 0, original.getWidth(), original.getHeight(),
+                    0, 0, largura, altura
+                );
+            }
+
+            return new Texture(texturaPixmap, true);
+        } finally {
+            if (texturaPixmap != original) texturaPixmap.dispose();
+            original.dispose();
+        }
     }
 
     private static String obterCaminhoImagem(String identificador) {
@@ -98,12 +144,6 @@ public class GerenciadorTexturas {
         if (id.contains("VERSO")) return "Cartas/Versos/versoTeste.jpg";
         if (id.startsWith("HER")) return "Cartas/Frente/Jogador/jogadorTeste.png";
         if (id.startsWith("BA")) return "Cartas/Frente/Bau/frenteTeste7.jpg";
-        if (id.contains("HERÃ“I") || id.contains("HEROI")) {
-            return "Cartas/Frente/Jogador/jogadorTeste.png";
-        }
-        if (id.contains("BAÃš") || id.contains("BAU")) {
-            return "Cartas/Frente/Bau/frenteTeste7.jpg";
-        }
         if (id.contains("CHAMA")) return "Cartas/Frente/Chama/frenteTeste4.jpg";
         if (id.contains("PAREDE")) return "Cartas/Frente/Parede/paredeTeste1.png";
         if (id.contains("CLAYMORE")) return "Cartas/Frente/Armas/claymore.jpeg";
@@ -136,7 +176,7 @@ public class GerenciadorTexturas {
     }
 
     private static Color escolherCor(String identificador) {
-        String id = identificador == null ? "" : identificador.toUpperCase();
+        String id = identificador == null ? "" : identificador.toUpperCase(Locale.ROOT);
         if (id.contains("VERSO")) return new Color(0.10f, 0.08f, 0.14f, 1f);
         if (id.contains("HERÓI") || id.contains("HEROI")) return new Color(0.24f, 0.10f, 0.16f, 1f);
         if (id.contains("INIMIGO")) return new Color(0.30f, 0.07f, 0.07f, 1f);

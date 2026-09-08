@@ -13,20 +13,17 @@ import com.blamecinders.aplicacao.MovimentoTabuleiro;
 import com.blamecinders.tabuleiro.CartaInfo;
 import com.blamecinders.tabuleiro.Tabuleiro;
 import com.blamecinders.tabuleiro.TipoCarta;
-import com.blamecinders.telas.Tela;
+import com.blamecinders.ui.carta.IdentificadorVisualCarta;
 
 /**
  * Dono da representação Scene2D do tabuleiro.
  * Mantém atores, layout, destaques e animações sincronizados com o grid lógico.
  */
-public final class TelaTabuleiro implements Disposable, Tela {
+public final class TelaTabuleiro implements Disposable {
 
     public static final float LARGURA_MUNDO = 1280f;
     public static final float ALTURA_MUNDO = 720f;
     public static final float ESPACO_CARTAS = 8f;
-
-    private static final String VERSO = "VERSO";
-    private static final String HEROI = "HERÓI-TESTE";
 
     private final Tabuleiro tabuleiro;
     private final Stage stage;
@@ -92,32 +89,6 @@ public final class TelaTabuleiro implements Disposable, Tela {
         stage.draw();
     }
 
-            @Override
-    public void mostrar() {
-        stage.getRoot().setVisible(true);
-    }
-
-    @Override
-    public void render(float delta) {
-        act(delta);
-        draw();
-    }
-
-    @Override
-    public void redimensionar(int largura, int altura) {
-        resize(largura, altura);
-    }
-
-    @Override
-    public void esconder() {
-        stage.getRoot().setVisible(false);
-    }
-
-    @Override
-    public void destruir() {
-        dispose();
-    }
-
     @Override
     public void dispose() {
         if (destruida) {
@@ -146,6 +117,20 @@ public final class TelaTabuleiro implements Disposable, Tela {
         RemapeadorGradeEsteira.remapear(cartas, movimento);
     }
 
+    public void animarTroca(MovimentoTabuleiro movimento, Runnable aoFinalizar) {
+        animacao.animarTrocaJogadorComCarta(
+            movimento.getLinhaOrigem(),
+            movimento.getColunaOrigem(),
+            movimento.getLinhaDestino(),
+            movimento.getColunaDestino(),
+            aoFinalizar
+        );
+    }
+
+    public void remapearAposTroca(MovimentoTabuleiro movimento) {
+        RemapeadorGradeTroca.remapear(cartas, movimento);
+    }
+
     public void sincronizar() {
         int jogadorLinha = tabuleiro.getJogadorLinha();
         int jogadorColuna = tabuleiro.getJogadorColuna();
@@ -157,8 +142,7 @@ public final class TelaTabuleiro implements Disposable, Tela {
 
                 prepararCarta(carta, linha, coluna);
                 if (linha == jogadorLinha && coluna == jogadorColuna) {
-                    carta.setFrente(HEROI);
-                    carta.setRevelada(true);
+                    carta.atualizarEstadoVisual(IdentificadorVisualCarta.HEROI, true);
                     carta.toFront();
                 } else {
                     aplicarEstadoLogico(carta, linha, coluna);
@@ -174,8 +158,7 @@ public final class TelaTabuleiro implements Disposable, Tela {
         prepararCarta(carta, linha, coluna);
 
         if (linha == tabuleiro.getJogadorLinha() && coluna == tabuleiro.getJogadorColuna()) {
-            carta.setFrente(HEROI);
-            carta.setRevelada(true);
+            carta.atualizarEstadoVisual(IdentificadorVisualCarta.HEROI, true);
             carta.toFront();
         } else {
             aplicarEstadoLogico(carta, linha, coluna);
@@ -232,7 +215,7 @@ public final class TelaTabuleiro implements Disposable, Tela {
             for (int coluna = 0; coluna < Tabuleiro.COLUNAS; coluna++) {
                 CartaVisual carta = new CartaVisual(
                     getIdentificador(linha, coluna),
-                    VERSO,
+                    IdentificadorVisualCarta.VERSO,
                     layout.getCartaX(coluna),
                     layout.getCartaY(linha),
                     linha,
@@ -262,9 +245,11 @@ public final class TelaTabuleiro implements Disposable, Tela {
     }
 
     private void aplicarEstadoLogico(CartaVisual carta, int linha, int coluna) {
-        carta.setFrente(getIdentificador(linha, coluna));
         boolean vazia = tabuleiro.getCarta(linha, coluna) == TipoCarta.VAZIO;
-        carta.setRevelada(!vazia && tabuleiro.cartaEstaRevelada(linha, coluna));
+        carta.atualizarEstadoVisual(
+            getIdentificador(linha, coluna),
+            !vazia && tabuleiro.cartaEstaRevelada(linha, coluna)
+        );
     }
 
     private void adicionarAoStageSeNecessario(CartaVisual carta) {
@@ -275,28 +260,11 @@ public final class TelaTabuleiro implements Disposable, Tela {
 
     public String getIdentificador(int linha, int coluna) {
         if (linha == tabuleiro.getJogadorLinha() && coluna == tabuleiro.getJogadorColuna()) {
-            return HEROI;
+            return IdentificadorVisualCarta.HEROI;
         }
 
         CartaInfo info = tabuleiro.getCartaInfo(linha, coluna);
-        if (info == null) return VERSO;
-
-        switch (info.getTipo()) {
-            case INIMIGO:
-                return info.getInimigo() == null
-                    ? "INIMIGO"
-                    : info.getInimigo().getIdentificadorVisual();
-            case BAU:
-                return "BAÚ";
-            case CHAMA:
-                return "CHAMA";
-            case PAREDE:
-                return "PAREDE";
-            case VAZIO:
-                return VERSO;
-            default:
-                throw new IllegalStateException("Tipo de carta sem representação visual.");
-        }
+        return IdentificadorVisualCarta.obter(info);
     }
 
     private static com.badlogic.gdx.scenes.scene2d.Action criarPulsoAdjacente() {

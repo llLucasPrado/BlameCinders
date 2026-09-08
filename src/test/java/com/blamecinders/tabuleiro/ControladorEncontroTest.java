@@ -101,7 +101,7 @@ class ControladorEncontroTest {
     }
 
     @Test
-    void furtividadeBemSucedidaConsomeInimigoSemChamarDeVitoria() {
+    void furtividadeBemSucedidaTrocaPosicoesSemCausarDano() {
         CartaInfo[][] grid = criarGrid();
         CartaInfo inimigo = criarInimigo(8);
         grid[0][1] = inimigo;
@@ -109,29 +109,65 @@ class ControladorEncontroTest {
         ControladorEncontro controlador = controladorComRolagem(partida, 0);
 
         ResultadoEncontroInimigo resultado = controlador.tentarFurtividade(inimigo);
+        assertEquals(50, partida.getJogador().getVida());
+        assertFalse(inimigo.isFurtividadeTentada());
         controlador.concluirInimigo(0, 1, resultado);
 
         assertEquals(DesfechoInimigo.FURTIVIDADE_SUCESSO, resultado.getDesfecho());
-        assertTrue(resultado.getMensagem().contains("evitou o combate"));
+        assertTrue(resultado.getMensagem().contains("sem sofrer dano"));
         assertFalse(resultado.getMensagem().contains("derrotado"));
+        assertEquals(0, resultado.getDanoRecebido());
+        assertEquals(50, partida.getJogador().getVida());
+        assertTrue(resultado.isTerminal());
+        assertEquals(0, partida.getTabuleiro().getJogadorLinha());
+        assertEquals(1, partida.getTabuleiro().getJogadorColuna());
+        assertSame(inimigo, partida.getTabuleiro().getCartaInfo(0, 0));
         assertNull(partida.getTabuleiro().getCartaInfo(0, 1));
     }
 
     @Test
-    void furtividadeFalhaUmaVezEMantemInimigo() {
+    void furtividadeFalhaTrocaPosicoesECausaMetadeDoDanoDireto() {
         CartaInfo[][] grid = criarGrid();
-        CartaInfo inimigo = criarInimigo(20);
+        CartaInfo inimigo = criarInimigo(15);
         grid[0][1] = inimigo;
         EstadoPartida partida = criarPartida(grid, 50);
+        Arma arma = new Arma("Escudo improvisado", 15, "ARMA TESTE");
+        partida.getJogador().setArmaEquipada(arma);
+        ControladorEncontro controlador = controladorComRolagem(partida, 99);
+
+        ResultadoEncontroInimigo resultado = controlador.tentarFurtividade(inimigo);
+        assertEquals(50, partida.getJogador().getVida());
+        assertEquals(15, arma.getDurabilidade());
+        controlador.concluirInimigo(0, 1, resultado);
+
+        assertEquals(DesfechoInimigo.FURTIVIDADE_FALHOU, resultado.getDesfecho());
+        assertEquals(8, resultado.getDanoRecebido());
+        assertEquals(42, partida.getJogador().getVida());
+        assertEquals(15, arma.getDurabilidade());
+        assertTrue(resultado.isTerminal());
+        assertSame(inimigo, partida.getTabuleiro().getCartaInfo(0, 0));
+        assertNull(partida.getTabuleiro().getCartaInfo(0, 1));
+        assertThrows(IllegalStateException.class, () -> controlador.tentarFurtividade(inimigo));
+    }
+
+    @Test
+    void falhaNaFurtividadeTrocaPosicoesAntesDeDerrotarHeroi() {
+        CartaInfo[][] grid = criarGrid();
+        CartaInfo inimigo = criarInimigo(8);
+        grid[0][1] = inimigo;
+        EstadoPartida partida = criarPartida(grid, 3);
         ControladorEncontro controlador = controladorComRolagem(partida, 99);
 
         ResultadoEncontroInimigo resultado = controlador.tentarFurtividade(inimigo);
         controlador.concluirInimigo(0, 1, resultado);
 
-        assertEquals(DesfechoInimigo.FURTIVIDADE_FALHOU, resultado.getDesfecho());
-        assertFalse(resultado.isTerminal());
-        assertSame(inimigo, partida.getTabuleiro().getCartaInfo(0, 1));
-        assertThrows(IllegalStateException.class, () -> controlador.tentarFurtividade(inimigo));
+        assertEquals(DesfechoInimigo.JOGADOR_DERROTADO, resultado.getDesfecho());
+        assertTrue(resultado.getMensagem().contains("Furtividade falhou"));
+        assertTrue(resultado.getMensagem().contains("dano direto"));
+        assertEquals(0, partida.getTabuleiro().getJogadorLinha());
+        assertEquals(1, partida.getTabuleiro().getJogadorColuna());
+        assertSame(inimigo, partida.getTabuleiro().getCartaInfo(0, 0));
+        assertTrue(partida.isFinalizada());
     }
 
     @Test

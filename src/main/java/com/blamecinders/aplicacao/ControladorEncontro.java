@@ -7,6 +7,7 @@ import com.blamecinders.combate.ResultadoCombate;
 import com.blamecinders.combate.ResultadoFurtividade;
 import com.blamecinders.combate.SistemaCombate;
 import com.blamecinders.combate.SistemaFurtividade;
+import com.blamecinders.configuracao.BalanceamentoJogo;
 import com.blamecinders.item.Arma;
 import com.blamecinders.item.Comida;
 import com.blamecinders.item.ItemBau;
@@ -78,16 +79,14 @@ public final class ControladorEncontro {
         if (carta.isFurtividadeTentada()) {
             throw new IllegalStateException("A furtividade já foi tentada nesta carta.");
         }
-        carta.registrarTentativaFurtividade();
         ResultadoFurtividade resultado = sistemaFurtividade.tentar(carta.getInimigo());
 
         int dano = resultado.isSucesso()
-            ? carta.getInimigo().getVida() / 2
-            : carta.getInimigo().getVida();
+            ? 0
+            : calcularDanoDiretoFurtividade(carta.getInimigo().getVida());
         Jogador jogador = partida.getJogador();
-        jogador.setVida(jogador.getVida() - dano);
 
-        if (!jogador.estaVivo()) {
+        if (jogador.getVida() <= dano) {
             return ResultadoEncontroInimigo.derrotaPorFurtividade(resultado, dano);
         }
         return ResultadoEncontroInimigo.furtividade(resultado, dano);
@@ -111,11 +110,18 @@ public final class ControladorEncontro {
         switch (resultado.getDesfecho()) {
             case FURTIVIDADE_SUCESSO:
             case FURTIVIDADE_FALHOU:
+                validarDestino(linha, coluna, TipoCarta.INIMIGO);
+                aplicarFurtividade(linha, coluna, resultado);
+                break;
             case COMBATE_VENCIDO:
                 validarDestino(linha, coluna, TipoCarta.INIMIGO);
                 partida.getTabuleiro().consumirCarta(linha, coluna);
                 break;
             case JOGADOR_DERROTADO:
+                if (resultado.isFurtividade()) {
+                    validarDestino(linha, coluna, TipoCarta.INIMIGO);
+                    aplicarFurtividade(linha, coluna, resultado);
+                }
                 partida.registrarDerrota();
                 break;
             case RECUO:
@@ -136,5 +142,21 @@ public final class ControladorEncontro {
         if (carta == null || carta.getTipo() != TipoCarta.INIMIGO || carta.getInimigo() == null) {
             throw new IllegalArgumentException("Carta de inimigo inválida.");
         }
+    }
+
+    private int calcularDanoDiretoFurtividade(int danoBase) {
+        int divisor = BalanceamentoJogo.DIVISOR_DANO_FURTIVIDADE_FALHA;
+        return danoBase / divisor + (danoBase % divisor == 0 ? 0 : 1);
+    }
+
+    private void aplicarFurtividade(
+        int linha,
+        int coluna,
+        ResultadoEncontroInimigo resultado
+    ) {
+        CartaInfo carta = partida.getTabuleiro().getCartaInfo(linha, coluna);
+        carta.registrarTentativaFurtividade();
+        partida.getJogador().receberDanoDireto(resultado.getDanoRecebido());
+        partida.getTabuleiro().trocarJogadorComCarta(linha, coluna);
     }
 }

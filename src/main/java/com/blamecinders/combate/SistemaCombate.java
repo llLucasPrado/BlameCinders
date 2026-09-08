@@ -2,9 +2,13 @@ package com.blamecinders.combate;
 
 import com.blamecinders.item.Arma;
 
+import java.util.Objects;
+
 public class SistemaCombate {
 
     public ResultadoCombate resolverCombate(Jogador jogador, Inimigo inimigo) {
+        Objects.requireNonNull(jogador, "jogador");
+        Objects.requireNonNull(inimigo, "inimigo");
 
         int danoTotal = inimigo.getVida();
 

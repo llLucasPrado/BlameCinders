@@ -70,8 +70,7 @@ public class CartaVisual extends CartaExibida {
         this.nomeFrente = nomeFrente;
         this.nomeVerso = nomeVerso;
         this.provedorFundos = Objects.requireNonNull(provedorFundos, "provedorFundos");
-        this.frente = obterFundo(provedorFundos, nomeFrente);
-        this.verso = obterFundo(provedorFundos, nomeVerso);
+        this.verso = getImagem().getDrawable();
         this.linha = linha;
         this.coluna = coluna;
 
@@ -109,6 +108,8 @@ public class CartaVisual extends CartaExibida {
                 interacao.aoClicar(CartaVisual.this.linha, CartaVisual.this.coluna);
             }
         });
+
+        atualizarFace();
     }
 
     public void setPosicaoGrid(int linha, int coluna) {
@@ -122,13 +123,24 @@ public class CartaVisual extends CartaExibida {
     }
 
     public void setFrente(String nome) {
+        if (!Objects.equals(nomeFrente, nome)) {
+            frente = null;
+        }
         nomeFrente = nome;
-        frente = obterFundo(provedorFundos, nome);
+        atualizarFace();
+    }
+
+    public void atualizarEstadoVisual(String nome, boolean revelada) {
+        if (!Objects.equals(nomeFrente, nome)) {
+            frente = null;
+        }
+        nomeFrente = nome;
+        this.revelada = revelada;
         atualizarFace();
     }
 
     public Drawable getFundoAtual() {
-        return revelada ? frente : verso;
+        return revelada ? obterFrente() : verso;
     }
 
     public void setBloqueandoAnimacaoClique(boolean bloqueando) {
@@ -140,10 +152,19 @@ public class CartaVisual extends CartaExibida {
     }
 
     private void atualizarFace() {
+        String identificador = revelada ? nomeFrente : nomeVerso;
         setConteudo(
-            revelada ? frente : verso,
-            revelada ? nomeFrente : nomeVerso
+            revelada ? obterFrente() : verso,
+            identificador
         );
+        setRotuloVisivel(!GerenciadorTexturas.possuiImagem(identificador));
+    }
+
+    private Drawable obterFrente() {
+        if (frente == null) {
+            frente = obterFundo(provedorFundos, nomeFrente);
+        }
+        return frente;
     }
 
     private static Drawable criarFundo(String identificador) {

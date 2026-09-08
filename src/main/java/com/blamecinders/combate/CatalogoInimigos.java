@@ -2,9 +2,10 @@ package com.blamecinders.combate;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Random;
 
-public class CatalogoInimigos {
+public final class CatalogoInimigos {
 
     private static final List<Inimigo> inimigos = new ArrayList<>();
     private static final Random random = new Random();
@@ -76,7 +77,11 @@ public class CatalogoInimigos {
         return gerarInimigoAleatorio(random);
     }
 
+    private CatalogoInimigos() {
+    }
+
     public static Inimigo gerarInimigoAleatorio(Random fonteAleatoria) {
+        Objects.requireNonNull(fonteAleatoria, "fonteAleatoria");
         Inimigo modelo = inimigos.get(fonteAleatoria.nextInt(inimigos.size()));
         return modelo.copiar();
     }

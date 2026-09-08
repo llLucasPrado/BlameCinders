@@ -16,6 +16,15 @@ public class Jogador {
         this.vidaMaxima = vida;
     }
 
+    public static Jogador restaurar(int vidaMaxima, int vidaAtual) {
+        Jogador jogador = new Jogador(vidaMaxima);
+        if (vidaAtual <= 0 || vidaAtual > vidaMaxima) {
+            throw new IllegalArgumentException("A vida atual restaurada é inválida.");
+        }
+        jogador.setVida(vidaAtual);
+        return jogador;
+    }
+
     public int getVida() {
         return vida;
     }
@@ -33,6 +42,12 @@ public class Jogador {
         int vidaAnterior = vida;
         setVida(vida + quantidade);
         return vida - vidaAnterior;
+    }
+
+    public void receberDanoDireto(int quantidade) {
+        if (quantidade > 0) {
+            setVida(vida - quantidade);
+        }
     }
 
     public boolean estaVivo() {
