@@ -5,6 +5,7 @@ build/
 bin/
 out/
 .idea/
+.vscode/
 *.iml
 .classpath
 .project
