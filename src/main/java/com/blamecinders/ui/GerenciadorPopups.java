@@ -20,6 +20,7 @@ import com.blamecinders.tabuleiro.CartaInfo;
 import com.blamecinders.util.GerenciadorTexturas;
 
 import java.util.Objects;
+import java.util.function.BooleanSupplier;
 
 /** Cria e anima os popups e overlays da partida. */
 public class GerenciadorPopups {
@@ -372,10 +373,11 @@ public class GerenciadorPopups {
     }
 
     public void mostrarPause(
+        BooleanSupplier salvar,
         Runnable continuar,
         Runnable voltarMenu
     ) {
-        popupPause.mostrar(continuar, voltarMenu);
+        popupPause.mostrar(salvar, continuar, voltarMenu);
     }
 
     public void fecharPause(Runnable aoFinalizar) {

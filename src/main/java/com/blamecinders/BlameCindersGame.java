@@ -35,6 +35,7 @@ import com.blamecinders.telas.TelaInicial;
 import com.blamecinders.telas.TelaOpcoes;
 import com.blamecinders.ui.ControladorHUD;
 import com.blamecinders.ui.GerenciadorPopups;
+import com.blamecinders.ui.IndicadorSalvamento;
 import com.blamecinders.ui.TemaJogo;
 import com.blamecinders.ui.tabuleiro.CartaVisual;
 import com.blamecinders.ui.tabuleiro.InteracaoCartaVisual;
@@ -77,6 +78,7 @@ public class BlameCindersGame extends ApplicationAdapter implements InteracaoCar
     private GerenciadorTelas gerenciadorTelas;
     private GerenciadorAudio gerenciadorAudio;
     private RepositorioPartida repositorioPartida;
+    private IndicadorSalvamento indicadorSalvamento;
 
     public boolean isFinalizado() {
         return partida != null && partida.isFinalizada();
@@ -124,6 +126,7 @@ public class BlameCindersGame extends ApplicationAdapter implements InteracaoCar
 
         gerenciadorAudio = new GerenciadorAudio();
         repositorioPartida = new RepositorioPartida();
+        indicadorSalvamento = new IndicadorSalvamento(stageUI);
 
         animacaoCarta = new AnimacaoCarta();
 
@@ -214,7 +217,6 @@ public class BlameCindersGame extends ApplicationAdapter implements InteracaoCar
 
     @Override
     public void dispose() {
-        salvarPartidaAtual();
         cancelarLimpezaMensagem();
         Timer.instance().clear();
         if (gerenciadorTelas != null) {
@@ -227,6 +229,7 @@ public class BlameCindersGame extends ApplicationAdapter implements InteracaoCar
         if (stageUI != null) stageUI.dispose();
         if (stageCartaZoom != null) stageCartaZoom.dispose();
         if (stageAnimacao != null) stageAnimacao.dispose();
+        if (indicadorSalvamento != null) indicadorSalvamento.dispose();
         if (tema != null) tema.dispose();
         GerenciadorTexturas.disposeAll();
         if (gerenciadorAudio != null) {
@@ -350,8 +353,7 @@ public class BlameCindersGame extends ApplicationAdapter implements InteracaoCar
             (linha, coluna, carta) -> coletarChama(linha, coluna),
             (linha, coluna, carta) -> coletarBau(linha, coluna),
             this::mostrarMensagem,
-            () -> telaModalAberta = false,
-            this::salvarPartidaAtual
+            () -> telaModalAberta = false
         );
 
         hudController.criarHUD();
@@ -359,7 +361,6 @@ public class BlameCindersGame extends ApplicationAdapter implements InteracaoCar
 
         telaTabuleiro.sincronizar();
         telaTabuleiro.atualizarDestaques();
-        salvarPartidaAtual();
     }
 
     private void coletarChama(int linha, int coluna) {
@@ -456,7 +457,6 @@ public class BlameCindersGame extends ApplicationAdapter implements InteracaoCar
                 controladorTurno.concluirMovimento(movimento);
                 telaTabuleiro.remapearAposEsteira(movimento);
                 animandoTabuleiro = false;
-                salvarPartidaAtual();
 
                 sincronizarTabuleiroVisual();
 
@@ -541,7 +541,6 @@ public class BlameCindersGame extends ApplicationAdapter implements InteracaoCar
                 telaModalAberta = false;
                 restaurarCartaOriginal(linha, coluna, cartaOriginal);
                 mostrarMensagem(resultado.getMensagem());
-                salvarPartidaAtual();
                 popupManager.mostrarGameOver();
                 break;
 
@@ -582,7 +581,6 @@ public class BlameCindersGame extends ApplicationAdapter implements InteracaoCar
 
             sincronizarTabuleiroVisual();
             atualizarHUDCompleto();
-            salvarPartidaAtual();
             mostrarMensagem(resultado.getMensagem());
 
             if (resultado.getDesfecho() == DesfechoInimigo.JOGADOR_DERROTADO) {
@@ -603,6 +601,7 @@ public class BlameCindersGame extends ApplicationAdapter implements InteracaoCar
         Timer.instance().stop();
         priorizarPause();
         popupManager.mostrarPause(
+            this::salvarPartidaAtual,
             this::concluirFechamentoPause,
             this::voltarAoMenuPrincipal
         );
@@ -623,7 +622,6 @@ public class BlameCindersGame extends ApplicationAdapter implements InteracaoCar
     }
 
     private void voltarAoMenuPrincipal() {
-        salvarPartidaAtual();
         cancelarLimpezaMensagem();
         Timer.instance().clear();
         Timer.instance().start();
@@ -674,9 +672,24 @@ public class BlameCindersGame extends ApplicationAdapter implements InteracaoCar
         labelMensagem = null;
     }
 
-    private void salvarPartidaAtual() {
-        if (!animandoTabuleiro && repositorioPartida != null && partida != null) {
+    private boolean salvarPartidaAtual() {
+        if (
+            animandoTabuleiro
+                || modalAbertaAntesDoPause
+                || repositorioPartida == null
+                || partida == null
+                || partida.isFinalizada()
+        ) {
+            return false;
+        }
+
+        try {
             repositorioPartida.salvar(partida);
+            indicadorSalvamento.mostrar();
+            return true;
+        } catch (RuntimeException erro) {
+            Gdx.app.error("BlameCinders", "Não foi possível salvar a partida.", erro);
+            return false;
         }
     }
 

@@ -38,7 +38,6 @@ public final class FluxoInteracaoCarta {
     private final AcaoCarta coletarBau;
     private final Consumer<String> mostrarMensagem;
     private final Runnable fecharModal;
-    private final Runnable registrarAlteracao;
 
     public FluxoInteracaoCarta(
         Stage stageCartaZoom,
@@ -52,8 +51,7 @@ public final class FluxoInteracaoCarta {
         AcaoCarta coletarChama,
         AcaoCarta coletarBau,
         Consumer<String> mostrarMensagem,
-        Runnable fecharModal,
-        Runnable registrarAlteracao
+        Runnable fecharModal
     ) {
         this.stageCartaZoom = Objects.requireNonNull(stageCartaZoom, "stageCartaZoom");
         this.tabuleiro = Objects.requireNonNull(tabuleiro, "tabuleiro");
@@ -67,10 +65,6 @@ public final class FluxoInteracaoCarta {
         this.coletarBau = Objects.requireNonNull(coletarBau, "coletarBau");
         this.mostrarMensagem = Objects.requireNonNull(mostrarMensagem, "mostrarMensagem");
         this.fecharModal = Objects.requireNonNull(fecharModal, "fecharModal");
-        this.registrarAlteracao = Objects.requireNonNull(
-            registrarAlteracao,
-            "registrarAlteracao"
-        );
     }
 
     public void revelar(int linha, int coluna, CartaVisual cartaOriginal) {
@@ -141,7 +135,6 @@ public final class FluxoInteracaoCarta {
             return;
         }
 
-        registrarAlteracao.run();
         CartaInfo cartaInfo = tabuleiro.getCartaInfo(linha, coluna);
         popupManager.mostrarPopupMensagem(
             TextoCarta.montar(cartaInfo),
@@ -227,7 +220,6 @@ public final class FluxoInteracaoCarta {
         }
 
         cartaInfo.registrarAberturaBau();
-        registrarAlteracao.run();
         if (cartaInfo.getItemDentro() == null) {
             popupManager.mostrarPopupMensagem(
                 "Baú vazio.",
