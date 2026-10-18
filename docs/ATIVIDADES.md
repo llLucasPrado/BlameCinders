@@ -1,0 +1,8 @@
+--- Corrigir a opção "opções" do menu pause --- pendente
+--- Corrigir ordem de popups da chama --- concluído
+--- Corrigir ordem popups de baú --- concluído
+--- Adicionar escolha de personagens --- em processo
+--- Adicionar sistema de drop de cinzas --- pendente
+--- Adicionar habilidades de cada personagem --- pendente
+--- Adicionar mostruário --- pendente
+--- Adicionar upgrades (árvore) --- pendente

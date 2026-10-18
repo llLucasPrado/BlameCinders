@@ -254,18 +254,12 @@ public class BlameCindersGame extends ApplicationAdapter implements InteracaoCar
         switch (acao) {
             case INTERAGIR:
                 telaModalAberta = true;
-                popupManager.mostrarConfirmacaoVisualizarCarta(
-                    () -> fluxoInteracaoCarta.mostrarOpcoes(linha, coluna, cartaOriginal),
-                    () -> telaModalAberta = false
-                );
+                fluxoInteracaoCarta.mostrarOpcoes(linha, coluna, cartaOriginal);
                 break;
 
             case VISUALIZAR:
                 telaModalAberta = true;
-                popupManager.mostrarConfirmacaoVisualizarCarta(
-                    () -> fluxoInteracaoCarta.visualizar(linha, coluna),
-                    () -> telaModalAberta = false
-                );
+                fluxoInteracaoCarta.visualizar(linha, coluna);
                 break;
 
             case BLOQUEAR:
@@ -274,12 +268,9 @@ public class BlameCindersGame extends ApplicationAdapter implements InteracaoCar
                 break;
 
             case REVELAR:
-                telaModalAberta = true;
-                popupManager.mostrarConfirmacaoCarta(
-                    () -> fluxoInteracaoCarta.revelar(linha, coluna, cartaOriginal),
-                    () -> telaModalAberta = false
-                );
-                break;
+            telaModalAberta = true;
+            fluxoInteracaoCarta.revelar(linha, coluna, cartaOriginal);
+            break;
 
             default:
                 throw new IllegalStateException("Ação de clique desconhecida.");

@@ -1,5 +1,8 @@
 package com.blamecinders.ui;
 
+import java.util.Objects;
+import java.util.function.BooleanSupplier;
+
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.scenes.scene2d.InputEvent;
 import com.badlogic.gdx.scenes.scene2d.Stage;
@@ -19,9 +22,6 @@ import com.blamecinders.item.ItemBau;
 import com.blamecinders.tabuleiro.CartaInfo;
 import com.blamecinders.util.GerenciadorTexturas;
 
-import java.util.Objects;
-import java.util.function.BooleanSupplier;
-
 /** Cria e anima os popups e overlays da partida. */
 public class GerenciadorPopups {
 
@@ -40,44 +40,6 @@ public class GerenciadorPopups {
         this.stageCartaZoom = Objects.requireNonNull(stageCartaZoom, "stageCartaZoom");
         this.skin = Objects.requireNonNull(skin, "skin");
         this.popupPause = new PopupPause(stageUI, skin, audio);
-    }
-
-    public void mostrarConfirmacaoCarta(Runnable confirmar, Runnable cancelar) {
-        if (stageUI.getRoot().findActor("popupConfirmacao") != null) return;
-
-        Window popup = new Window("", skin);
-        popup.setName("popupConfirmacao");
-
-        Label texto = new Label("Revelar esta carta?", skin);
-        texto.setAlignment(Align.center);
-
-        TextButton btnConfirmar = new TextButton("Confirmar", skin);
-        TextButton btnCancelar = new TextButton("Cancelar", skin);
-
-        btnConfirmar.addListener(new ClickListener() {
-            @Override
-            public void clicked(InputEvent event, float x, float y) {
-                AnimadorPopup.fechar(popup, confirmar);
-            }
-        });
-
-        btnCancelar.addListener(new ClickListener() {
-            @Override
-            public void clicked(InputEvent event, float x, float y) {
-                AnimadorPopup.fechar(popup, cancelar);
-            }
-        });
-
-        popup.add(texto).colspan(2).pad(20);
-        popup.row();
-        popup.add(btnConfirmar).width(140).pad(10);
-        popup.add(btnCancelar).width(140).pad(10);
-
-        popup.pack();
-        ElementosPopup.centralizar(stageUI, popup);
-        stageUI.addActor(popup);
-        AnimadorPopup.abrir(popup);
-        popup.toFront();
     }
 
     public void mostrarPopupMensagem(String mensagem, Runnable confirmar) {
@@ -151,49 +113,6 @@ public class GerenciadorPopups {
             stageCartaZoom.getViewport().getWorldWidth() / 2f - popup.getWidth() / 2f,
             stageCartaZoom.getViewport().getWorldHeight() / 2f - 300
         );
-    }
-
-    public void mostrarConfirmacaoVisualizarCarta(Runnable visualizar, Runnable cancelar) {
-        if (stageUI.getRoot().findActor("popupVisualizarCarta") != null) return;
-
-        Window popup = new Window("", skin);
-        popup.setName("popupVisualizarCarta");
-
-        Label texto = new Label("Visualizar esta carta?", skin);
-        texto.setAlignment(Align.center);
-
-        TextButton btnVisualizar = new TextButton("Visualizar", skin);
-        TextButton btnCancelar = new TextButton("Cancelar", skin);
-
-        btnVisualizar.addListener(new ClickListener() {
-            @Override
-            public void clicked(InputEvent event, float x, float y) {
-                AnimadorPopup.fechar(popup, visualizar);
-            }
-        });
-
-        btnCancelar.addListener(new ClickListener() {
-            @Override
-            public void clicked(InputEvent event, float x, float y) {
-                AnimadorPopup.fechar(popup, cancelar);
-            }
-        });
-
-        popup.add(texto).colspan(2).pad(20);
-        popup.row();
-        popup.add(btnVisualizar).width(170).pad(10);
-        popup.add(btnCancelar).width(170).pad(10);
-
-        popup.pack();
-
-        popup.setPosition(
-            stageUI.getViewport().getWorldWidth() / 2f - popup.getWidth() / 2f,
-            stageUI.getViewport().getWorldHeight() / 2f - popup.getHeight() / 2f
-        );
-
-        stageUI.addActor(popup);
-        AnimadorPopup.abrir(popup);
-        popup.toFront();
     }
 
     public void mostrarPopupCartaReveladaComAcao(String mensagem, String textoAcao, Runnable acaoPrincipal, Runnable cancelar) {

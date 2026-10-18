@@ -1,5 +1,8 @@
 package com.blamecinders.fluxo;
 
+import java.util.Objects;
+import java.util.function.Consumer;
+
 import com.badlogic.gdx.scenes.scene2d.Stage;
 import com.badlogic.gdx.utils.Align;
 import com.badlogic.gdx.utils.Timer;
@@ -14,9 +17,6 @@ import com.blamecinders.ui.carta.TextoCarta;
 import com.blamecinders.ui.tabuleiro.CartaVisual;
 import com.blamecinders.ui.tabuleiro.TelaTabuleiro;
 import com.blamecinders.util.GerenciadorTexturas;
-
-import java.util.Objects;
-import java.util.function.Consumer;
 
 /** Coordena revelação, consulta e ações das cartas fora da classe principal. */
 public final class FluxoInteracaoCarta {
@@ -136,6 +136,12 @@ public final class FluxoInteracaoCarta {
         }
 
         CartaInfo cartaInfo = tabuleiro.getCartaInfo(linha, coluna);
+
+        if (tipo == TipoCarta.INIMIGO || tipo == TipoCarta.CHAMA || tipo == TipoCarta.BAU) {
+            mostrarOpcoesPorTipo(linha, coluna, cartaOriginal, fluxoRevelacao.getCartaZoomAtual(), cartaInfo);
+            return;
+        }
+
         popupManager.mostrarPopupMensagem(
             TextoCarta.montar(cartaInfo),
             () -> fecharCartaRevelada(linha, coluna, cartaOriginal)
