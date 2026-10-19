@@ -6,6 +6,7 @@ import com.blamecinders.tabuleiro.TipoCarta;
 public final class DadosPartida {
 
     public int versao;
+    public String personagemId;
     public int jogadorLinha;
     public int jogadorColuna;
     public int chamasColetadas;

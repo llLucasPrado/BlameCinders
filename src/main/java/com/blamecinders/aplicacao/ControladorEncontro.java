@@ -79,7 +79,10 @@ public final class ControladorEncontro {
         if (carta.isFurtividadeTentada()) {
             throw new IllegalStateException("A furtividade já foi tentada nesta carta.");
         }
-        ResultadoFurtividade resultado = sistemaFurtividade.tentar(carta.getInimigo());
+        ResultadoFurtividade resultado = sistemaFurtividade.tentar(
+            carta.getInimigo(),
+            partida.getPersonagem().getChanceFurtividade()
+        );
 
         int dano = resultado.isSucesso()
             ? 0

@@ -8,9 +8,10 @@ import com.badlogic.gdx.scenes.scene2d.Group;
 import com.badlogic.gdx.scenes.scene2d.Touchable;
 import com.badlogic.gdx.scenes.scene2d.ui.Image;
 import com.badlogic.gdx.scenes.scene2d.ui.Label;
-import com.badlogic.gdx.scenes.scene2d.utils.TextureRegionDrawable;
 import com.badlogic.gdx.scenes.scene2d.utils.Drawable;
+import com.badlogic.gdx.scenes.scene2d.utils.TextureRegionDrawable;
 import com.badlogic.gdx.utils.Align;
+import com.blamecinders.util.GerenciadorTexturas;
 
 /** Carta composta por fundo e texto, transformados como uma única unidade. */
 public class CartaExibida extends Group {
@@ -61,6 +62,7 @@ public class CartaExibida extends Group {
     public void setConteudo(Drawable fundo, String texto) {
         imagem.setDrawable(fundo);
         rotulo.setText(texto == null ? "" : texto);
+        rotulo.setVisible(!GerenciadorTexturas.possuiImagem(texto));
     }
 
     public Image getImagem() {

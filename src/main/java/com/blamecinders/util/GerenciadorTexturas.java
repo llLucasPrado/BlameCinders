@@ -1,13 +1,14 @@
 package com.blamecinders.util;
 
-import com.badlogic.gdx.Gdx;
-import com.badlogic.gdx.graphics.Color;
-import com.badlogic.gdx.graphics.Pixmap;
-import com.badlogic.gdx.graphics.Texture;
-import com.badlogic.gdx.files.FileHandle;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Objects;
+
+import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.files.FileHandle;
+import com.badlogic.gdx.graphics.Color;
+import com.badlogic.gdx.graphics.Pixmap;
+import com.badlogic.gdx.graphics.Texture;
 
 public final class GerenciadorTexturas {
 
@@ -142,6 +143,10 @@ public final class GerenciadorTexturas {
         String id = identificador == null ? "" : identificador.toUpperCase(Locale.ROOT);
 
         if (id.contains("VERSO")) return "Cartas/Versos/versoTeste.jpg";
+        if (id.startsWith("PERSONAGEM_")) {
+            return "Cartas/Frente/Jogador/"
+                + id.substring("PERSONAGEM_".length()).toLowerCase(Locale.ROOT) + ".png";
+        }
         if (id.startsWith("HER")) return "Cartas/Frente/Jogador/jogadorTeste.png";
         if (id.startsWith("BA")) return "Cartas/Frente/Bau/frenteTeste7.jpg";
         if (id.contains("CHAMA")) return "Cartas/Frente/Chama/frenteTeste4.jpg";

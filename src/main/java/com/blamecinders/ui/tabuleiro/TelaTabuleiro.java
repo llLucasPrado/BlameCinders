@@ -26,22 +26,20 @@ public final class TelaTabuleiro implements Disposable {
     public static final float ESPACO_CARTAS = 8f;
 
     private final Tabuleiro tabuleiro;
+    private final String identificadorHeroi;
     private final Stage stage;
     private final CartaVisual[][] cartas;
     private final LayoutTabuleiro layout;
     private final AnimacaoTabuleiro animacao;
     private boolean destruida = false;
 
-    public TelaTabuleiro(
-        Tabuleiro tabuleiro,
-        BitmapFont fonteCarta,
-        InteracaoCartaVisual interacao
-    ) {
-        if (tabuleiro == null || fonteCarta == null || interacao == null) {
+    public TelaTabuleiro(Tabuleiro tabuleiro, BitmapFont fonteCarta, InteracaoCartaVisual interacao, String identificadorHeroi) {
+        if (tabuleiro == null || fonteCarta == null || interacao == null || identificadorHeroi == null) {
             throw new IllegalArgumentException("Tela do tabuleiro recebeu uma dependência nula.");
         }
 
         this.tabuleiro = tabuleiro;
+        this.identificadorHeroi = identificadorHeroi;
         stage = new Stage(new FitViewport(LARGURA_MUNDO, ALTURA_MUNDO));
         cartas = new CartaVisual[Tabuleiro.LINHAS][Tabuleiro.COLUNAS];
         layout = new LayoutTabuleiro(
@@ -142,7 +140,7 @@ public final class TelaTabuleiro implements Disposable {
 
                 prepararCarta(carta, linha, coluna);
                 if (linha == jogadorLinha && coluna == jogadorColuna) {
-                    carta.atualizarEstadoVisual(IdentificadorVisualCarta.HEROI, true);
+                    carta.atualizarEstadoVisual(identificadorHeroi, true);
                     carta.toFront();
                 } else {
                     aplicarEstadoLogico(carta, linha, coluna);
@@ -158,7 +156,7 @@ public final class TelaTabuleiro implements Disposable {
         prepararCarta(carta, linha, coluna);
 
         if (linha == tabuleiro.getJogadorLinha() && coluna == tabuleiro.getJogadorColuna()) {
-            carta.atualizarEstadoVisual(IdentificadorVisualCarta.HEROI, true);
+            carta.atualizarEstadoVisual(identificadorHeroi, true);
             carta.toFront();
         } else {
             aplicarEstadoLogico(carta, linha, coluna);
@@ -260,7 +258,7 @@ public final class TelaTabuleiro implements Disposable {
 
     public String getIdentificador(int linha, int coluna) {
         if (linha == tabuleiro.getJogadorLinha() && coluna == tabuleiro.getJogadorColuna()) {
-            return IdentificadorVisualCarta.HEROI;
+            return identificadorHeroi;
         }
 
         CartaInfo info = tabuleiro.getCartaInfo(linha, coluna);

@@ -23,6 +23,7 @@ import com.blamecinders.aplicacao.ResultadoColetaChama;
 import com.blamecinders.aplicacao.ResultadoEncontroInimigo;
 import com.blamecinders.audio.GerenciadorAudio;
 import com.blamecinders.combate.Jogador;
+import com.blamecinders.combate.Personagem;
 import com.blamecinders.configuracao.BalanceamentoJogo;
 import com.blamecinders.fluxo.FluxoCarta;
 import com.blamecinders.fluxo.FluxoCombate;
@@ -31,6 +32,7 @@ import com.blamecinders.persistencia.RepositorioPartida;
 import com.blamecinders.tabuleiro.Tabuleiro;
 import com.blamecinders.telas.GerenciadorTelas;
 import com.blamecinders.telas.MenuPrincipal;
+import com.blamecinders.telas.TelaEscolhaPersonagem;
 import com.blamecinders.telas.TelaInicial;
 import com.blamecinders.telas.TelaOpcoes;
 import com.blamecinders.ui.ControladorHUD;
@@ -145,7 +147,7 @@ public class BlameCindersGame extends ApplicationAdapter implements InteracaoCar
         gerenciadorTelas.trocarTela(
             new TelaInicial(
                 gerenciadorTelas,
-                this::iniciarNovoJogo,
+                this::abrirEscolhaPersonagem,
                 this::continuarPartida,
                 this::abrirOpcoes,
                 repositorioPartida::existe,
@@ -277,9 +279,20 @@ public class BlameCindersGame extends ApplicationAdapter implements InteracaoCar
         }
     }
 
-    private void iniciarNovoJogo() {
+    private void abrirEscolhaPersonagem() {
+        gerenciadorTelas.trocarTela(
+            new TelaEscolhaPersonagem(
+                this::iniciarNovoJogo,
+                this::abrirMenuPrincipal,
+                gerenciadorAudio,
+                skin
+            )
+        );
+    }
+
+    private void iniciarNovoJogo(Personagem personagem) {
         repositorioPartida.remover();
-        prepararPartida(new EstadoPartida());
+        prepararPartida(new EstadoPartida(personagem));
     }
 
     private void continuarPartida() {
@@ -303,9 +316,7 @@ public class BlameCindersGame extends ApplicationAdapter implements InteracaoCar
         controladorInteracaoCarta = new ControladorInteracaoCarta(partida);
 
         telaTabuleiro = new TelaTabuleiro(
-            tabuleiro(),
-            fonteCarta,
-            this
+            tabuleiro(), fonteCarta, this, partida.getPersonagem().getIdentificadorVisual()
         );
 
         multiplexer = new InputMultiplexer();
@@ -495,12 +506,8 @@ public class BlameCindersGame extends ApplicationAdapter implements InteracaoCar
         fluxoCombate.mostrarTelaCombate(
             tabuleiro().getCartaInfo(linha, coluna),
             jogador(),
-            resultado -> finalizarEncontroInimigo(
-                linha,
-                coluna,
-                cartaOriginal,
-                resultado
-            ),
+            partida.getPersonagem().getIdentificadorVisual(),
+            resultado -> finalizarEncontroInimigo(linha, coluna, cartaOriginal, resultado),
             this::mostrarMensagem
         );
     }
@@ -647,7 +654,7 @@ public class BlameCindersGame extends ApplicationAdapter implements InteracaoCar
 
     private void abrirMenuPrincipal() {
         gerenciadorTelas.trocarTela(new MenuPrincipal(
-            this::iniciarNovoJogo,
+            this::abrirEscolhaPersonagem,
             this::continuarPartida,
             this::abrirOpcoes,
             repositorioPartida::existe,

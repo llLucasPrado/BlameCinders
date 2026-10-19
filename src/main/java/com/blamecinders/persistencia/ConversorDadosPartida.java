@@ -1,8 +1,11 @@
 package com.blamecinders.persistencia;
 
+import java.util.Objects;
+
 import com.blamecinders.aplicacao.EstadoPartida;
 import com.blamecinders.combate.Inimigo;
 import com.blamecinders.combate.Jogador;
+import com.blamecinders.combate.Personagem;
 import com.blamecinders.item.Arma;
 import com.blamecinders.item.Comida;
 import com.blamecinders.item.ItemBau;
@@ -13,8 +16,6 @@ import com.blamecinders.persistencia.DadosPartida.TipoItemSalvo;
 import com.blamecinders.tabuleiro.CartaInfo;
 import com.blamecinders.tabuleiro.Tabuleiro;
 import com.blamecinders.tabuleiro.TipoCarta;
-
-import java.util.Objects;
 
 final class ConversorDadosPartida {
 
@@ -28,6 +29,7 @@ final class ConversorDadosPartida {
         DadosPartida dados = new DadosPartida();
         Tabuleiro tabuleiro = partida.getTabuleiro();
         Jogador jogador = partida.getJogador();
+        dados.personagemId = partida.getPersonagem().name();
 
         dados.versao = VERSAO_ATUAL;
         dados.jogadorLinha = tabuleiro.getJogadorLinha();
@@ -74,7 +76,7 @@ final class ConversorDadosPartida {
             throw new IllegalArgumentException("O item equipado no save não é uma arma.");
         }
         jogador.setArmaEquipada((Arma) arma);
-        return new EstadoPartida(tabuleiro, jogador);
+        return new EstadoPartida(tabuleiro, jogador, Personagem.porId(dados.personagemId));
     }
 
     private static CartaSalva paraCarta(CartaInfo carta) {

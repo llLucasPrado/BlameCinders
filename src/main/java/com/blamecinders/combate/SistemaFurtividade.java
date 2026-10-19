@@ -1,9 +1,9 @@
 package com.blamecinders.combate;
 
-import com.blamecinders.configuracao.BalanceamentoJogo;
-
 import java.util.Objects;
 import java.util.Random;
+
+import com.blamecinders.configuracao.BalanceamentoJogo;
 
 public class SistemaFurtividade {
 
@@ -18,14 +18,18 @@ public class SistemaFurtividade {
     public SistemaFurtividade(Random random) {
         this.random = Objects.requireNonNull(random, "random");
     }
-
+    
     public ResultadoFurtividade tentar(Inimigo inimigo) {
+    return tentar(inimigo, CHANCE_BASE);
+}
+
+    public ResultadoFurtividade tentar(Inimigo inimigo, int chanceBase) {
         Objects.requireNonNull(inimigo, "inimigo");
         int chance = Math.max(
             BalanceamentoJogo.CHANCE_MINIMA_FURTIVIDADE,
             Math.min(
                 BalanceamentoJogo.CHANCE_MAXIMA_FURTIVIDADE,
-                CHANCE_BASE - inimigo.getDificuldadeFurtividade()
+                chanceBase - inimigo.getDificuldadeFurtividade()
             )
         );
         int rolagem = random.nextInt(BalanceamentoJogo.TOTAL_PERCENTUAL) + 1;

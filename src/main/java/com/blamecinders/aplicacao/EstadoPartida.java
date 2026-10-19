@@ -1,10 +1,11 @@
 package com.blamecinders.aplicacao;
 
+import java.util.Objects;
+
 import com.blamecinders.combate.Jogador;
+import com.blamecinders.combate.Personagem;
 import com.blamecinders.configuracao.BalanceamentoJogo;
 import com.blamecinders.tabuleiro.Tabuleiro;
-
-import java.util.Objects;
 
 /** Mantém o estado persistente de uma partida, sem depender do libGDX. */
 public final class EstadoPartida {
@@ -13,15 +14,29 @@ public final class EstadoPartida {
 
     private final Tabuleiro tabuleiro;
     private final Jogador jogador;
+    private final Personagem personagem;
     private ResultadoPartida resultado = ResultadoPartida.EM_ANDAMENTO;
 
     public EstadoPartida() {
-        this(new Tabuleiro(), new Jogador(VIDA_INICIAL_HEROI));
+    this(Personagem.PADRAO);
+}
+
+    public EstadoPartida(Personagem personagem) {
+        this(new Tabuleiro(), new Jogador(personagem.getVidaInicial()), personagem);
     }
 
     public EstadoPartida(Tabuleiro tabuleiro, Jogador jogador) {
+        this(tabuleiro, jogador, Personagem.PADRAO);
+    }
+
+    public EstadoPartida(Tabuleiro tabuleiro, Jogador jogador, Personagem personagem) {
         this.tabuleiro = Objects.requireNonNull(tabuleiro, "tabuleiro");
         this.jogador = Objects.requireNonNull(jogador, "jogador");
+        this.personagem = Objects.requireNonNull(personagem, "personagem");
+    }
+
+    public Personagem getPersonagem() {
+        return personagem;
     }
 
     public Tabuleiro getTabuleiro() {

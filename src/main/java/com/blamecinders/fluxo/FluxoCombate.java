@@ -53,6 +53,7 @@ public class FluxoCombate {
     public void mostrarTelaCombate(
         CartaInfo cartaInfo,
         Jogador jogadorCombate,
+        String identificadorHeroi,
         Consumer<ResultadoEncontroInimigo> onResultado,
         Consumer<String> onMensagem
     ) {
@@ -85,14 +86,18 @@ public class FluxoCombate {
         stageCartaZoom.addActor(cartaInimigo);
 
         CartaExibida cartaJogador = new CartaExibida(
-            GerenciadorTexturas.get("HERÓI-TESTE"),
-            "HERÓI-TESTE",
+            GerenciadorTexturas.get(identificadorHeroi),
+            identificadorHeroi,
             skin.getFont("default-font")
         );
+        
         cartaJogador.setRotuloVisivel(!GerenciadorTexturas.possuiImagem("HERÓI-TESTE"));
         cartaJogador.setSize(280, 380);
         cartaJogador.setPosition(700, 300);
         stageCartaZoom.addActor(cartaJogador);
+
+        cartaInimigo.setRotuloVisivel(false);
+        cartaJogador.setRotuloVisivel(false);
 
         animacaoCarta.aplicarIdleFlutuacao(cartaInimigo);
         animacaoCarta.aplicarIdleFlutuacao(cartaJogador);
