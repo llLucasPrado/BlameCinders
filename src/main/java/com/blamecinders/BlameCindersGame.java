@@ -23,7 +23,9 @@ import com.blamecinders.aplicacao.ResultadoColetaChama;
 import com.blamecinders.aplicacao.ResultadoEncontroInimigo;
 import com.blamecinders.audio.GerenciadorAudio;
 import com.blamecinders.combate.Jogador;
+import com.blamecinders.combate.Inimigo;
 import com.blamecinders.combate.Personagem;
+import com.blamecinders.combate.RecompensaCinzas;
 import com.blamecinders.configuracao.BalanceamentoJogo;
 import com.blamecinders.fluxo.FluxoCarta;
 import com.blamecinders.fluxo.FluxoCombate;
@@ -403,7 +405,7 @@ public class BlameCindersGame extends ApplicationAdapter implements InteracaoCar
     }
 
     private void atualizarHUDCompleto() {
-        hudController.atualizarHUD(jogador(), tabuleiro().getChamasColetadas());
+        hudController.atualizarHUD(jogador(), tabuleiro().getChamasColetadas(), partida.getCinzas());
         hudController.setClickArmaListener(this::mostrarPopupDetalheArmaHUD);
     }
 
@@ -523,21 +525,27 @@ public class BlameCindersGame extends ApplicationAdapter implements InteracaoCar
             return;
         }
 
+        Inimigo inimigoEncontrado = tabuleiro().getCartaInfo(linha, coluna).getInimigo();
         controladorEncontro.concluirInimigo(linha, coluna, resultado);
         switch (resultado.getDesfecho()) {
             case COMBATE_VENCIDO:
+                int cinzasDropadas = RecompensaCinzas.calcular(inimigoEncontrado);
+                partida.adicionarCinzas(cinzasDropadas);
                 stageCartaZoom.clear();
                 telaModalAberta = false;
                 recolocarCartaConsumidaComoPlaceholder(linha, coluna, cartaOriginal);
                 moverJogadorPara(linha, coluna);
                 atualizarHUDCompleto();
-                mostrarMensagem(resultado.getMensagem());
+                mostrarMensagem(resultado.getMensagem() + (cinzasDropadas > 0
+                    ? " Cinzas: +" + cinzasDropadas + "."
+                    : " Não houve drop de cinzas."));
                 break;
 
             case JOGADOR_DERROTADO:
                 stageCartaZoom.clear();
                 telaModalAberta = false;
                 restaurarCartaOriginal(linha, coluna, cartaOriginal);
+                atualizarHUDCompleto();
                 mostrarMensagem(resultado.getMensagem());
                 popupManager.mostrarGameOver();
                 break;

@@ -15,6 +15,7 @@ public final class EstadoPartida {
     private final Tabuleiro tabuleiro;
     private final Jogador jogador;
     private final Personagem personagem;
+    private int cinzas;
     private ResultadoPartida resultado = ResultadoPartida.EM_ANDAMENTO;
 
     public EstadoPartida() {
@@ -51,6 +52,26 @@ public final class EstadoPartida {
         return resultado;
     }
 
+    public int getCinzas() {
+        return cinzas;
+    }
+
+    public void adicionarCinzas(int quantidade) {
+        validarQuantidadeCinzas(quantidade);
+        cinzas += quantidade;
+    }
+
+    public void restaurarCinzas(int quantidade) {
+        validarQuantidadeCinzas(quantidade);
+        cinzas = quantidade;
+    }
+
+    private void validarQuantidadeCinzas(int quantidade) {
+        if (quantidade < 0) {
+            throw new IllegalArgumentException("A quantidade de cinzas não pode ser negativa.");
+        }
+    }
+
     public boolean isFinalizada() {
         return resultado != ResultadoPartida.EM_ANDAMENTO;
     }
@@ -70,6 +91,7 @@ public final class EstadoPartida {
 
     public void registrarDerrota() {
         if (!isFinalizada()) {
+            cinzas = 0;
             resultado = ResultadoPartida.DERROTA;
         }
     }

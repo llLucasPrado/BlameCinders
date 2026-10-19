@@ -10,6 +10,7 @@ public final class DadosPartida {
     public int jogadorLinha;
     public int jogadorColuna;
     public int chamasColetadas;
+    public int cinzas;
     public int vidaAtual;
     public int vidaMaxima;
     public ItemSalvo armaEquipada;

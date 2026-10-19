@@ -38,7 +38,7 @@ public class ControladorHUD {
         stageUI.addActor(labelHUD);
     }
 
-    public void atualizarHUD(Jogador jogador, int chamasColetadas) {
+    public void atualizarHUD(Jogador jogador, int chamasColetadas, int cinzas) {
 
         if (labelHUD == null) return;
 
@@ -52,6 +52,7 @@ public class ControladorHUD {
         if (jogador != null) {
             labelHUD.setText(
                 "Chamas: " + chamasColetadas + " / " + BalanceamentoJogo.OBJETIVO_CHAMAS
+                    + "\nCinzas: " + cinzas
                     + "    Vida: " + jogador.getVida()
                     + "    Arma: " + textoArma
             );

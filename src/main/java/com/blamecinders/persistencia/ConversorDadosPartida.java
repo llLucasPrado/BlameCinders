@@ -35,6 +35,7 @@ final class ConversorDadosPartida {
         dados.jogadorLinha = tabuleiro.getJogadorLinha();
         dados.jogadorColuna = tabuleiro.getJogadorColuna();
         dados.chamasColetadas = tabuleiro.getChamasColetadas();
+        dados.cinzas = partida.getCinzas();
         dados.vidaAtual = jogador.getVida();
         dados.vidaMaxima = jogador.getVidaMaxima();
         dados.armaEquipada = paraItem(jogador.getArmaEquipada());
@@ -76,7 +77,9 @@ final class ConversorDadosPartida {
             throw new IllegalArgumentException("O item equipado no save não é uma arma.");
         }
         jogador.setArmaEquipada((Arma) arma);
-        return new EstadoPartida(tabuleiro, jogador, Personagem.porId(dados.personagemId));
+        EstadoPartida partida = new EstadoPartida(tabuleiro, jogador, Personagem.porId(dados.personagemId));
+        partida.restaurarCinzas(dados.cinzas);
+        return partida;
     }
 
     private static CartaSalva paraCarta(CartaInfo carta) {
