@@ -19,6 +19,7 @@ import com.blamecinders.animacao.AnimacaoCarta;
 import com.blamecinders.aplicacao.ControladorEncontro;
 import com.blamecinders.aplicacao.DesfechoInimigo;
 import com.blamecinders.aplicacao.ResultadoEncontroInimigo;
+import com.blamecinders.audio.GerenciadorAudio;
 import com.blamecinders.combate.Inimigo;
 import com.blamecinders.combate.Jogador;
 import com.blamecinders.combate.ResultadoCombate;
@@ -35,19 +36,22 @@ public class FluxoCombate {
     private final AnimacaoCarta animacaoCarta;
     private final GerenciadorPopups popupManager;
     private final ControladorEncontro controladorEncontro;
+    private final GerenciadorAudio gerenciadorAudio;
 
     public FluxoCombate(
         Stage stageCartaZoom,
         Skin skin,
         AnimacaoCarta animacaoCarta,
         GerenciadorPopups popupManager,
-        ControladorEncontro controladorEncontro
+        ControladorEncontro controladorEncontro,
+        GerenciadorAudio gerenciadorAudio
     ) {
         this.stageCartaZoom = Objects.requireNonNull(stageCartaZoom, "stageCartaZoom");
         this.skin = Objects.requireNonNull(skin, "skin");
         this.animacaoCarta = Objects.requireNonNull(animacaoCarta, "animacaoCarta");
         this.popupManager = Objects.requireNonNull(popupManager, "popupManager");
         this.controladorEncontro = Objects.requireNonNull(controladorEncontro, "controladorEncontro");
+        this.gerenciadorAudio = Objects.requireNonNull(gerenciadorAudio, "gerenciadorAudio");
     }
 
     public void mostrarTelaCombate(
@@ -177,14 +181,11 @@ public class FluxoCombate {
         TextButton btnFurtividade = new TextButton("Furtividade", skin);
         btnFurtividade.setSize(180, 60);
         btnFurtividade.setPosition(660, 90);
-        if (cartaInfo.isFurtividadeTentada()) {
-            btnFurtividade.setDisabled(true);
-            btnFurtividade.setTouchable(Touchable.disabled);
-        }
 
         btnVoltar.addListener(new ClickListener() {
             @Override
             public void clicked(InputEvent event, float x, float y) {
+                gerenciadorAudio.tocarSelecionarOpcao();
                 onResultado.accept(ResultadoEncontroInimigo.recuo());
             }
         });
@@ -192,11 +193,18 @@ public class FluxoCombate {
         btnFurtividade.addListener(new ClickListener() {
             @Override
             public void clicked(InputEvent event, float x, float y) {
-                if (combateEmAndamento[0] || cartaInfo.isFurtividadeTentada()) {
+                if (combateEmAndamento[0]) {
+                    event.stop();
+                    return;
+                }
+                if (cartaInfo.isFurtividadeTentada()) {
+                    gerenciadorAudio.tocarClickCartaErrada();
+                    onMensagem.accept("Furtividade já usada nesta carta");
                     event.stop();
                     return;
                 }
                 ResultadoEncontroInimigo resultado = controladorEncontro.tentarFurtividade(cartaInfo);
+                gerenciadorAudio.iniciarSomFurtividade();
                 btnFurtividade.setDisabled(true);
                 btnFurtividade.setTouchable(Touchable.disabled);
 
@@ -216,6 +224,7 @@ public class FluxoCombate {
                 stageCartaZoom.addActor(labelProcesso);
 
                 animacaoCarta.animarFurtividade(cartaJogador, cartaInimigo, stageCartaZoom, labelProcesso, sucesso, () -> {
+                    gerenciadorAudio.finalizarSomFurtividade(sucesso);
                     labelProcesso.remove();
                     labelVidaJogador.setText(
                         montarTextoStatusJogadorCombate(
@@ -285,6 +294,7 @@ public class FluxoCombate {
                 final int[] durabilidadeExibida = { durabilidadeInicialArma };
 
                 animacaoCarta.animarImpactoJogador(cartaJogador);
+                gerenciadorAudio.iniciarSomCombate();
 
                 // Um único timer mantém os três contadores visuais sincronizados.
                 Timer.schedule(new Timer.Task() {
@@ -321,6 +331,7 @@ public class FluxoCombate {
 
                         if (!alterouAlgo) {
                             cancel();
+                            gerenciadorAudio.finalizarSomCombate();
 
                             if (resultado.isArmaQuebrou()) {
                                 animacaoCarta.animarQuebraArma(miniArmaFinal, stageCartaZoom, null);

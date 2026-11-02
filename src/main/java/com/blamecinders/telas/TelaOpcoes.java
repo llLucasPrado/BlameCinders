@@ -12,6 +12,7 @@ import com.badlogic.gdx.scenes.scene2d.utils.ClickListener;
 import com.badlogic.gdx.utils.Align;
 import com.badlogic.gdx.utils.viewport.FitViewport;
 import com.blamecinders.audio.GerenciadorAudio;
+import com.blamecinders.ui.PopupAudio;
 
 import java.util.Objects;
 
@@ -25,6 +26,7 @@ public final class TelaOpcoes implements Tela {
     private final Skin skin;
 
     private Stage stage;
+    private PopupAudio popupAudio;
     private Label[] opcoes;
     private int opcaoSelecionada;
     private boolean encerrando;
@@ -38,6 +40,7 @@ public final class TelaOpcoes implements Tela {
     @Override
     public void mostrar() {
         stage = new Stage(new FitViewport(LARGURA_MUNDO, ALTURA_MUNDO));
+        popupAudio = new PopupAudio(stage, skin, audio);
 
         Label titulo = new Label("OPÇÕES", skin);
         titulo.setFontScale(2.2f);
@@ -47,13 +50,11 @@ public final class TelaOpcoes implements Tela {
         stage.addActor(titulo);
 
         opcoes = new Label[] {
-            criarOpcao(360f, 0),
-            criarOpcao(300f, 1),
-            criarOpcao(210f, 2)
+            criarOpcao("ÁUDIO", 360f, 0),
+            criarOpcao("VOLTAR", 280f, 1)
         };
         for (Label opcao : opcoes) stage.addActor(opcao);
 
-        atualizarTextos();
         atualizarSelecao();
         Gdx.input.setInputProcessor(stage);
         audio.iniciarMusicaMenu();
@@ -94,8 +95,8 @@ public final class TelaOpcoes implements Tela {
         stage = null;
     }
 
-    private Label criarOpcao(float y, int indice) {
-        Label opcao = new Label("", skin);
+    private Label criarOpcao(String texto, float y, int indice) {
+        Label opcao = new Label(texto, skin);
         opcao.setAlignment(Align.center);
         opcao.setSize(LARGURA_MUNDO, 50f);
         opcao.setPosition(0f, y);
@@ -124,28 +125,15 @@ public final class TelaOpcoes implements Tela {
     private void executarOpcao() {
         audio.tocarSelecionarOpcao();
         if (opcaoSelecionada == 0) {
-            audio.setMusicaAtiva(!audio.isMusicaAtiva());
-        } else if (opcaoSelecionada == 1) {
-            audio.setEfeitosAtivos(!audio.isEfeitosAtivos());
+            popupAudio.mostrar();
         } else {
             sair();
-            return;
         }
-        atualizarTextos();
     }
-
     private void sair() {
         if (encerrando) return;
         encerrando = true;
         voltar.executar();
-    }
-
-    private void atualizarTextos() {
-        opcoes[0].setText("MÚSICA: " + (audio.isMusicaAtiva() ? "LIGADA" : "DESLIGADA"));
-        opcoes[1].setText(
-            "EFEITOS: " + (audio.isEfeitosAtivos() ? "LIGADOS" : "DESLIGADOS")
-        );
-        opcoes[2].setText("VOLTAR");
     }
 
     private void atualizarSelecao() {

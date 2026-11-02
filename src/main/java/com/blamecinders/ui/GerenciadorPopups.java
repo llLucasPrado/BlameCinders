@@ -28,6 +28,7 @@ public class GerenciadorPopups {
     private final Stage stageUI;
     private final Stage stageCartaZoom;
     private final Skin skin;
+    private final GerenciadorAudio audio;
     private final PopupPause popupPause;
 
     public GerenciadorPopups(
@@ -39,6 +40,7 @@ public class GerenciadorPopups {
         this.stageUI = Objects.requireNonNull(stageUI, "stageUI");
         this.stageCartaZoom = Objects.requireNonNull(stageCartaZoom, "stageCartaZoom");
         this.skin = Objects.requireNonNull(skin, "skin");
+        this.audio = Objects.requireNonNull(audio, "audio");
         this.popupPause = new PopupPause(stageUI, skin, audio);
     }
 
@@ -53,6 +55,7 @@ public class GerenciadorPopups {
         btn.addListener(new ClickListener() {
             @Override
             public void clicked(InputEvent event, float x, float y) {
+                audio.tocarSelecionarOpcao();
                 AnimadorPopup.fechar(popup, confirmar);
             }
         });
@@ -128,6 +131,7 @@ public class GerenciadorPopups {
         btnAcao.addListener(new ClickListener() {
             @Override
             public void clicked(InputEvent event, float x, float y) {
+                audio.tocarSelecionarOpcao();
                 AnimadorPopup.fechar(popup, acaoPrincipal);
             }
         });
@@ -135,6 +139,7 @@ public class GerenciadorPopups {
         btnCancelar.addListener(new ClickListener() {
             @Override
             public void clicked(InputEvent event, float x, float y) {
+                audio.tocarSelecionarOpcao();
                 AnimadorPopup.fechar(popup, cancelar);
             }
         });
@@ -263,6 +268,7 @@ public class GerenciadorPopups {
         btn1.addListener(new ClickListener() {
             @Override
             public void clicked(InputEvent event, float x, float y) {
+                audio.tocarSelecionarOpcao();
                 AnimadorPopup.fechar(popup, aoUsar);
             }
         });
@@ -270,6 +276,7 @@ public class GerenciadorPopups {
         btn2.addListener(new ClickListener() {
             @Override
             public void clicked(InputEvent event, float x, float y) {
+                audio.tocarSelecionarOpcao();
                 AnimadorPopup.fechar(popup, aoDeixar);
             }
         });

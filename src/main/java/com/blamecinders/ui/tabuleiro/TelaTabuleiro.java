@@ -34,6 +34,16 @@ public final class TelaTabuleiro implements Disposable {
     private boolean destruida = false;
 
     public TelaTabuleiro(Tabuleiro tabuleiro, BitmapFont fonteCarta, InteracaoCartaVisual interacao, String identificadorHeroi) {
+        this(tabuleiro, fonteCarta, interacao, identificadorHeroi, () -> {});
+    }
+
+    public TelaTabuleiro(
+        Tabuleiro tabuleiro,
+        BitmapFont fonteCarta,
+        InteracaoCartaVisual interacao,
+        String identificadorHeroi,
+        Runnable aoHoverCarta
+    ) {
         if (tabuleiro == null || fonteCarta == null || interacao == null || identificadorHeroi == null) {
             throw new IllegalArgumentException("Tela do tabuleiro recebeu uma dependência nula.");
         }
@@ -52,7 +62,7 @@ public final class TelaTabuleiro implements Disposable {
             stage.getViewport().getWorldHeight()
         );
 
-        criarCartas(fonteCarta, interacao);
+        criarCartas(fonteCarta, interacao, aoHoverCarta);
         animacao = new AnimacaoTabuleiro(
             stage,
             cartas,
@@ -208,7 +218,11 @@ public final class TelaTabuleiro implements Disposable {
         }
     }
 
-    private void criarCartas(BitmapFont fonteCarta, InteracaoCartaVisual interacao) {
+    private void criarCartas(
+        BitmapFont fonteCarta,
+        InteracaoCartaVisual interacao,
+        Runnable aoHoverCarta
+    ) {
         for (int linha = 0; linha < Tabuleiro.LINHAS; linha++) {
             for (int coluna = 0; coluna < Tabuleiro.COLUNAS; coluna++) {
                 CartaVisual carta = new CartaVisual(
@@ -219,7 +233,8 @@ public final class TelaTabuleiro implements Disposable {
                     linha,
                     coluna,
                     interacao,
-                    fonteCarta
+                    fonteCarta,
+                    aoHoverCarta
                 );
                 if (linha == tabuleiro.getJogadorLinha() && coluna == tabuleiro.getJogadorColuna()) {
                     carta.setRevelada(true);

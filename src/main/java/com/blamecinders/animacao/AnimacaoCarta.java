@@ -17,11 +17,23 @@ import com.blamecinders.util.GerenciadorTexturas;
 /** Animações Scene2D usadas por cartas, armas e transições de combate. */
 public class AnimacaoCarta {
 
+    private Runnable aoIniciarFlip = () -> {};
+    private Runnable aoIniciarDerrotaInimigo = () -> {};
+
+    public void setAoIniciarFlip(Runnable callback) {
+        aoIniciarFlip = callback != null ? callback : () -> {};
+    }
+
+    public void setAoIniciarDerrotaInimigo(Runnable callback) {
+        aoIniciarDerrotaInimigo = callback != null ? callback : () -> {};
+    }
+
     public void aplicarFlip(Actor carta, Runnable aposFlip) {
         aplicarFlip(carta, aposFlip, null);
     }
 
     public void aplicarFlip(Actor carta, Runnable aposFlip, Runnable aoFinalizar) {
+        aoIniciarFlip.run();
         carta.setOrigin(Align.center);
 
         carta.addAction(
@@ -127,6 +139,7 @@ public class AnimacaoCarta {
             return;
         }
 
+        aoIniciarDerrotaInimigo.run();
         cartaInimigo.clearActions();
         cartaInimigo.setOrigin(Align.center);
         cartaInimigo.toFront();

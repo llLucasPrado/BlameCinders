@@ -120,7 +120,6 @@ public final class TelaEscolhaPersonagem implements Tela {
 
     @Override
     public void destruir() {
-        audio.pararMusicaMenu();
         if (stage != null) {
             if (Gdx.input.getInputProcessor() == stage) Gdx.input.setInputProcessor(null);
             stage.dispose();

@@ -131,7 +131,6 @@ public final class MenuPrincipal implements Tela {
 
     @Override
     public void destruir() {
-        audio.pararMusicaMenu();
         if (stage != null) {
             if (Gdx.input.getInputProcessor() == stage) {
                 Gdx.input.setInputProcessor(null);

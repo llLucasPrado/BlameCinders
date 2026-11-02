@@ -10,6 +10,7 @@ import com.badlogic.gdx.scenes.scene2d.utils.ClickListener;
 import com.badlogic.gdx.scenes.scene2d.utils.Drawable;
 import com.badlogic.gdx.scenes.scene2d.utils.TextureRegionDrawable;
 import com.badlogic.gdx.utils.Align;
+import com.badlogic.gdx.utils.TimeUtils;
 import com.blamecinders.ui.carta.CartaExibida;
 import com.blamecinders.util.GerenciadorTexturas;
 
@@ -25,12 +26,14 @@ public class CartaVisual extends CartaExibida {
     private Drawable frente;
     private final Drawable verso;
     private final Function<String, Drawable> provedorFundos;
+    private final Runnable aoHover;
     private String nomeFrente;
     private final String nomeVerso;
     private int linha;
     private int coluna;
     private boolean revelada;
     private boolean bloqueandoAnimacaoClique;
+    private long hoverSomSuprimidoAteMs;
 
     public CartaVisual(
         String nomeFrente,
@@ -64,12 +67,48 @@ public class CartaVisual extends CartaExibida {
         int coluna,
         InteracaoCartaVisual interacao,
         BitmapFont fonte,
+        Runnable aoHover
+    ) {
+        this(
+            nomeFrente, nomeVerso, x, y, linha, coluna, interacao, fonte,
+            CartaVisual::criarFundo, aoHover
+        );
+    }
+
+    public CartaVisual(
+        String nomeFrente,
+        String nomeVerso,
+        float x,
+        float y,
+        int linha,
+        int coluna,
+        InteracaoCartaVisual interacao,
+        BitmapFont fonte,
         Function<String, Drawable> provedorFundos
+    ) {
+        this(
+            nomeFrente, nomeVerso, x, y, linha, coluna, interacao, fonte,
+            provedorFundos, () -> {}
+        );
+    }
+
+    public CartaVisual(
+        String nomeFrente,
+        String nomeVerso,
+        float x,
+        float y,
+        int linha,
+        int coluna,
+        InteracaoCartaVisual interacao,
+        BitmapFont fonte,
+        Function<String, Drawable> provedorFundos,
+        Runnable aoHover
     ) {
         super(obterFundo(provedorFundos, nomeVerso), nomeVerso, fonte);
         this.nomeFrente = nomeFrente;
         this.nomeVerso = nomeVerso;
         this.provedorFundos = Objects.requireNonNull(provedorFundos, "provedorFundos");
+        this.aoHover = Objects.requireNonNull(aoHover, "aoHover");
         this.verso = getImagem().getDrawable();
         this.linha = linha;
         this.coluna = coluna;
@@ -84,6 +123,9 @@ public class CartaVisual extends CartaExibida {
                     return;
                 }
 
+                if (TimeUtils.millis() >= hoverSomSuprimidoAteMs) {
+                    CartaVisual.this.aoHover.run();
+                }
                 clearActions();
                 addAction(Actions.scaleTo(1.1f, 1.1f, 0.12f, Interpolation.fade));
                 toFront();
@@ -105,6 +147,7 @@ public class CartaVisual extends CartaExibida {
                     return;
                 }
 
+                hoverSomSuprimidoAteMs = TimeUtils.millis() + 500L;
                 interacao.aoClicar(CartaVisual.this.linha, CartaVisual.this.coluna);
             }
         });

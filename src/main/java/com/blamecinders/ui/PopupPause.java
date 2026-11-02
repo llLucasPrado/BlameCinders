@@ -25,11 +25,13 @@ final class PopupPause {
     private final Stage stage;
     private final Skin skin;
     private final GerenciadorAudio audio;
+    private final PopupAudio popupAudio;
 
     PopupPause(Stage stage, Skin skin, GerenciadorAudio audio) {
         this.stage = Objects.requireNonNull(stage, "stage");
         this.skin = Objects.requireNonNull(skin, "skin");
         this.audio = Objects.requireNonNull(audio, "audio");
+        this.popupAudio = new PopupAudio(stage, skin, audio);
     }
 
     void mostrar(BooleanSupplier salvar, Runnable continuar, Runnable voltarMenu) {
@@ -73,8 +75,7 @@ final class PopupPause {
         Label aviso = criarAviso(mensagem);
         TextButton btnContinuar = new TextButton("Continuar", skin);
         TextButton btnSalvarSair = new TextButton("Salvar / Sair", skin);
-        TextButton btnMusica = new TextButton(textoMusica(), skin);
-        TextButton btnEfeitos = new TextButton(textoEfeitos(), skin);
+        TextButton btnAudio = new TextButton("Áudio", skin);
 
         btnContinuar.addListener(aoClicar(() ->
             AnimadorPopup.fecharComOverlay(popup, overlay, continuar)
@@ -82,24 +83,17 @@ final class PopupPause {
         btnSalvarSair.addListener(aoClicar(() ->
             montarMenuSalvar(popup, overlay, salvar, continuar, voltarMenu)
         ));
-        btnMusica.addListener(aoClicar(() -> {
-            audio.setMusicaAtiva(!audio.isMusicaAtiva());
-            btnMusica.setText(textoMusica());
-        }));
-        btnEfeitos.addListener(aoClicar(() -> {
-            audio.setEfeitosAtivos(!audio.isEfeitosAtivos());
-            btnEfeitos.setText(textoEfeitos());
-        }));
+        btnAudio.addListener(aoClicar(() ->
+            popupAudio.mostrar()
+        ));
 
         popup.add(titulo).width(420).pad(20);
         popup.row();
         popup.add(btnContinuar).width(220).pad(8);
         popup.row();
+        popup.add(btnAudio).width(220).pad(8);
+        popup.row();
         popup.add(btnSalvarSair).width(220).pad(8);
-        popup.row();
-        popup.add(btnMusica).width(220).pad(8);
-        popup.row();
-        popup.add(btnEfeitos).width(220).pad(8);
         popup.row();
         popup.add(aviso).width(420).pad(8);
         ajustarPopup(popup);
@@ -118,6 +112,7 @@ final class PopupPause {
         Label aviso = criarAviso("");
         TextButton btnSalvar = new TextButton("Salvar", skin);
         TextButton btnSalvarSair = new TextButton("Salvar e sair", skin);
+        TextButton btnSairSemSalvar = new TextButton("Sair sem salvar", skin);
 
         btnSalvar.addListener(aoClicar(() -> {
             if (salvar.getAsBoolean()) {
@@ -148,6 +143,9 @@ final class PopupPause {
                 aviso.setText("Não é possível salvar durante uma ação.");
             }
         }));
+        btnSairSemSalvar.addListener(aoClicar(() ->
+            montarConfirmacaoSairSemSalvar(popup, overlay, salvar, continuar, voltarMenu)
+        ));
 
         popup.add(titulo).width(420).pad(20);
         popup.row();
@@ -155,7 +153,40 @@ final class PopupPause {
         popup.row();
         popup.add(btnSalvarSair).width(220).pad(8);
         popup.row();
+        popup.add(btnSairSemSalvar).width(220).pad(8);
+        popup.row();
         popup.add(aviso).width(420).pad(8);
+        ajustarPopup(popup);
+    }
+
+    private void montarConfirmacaoSairSemSalvar(
+        Window popup,
+        Image overlay,
+        BooleanSupplier salvar,
+        Runnable continuar,
+        Runnable voltarMenu
+    ) {
+        popup.clearChildren();
+
+        Label titulo = criarTitulo("SAIR SEM SALVAR", 1.8f);
+        Label aviso = criarAviso("O progresso pode ser perdido. Deseja sair sem salvar?");
+        TextButton btnCancelar = new TextButton("Cancelar", skin);
+        TextButton btnConfirmar = new TextButton("Confirmar", skin);
+
+        btnCancelar.addListener(aoClicar(() ->
+            montarMenuSalvar(popup, overlay, salvar, continuar, voltarMenu)
+        ));
+        btnConfirmar.addListener(aoClicar(() ->
+            AnimadorPopup.fecharComOverlay(popup, overlay, voltarMenu)
+        ));
+
+        popup.add(titulo).width(500).pad(20);
+        popup.row();
+        popup.add(aviso).width(500).pad(12);
+        popup.row();
+        popup.add(btnCancelar).width(220).pad(8);
+        popup.row();
+        popup.add(btnConfirmar).width(220).pad(8);
         ajustarPopup(popup);
     }
 
@@ -178,20 +209,13 @@ final class PopupPause {
         popup.toFront();
     }
 
-    private static ClickListener aoClicar(Runnable acao) {
+    private ClickListener aoClicar(Runnable acao) {
         return new ClickListener() {
             @Override
             public void clicked(InputEvent event, float x, float y) {
+                audio.tocarSelecionarOpcao();
                 acao.run();
             }
         };
-    }
-
-    private String textoMusica() {
-        return "Música: " + (audio.isMusicaAtiva() ? "ligada" : "desligada");
-    }
-
-    private String textoEfeitos() {
-        return "Efeitos: " + (audio.isEfeitosAtivos() ? "ligados" : "desligados");
     }
 }

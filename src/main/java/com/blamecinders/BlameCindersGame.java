@@ -133,6 +133,8 @@ public class BlameCindersGame extends ApplicationAdapter implements InteracaoCar
         indicadorSalvamento = new IndicadorSalvamento(stageUI);
 
         animacaoCarta = new AnimacaoCarta();
+        animacaoCarta.setAoIniciarFlip(gerenciadorAudio::tocarFlipCartas);
+        animacaoCarta.setAoIniciarDerrotaInimigo(gerenciadorAudio::tocarDerrotaCarta);
 
         popupManager = new GerenciadorPopups(
             stageUI,
@@ -177,6 +179,7 @@ public class BlameCindersGame extends ApplicationAdapter implements InteracaoCar
     public void render() {
 
         float delta = Gdx.graphics.getDeltaTime();
+        gerenciadorAudio.atualizar(delta);
 
         ScreenUtils.clear(0.1f, 0.1f, 0.1f, 1f);
 
@@ -267,6 +270,7 @@ public class BlameCindersGame extends ApplicationAdapter implements InteracaoCar
                 break;
 
             case BLOQUEAR:
+                gerenciadorAudio.tocarClickCartaErrada();
                 mostrarMensagem("Você só pode revelar cartas adjacentes.");
                 telaTabuleiro.animarMovimentoInvalido(linha, coluna);
                 break;
@@ -304,6 +308,7 @@ public class BlameCindersGame extends ApplicationAdapter implements InteracaoCar
 
     private void prepararPartida(EstadoPartida partidaInicial) {
         gerenciadorTelas.encerrarTelaAtual();
+        gerenciadorAudio.iniciarMusicaFase();
         limparCamadasPartida();
         criarMensagemUI();
         pauseAberto = false;
@@ -318,7 +323,11 @@ public class BlameCindersGame extends ApplicationAdapter implements InteracaoCar
         controladorInteracaoCarta = new ControladorInteracaoCarta(partida);
 
         telaTabuleiro = new TelaTabuleiro(
-            tabuleiro(), fonteCarta, this, partida.getPersonagem().getIdentificadorVisual()
+            tabuleiro(),
+            fonteCarta,
+            this,
+            partida.getPersonagem().getIdentificadorVisual(),
+            gerenciadorAudio::tocarHoverCarta
         );
 
         multiplexer = new InputMultiplexer();
@@ -335,7 +344,8 @@ public class BlameCindersGame extends ApplicationAdapter implements InteracaoCar
             skin,
             animacaoCarta,
             popupManager,
-            controladorEncontro
+            controladorEncontro,
+            gerenciadorAudio
         );
 
         fluxoCarta = new FluxoCarta(
@@ -368,6 +378,7 @@ public class BlameCindersGame extends ApplicationAdapter implements InteracaoCar
     }
 
     private void coletarChama(int linha, int coluna) {
+        gerenciadorAudio.tocarChama();
         ResultadoColetaChama resultado = controladorEncontro.coletarChama(linha, coluna);
 
         atualizarHUDCompleto();
@@ -547,6 +558,8 @@ public class BlameCindersGame extends ApplicationAdapter implements InteracaoCar
                 restaurarCartaOriginal(linha, coluna, cartaOriginal);
                 atualizarHUDCompleto();
                 mostrarMensagem(resultado.getMensagem());
+                gerenciadorAudio.tocarGameOver();
+                gerenciadorAudio.pararMusicaFase();
                 popupManager.mostrarGameOver();
                 break;
 
@@ -590,6 +603,8 @@ public class BlameCindersGame extends ApplicationAdapter implements InteracaoCar
             mostrarMensagem(resultado.getMensagem());
 
             if (resultado.getDesfecho() == DesfechoInimigo.JOGADOR_DERROTADO) {
+                gerenciadorAudio.tocarGameOver();
+                gerenciadorAudio.pararMusicaFase();
                 popupManager.mostrarGameOver();
             } else {
                 atualizarDestaqueCartas();
@@ -628,6 +643,7 @@ public class BlameCindersGame extends ApplicationAdapter implements InteracaoCar
     }
 
     private void voltarAoMenuPrincipal() {
+        gerenciadorAudio.pararMusicaFase();
         cancelarLimpezaMensagem();
         Timer.instance().clear();
         Timer.instance().start();
