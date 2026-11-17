@@ -76,12 +76,17 @@ public final class ControladorEncontro {
 
     public ResultadoEncontroInimigo tentarFurtividade(CartaInfo carta) {
         validarInimigo(carta);
+        if (!podeUsarFurtividade()) {
+            throw new IllegalStateException(
+                partida.getPersonagem().getArquetipo() + " não pode usar furtividade."
+            );
+        }
         if (carta.isFurtividadeTentada()) {
             throw new IllegalStateException("A furtividade já foi tentada nesta carta.");
         }
         ResultadoFurtividade resultado = sistemaFurtividade.tentar(
-            carta.getInimigo(),
-            partida.getPersonagem().getChanceFurtividade()
+            partida.getPersonagem(),
+            carta.getInimigo()
         );
 
         int dano = resultado.isSucesso()
@@ -93,6 +98,10 @@ public final class ControladorEncontro {
             return ResultadoEncontroInimigo.derrotaPorFurtividade(resultado, dano);
         }
         return ResultadoEncontroInimigo.furtividade(resultado, dano);
+    }
+
+    public boolean podeUsarFurtividade() {
+        return partida.getPersonagem().podeUsarFurtividade();
     }
 
     public ResultadoEncontroInimigo lutar(CartaInfo carta) {

@@ -16,22 +16,31 @@ public final class RecompensaCinzas {
             this.chancePercentual = chancePercentual;
         }
 
-        public int getQuantidade() { return quantidade; }
-        public int getChancePercentual() { return chancePercentual; }
+        public int getQuantidade() {
+            return quantidade;
+        }
+
+        public int getChancePercentual() {
+            return chancePercentual;
+        }
     }
 
-    private RecompensaCinzas() { }
+    private RecompensaCinzas() {
+    }
 
     public static Drop para(Inimigo inimigo) {
         Objects.requireNonNull(inimigo, "inimigo");
-        switch (inimigo.getNome().toLowerCase()) {
-            case "rato": return new Drop(2, 100);
-            case "lobo": return new Drop(4, 80);
-            case "zumbi": return new Drop(6, 75);
-            case "esqueleto": return new Drop(8, 70);
-            case "espírito":
-            case "espirito": return new Drop(10, 65);
-            default: return new Drop(2, 50);
+        switch (inimigo.getCategoria()) {
+            case FRACO:
+                return new Drop(2, 100);
+            case MEDIO_BAIXO:
+                return new Drop(4, 80);
+            case MEDIO_ALTO:
+                return new Drop(7, 75);
+            case MEDIO_DIFICIL:
+                return new Drop(10, 65);
+            default:
+                throw new IllegalStateException("Categoria de inimigo desconhecida.");
         }
     }
 

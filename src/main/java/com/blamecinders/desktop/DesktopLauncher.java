@@ -14,7 +14,11 @@ public final class DesktopLauncher {
     public static void main(String[] args) {
         Lwjgl3ApplicationConfiguration configuracao = new Lwjgl3ApplicationConfiguration();
         configuracao.setTitle("Blame Cinders");
-        configuracao.setFullscreenMode(Lwjgl3ApplicationConfiguration.getDisplayMode());
+        if ("true".equalsIgnoreCase(System.getenv("BLAMECINDERS_WINDOWED"))) {
+            configuracao.setWindowedMode(1280, 720);
+        } else {
+            configuracao.setFullscreenMode(Lwjgl3ApplicationConfiguration.getDisplayMode());
+        }
         configuracao.setHdpiMode(HdpiMode.Pixels);
         configuracao.useVsync(true);
         configuracao.setForegroundFPS(60);

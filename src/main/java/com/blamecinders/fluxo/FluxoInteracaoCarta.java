@@ -3,6 +3,7 @@ package com.blamecinders.fluxo;
 import java.util.Objects;
 import java.util.function.Consumer;
 
+import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.scenes.scene2d.Stage;
 import com.badlogic.gdx.utils.Align;
 import com.badlogic.gdx.utils.Timer;
@@ -91,12 +92,13 @@ public final class FluxoInteracaoCarta {
         }
 
         String textura = telaTabuleiro.getIdentificador(linha, coluna);
+        Texture texturaCarregada = GerenciadorTexturas.get(textura);
         CartaVisual cartaZoom = prepararCartaZoom(cartaOriginal);
         montarCamadaZoom(cartaZoom);
         animacaoCarta.aplicarIdleFlutuacao(cartaZoom);
         animacaoCarta.aplicarFlip(
             cartaZoom,
-            () -> cartaZoom.setConteudo(GerenciadorTexturas.get(textura), textura),
+            () -> cartaZoom.setConteudo(texturaCarregada, textura),
             () -> popupManager.mostrarPopupMensagem(
                 TextoCarta.montar(cartaInfo),
                 () -> dissolverERestaurar(cartaZoom, linha, coluna, cartaOriginal, null)
@@ -113,12 +115,13 @@ public final class FluxoInteracaoCarta {
         }
 
         String textura = telaTabuleiro.getIdentificador(linha, coluna);
+        Texture texturaCarregada = GerenciadorTexturas.get(textura);
         CartaVisual cartaZoom = prepararCartaZoom(cartaOriginal);
         montarCamadaZoom(cartaZoom);
         animacaoCarta.aplicarIdleFlutuacao(cartaZoom);
         animacaoCarta.aplicarFlip(
             cartaZoom,
-            () -> cartaZoom.setConteudo(GerenciadorTexturas.get(textura), textura),
+            () -> cartaZoom.setConteudo(texturaCarregada, textura),
             () -> mostrarOpcoesPorTipo(linha, coluna, cartaOriginal, cartaZoom, cartaInfo)
         );
     }
@@ -136,29 +139,48 @@ public final class FluxoInteracaoCarta {
         }
 
         CartaInfo cartaInfo = tabuleiro.getCartaInfo(linha, coluna);
-
-        if (tipo == TipoCarta.INIMIGO || tipo == TipoCarta.CHAMA || tipo == TipoCarta.BAU) {
-            mostrarOpcoesPorTipo(linha, coluna, cartaOriginal, fluxoRevelacao.getCartaZoomAtual(), cartaInfo);
-            return;
-        }
-
         popupManager.mostrarPopupMensagem(
             TextoCarta.montar(cartaInfo),
-            () -> fecharCartaRevelada(linha, coluna, cartaOriginal)
+            () -> continuarAposRevelacao(linha, coluna, cartaOriginal)
         );
     }
 
-    private void fecharCartaRevelada(int linha, int coluna, CartaVisual cartaOriginal) {
+    private void continuarAposRevelacao(
+        int linha,
+        int coluna,
+        CartaVisual cartaOriginal
+    ) {
+        CartaInfo cartaInfo = tabuleiro.getCartaInfo(linha, coluna);
         CartaVisual cartaZoom = fluxoRevelacao.getCartaZoomAtual();
-        Runnable finalizar = () -> concluirModal(() -> {
-            restaurarCarta(linha, coluna, cartaOriginal);
-            mostrarMensagem.accept("Carta revelada. Clique novamente para interagir.");
-        });
 
-        if (cartaZoom == null) {
-            finalizar.run();
-        } else {
-            animacaoCarta.dissolverCartaZoom(cartaZoom, finalizar);
+        if (cartaInfo == null || cartaZoom == null) {
+            concluirModal(() -> restaurarCarta(linha, coluna, cartaOriginal));
+            return;
+        }
+
+        switch (cartaInfo.getTipo()) {
+            case INIMIGO:
+            case BAU:
+            case CHAMA:
+                mostrarOpcoesPorTipo(
+                    linha,
+                    coluna,
+                    cartaOriginal,
+                    cartaZoom,
+                    cartaInfo
+                );
+                break;
+            case PAREDE:
+            case VAZIO:
+            default:
+                dissolverERestaurar(
+                    cartaZoom,
+                    linha,
+                    coluna,
+                    cartaOriginal,
+                    null
+                );
+                break;
         }
     }
 
@@ -235,10 +257,11 @@ public final class FluxoInteracaoCarta {
         }
 
         String identificadorItem = cartaInfo.getItemDentro().getIdentificadorVisual();
+        Texture texturaItem = GerenciadorTexturas.get(identificadorItem);
         animacaoCarta.aplicarFlip(
             cartaZoom,
             () -> cartaZoom.setConteudo(
-                GerenciadorTexturas.get(identificadorItem),
+                texturaItem,
                 identificadorItem
             )
         );

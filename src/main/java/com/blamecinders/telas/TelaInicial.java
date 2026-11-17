@@ -10,6 +10,7 @@ import com.badlogic.gdx.scenes.scene2d.ui.Skin;
 import com.badlogic.gdx.utils.Align;
 import com.badlogic.gdx.utils.viewport.FitViewport;
 import com.blamecinders.audio.GerenciadorAudio;
+import com.blamecinders.ui.VisualMenu;
 
 import java.util.Objects;
 import java.util.function.BooleanSupplier;
@@ -24,6 +25,7 @@ public final class TelaInicial implements Tela {
     private final AcaoTela acaoNovoJogo;
     private final AcaoTela acaoContinuar;
     private final AcaoTela acaoOpcoes;
+    private final AcaoTela acaoCreditos;
     private final BooleanSupplier partidaSalvaDisponivel;
     private final GerenciadorAudio audio;
     private final Skin skin;
@@ -39,6 +41,7 @@ public final class TelaInicial implements Tela {
         AcaoTela acaoNovoJogo,
         AcaoTela acaoContinuar,
         AcaoTela acaoOpcoes,
+        AcaoTela acaoCreditos,
         BooleanSupplier partidaSalvaDisponivel,
         GerenciadorAudio audio,
         Skin skin
@@ -47,6 +50,7 @@ public final class TelaInicial implements Tela {
         this.acaoNovoJogo = Objects.requireNonNull(acaoNovoJogo, "acaoNovoJogo");
         this.acaoContinuar = Objects.requireNonNull(acaoContinuar, "acaoContinuar");
         this.acaoOpcoes = Objects.requireNonNull(acaoOpcoes, "acaoOpcoes");
+        this.acaoCreditos = Objects.requireNonNull(acaoCreditos, "acaoCreditos");
         this.partidaSalvaDisponivel = Objects.requireNonNull(
             partidaSalvaDisponivel,
             "partidaSalvaDisponivel"
@@ -58,22 +62,27 @@ public final class TelaInicial implements Tela {
     @Override
     public void mostrar() {
         stage = new Stage(new FitViewport(LARGURA_MUNDO, ALTURA_MUNDO));
+        VisualMenu.adicionarFundo(stage, VisualMenu.FUNDO_CEMITERIO, 0.20f);
 
-        Label titulo = new Label("Blame Cinders", skin);
-        titulo.setFontScale(2.5f);
+        Label titulo = new Label("B L A M E   C I N D E R S", skin);
+        titulo.setFontScale(2.05f);
         titulo.setAlignment(Align.center);
         titulo.setSize(LARGURA_MUNDO, 100f);
-        titulo.setPosition(0f, 430f);
+        titulo.setPosition(0f, 360f);
 
-        Label pressionarEnter = new Label("PRESSIONE ENTER", skin);
-        pressionarEnter.setFontScale(1.2f);
+        Label pressionarEnter = new Label("PRESSIONE QUALQUER TECLA", skin);
+        pressionarEnter.setFontScale(0.9f);
         pressionarEnter.setAlignment(Align.center);
         pressionarEnter.setSize(LARGURA_MUNDO, 60f);
-        pressionarEnter.setPosition(0f, 250f);
+        pressionarEnter.setPosition(0f, 270f);
 
         stage.addActor(titulo);
         stage.addActor(pressionarEnter);
+        VisualMenu.animarEntrada(titulo, 0.1f);
+        VisualMenu.animarEntrada(pressionarEnter, 0.35f);
         fadeRenderer = new ShapeRenderer();
+        Gdx.input.setInputProcessor(stage);
+        audio.iniciarMusicaMenu();
     }
 
     @Override
@@ -82,7 +91,8 @@ public final class TelaInicial implements Tela {
         stage.draw();
 
         if (!transicionando) {
-            if (Gdx.input.isKeyJustPressed(Input.Keys.ENTER)) {
+            if (Gdx.input.isKeyJustPressed(Input.Keys.ANY_KEY)
+                || Gdx.input.justTouched()) {
                 transicionando = true;
                 audio.tocarPressEnter();
             }
@@ -99,6 +109,7 @@ public final class TelaInicial implements Tela {
                 acaoNovoJogo,
                 acaoContinuar,
                 acaoOpcoes,
+                acaoCreditos,
                 partidaSalvaDisponivel,
                 audio,
                 skin

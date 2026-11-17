@@ -2,6 +2,7 @@ package com.blamecinders.persistencia;
 
 import com.blamecinders.tabuleiro.EstadoCarta;
 import com.blamecinders.tabuleiro.TipoCarta;
+import com.blamecinders.combate.CategoriaInimigo;
 
 public final class DadosPartida {
 
@@ -30,6 +31,7 @@ public final class DadosPartida {
         public String identificadorVisual;
         public int vida;
         public int dificuldadeFurtividade;
+        public CategoriaInimigo categoria;
     }
 
     public static final class ItemSalvo {

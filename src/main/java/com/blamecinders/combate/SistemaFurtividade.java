@@ -7,8 +7,6 @@ import com.blamecinders.configuracao.BalanceamentoJogo;
 
 public class SistemaFurtividade {
 
-    static final int CHANCE_BASE = BalanceamentoJogo.CHANCE_BASE_FURTIVIDADE;
-
     private final Random random;
 
     public SistemaFurtividade() {
@@ -18,21 +16,31 @@ public class SistemaFurtividade {
     public SistemaFurtividade(Random random) {
         this.random = Objects.requireNonNull(random, "random");
     }
-    
-    public ResultadoFurtividade tentar(Inimigo inimigo) {
-    return tentar(inimigo, CHANCE_BASE);
-}
 
-    public ResultadoFurtividade tentar(Inimigo inimigo, int chanceBase) {
+    public ResultadoFurtividade tentar(Personagem personagem, Inimigo inimigo) {
+        Objects.requireNonNull(personagem, "personagem");
         Objects.requireNonNull(inimigo, "inimigo");
-        int chance = Math.max(
+        if (!personagem.podeUsarFurtividade()) {
+            throw new IllegalStateException(
+                personagem.getArquetipo() + " não pode usar furtividade."
+            );
+        }
+
+        int chance = calcularChance(personagem, inimigo.getDificuldadeFurtividade());
+        int rolagem = random.nextInt(BalanceamentoJogo.TOTAL_PERCENTUAL) + 1;
+        return new ResultadoFurtividade(rolagem <= chance, chance, rolagem);
+    }
+
+    public static int calcularChance(Personagem personagem, int dificuldadeInimigo) {
+        Objects.requireNonNull(personagem, "personagem");
+        if (!personagem.podeUsarFurtividade()) return 0;
+
+        return Math.max(
             BalanceamentoJogo.CHANCE_MINIMA_FURTIVIDADE,
             Math.min(
                 BalanceamentoJogo.CHANCE_MAXIMA_FURTIVIDADE,
-                chanceBase - inimigo.getDificuldadeFurtividade()
+                personagem.getChanceBaseFurtividade() - dificuldadeInimigo
             )
         );
-        int rolagem = random.nextInt(BalanceamentoJogo.TOTAL_PERCENTUAL) + 1;
-        return new ResultadoFurtividade(rolagem <= chance, chance, rolagem);
     }
 }

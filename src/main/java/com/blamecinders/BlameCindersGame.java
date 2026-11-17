@@ -22,8 +22,8 @@ import com.blamecinders.aplicacao.ResultadoColetaBau;
 import com.blamecinders.aplicacao.ResultadoColetaChama;
 import com.blamecinders.aplicacao.ResultadoEncontroInimigo;
 import com.blamecinders.audio.GerenciadorAudio;
-import com.blamecinders.combate.Jogador;
 import com.blamecinders.combate.Inimigo;
+import com.blamecinders.combate.Jogador;
 import com.blamecinders.combate.Personagem;
 import com.blamecinders.combate.RecompensaCinzas;
 import com.blamecinders.configuracao.BalanceamentoJogo;
@@ -34,9 +34,11 @@ import com.blamecinders.persistencia.RepositorioPartida;
 import com.blamecinders.tabuleiro.Tabuleiro;
 import com.blamecinders.telas.GerenciadorTelas;
 import com.blamecinders.telas.MenuPrincipal;
+import com.blamecinders.telas.TelaCreditos;
 import com.blamecinders.telas.TelaEscolhaPersonagem;
 import com.blamecinders.telas.TelaInicial;
 import com.blamecinders.telas.TelaOpcoes;
+import com.blamecinders.telas.TelaPrologo;
 import com.blamecinders.ui.ControladorHUD;
 import com.blamecinders.ui.GerenciadorPopups;
 import com.blamecinders.ui.IndicadorSalvamento;
@@ -151,9 +153,10 @@ public class BlameCindersGame extends ApplicationAdapter implements InteracaoCar
         gerenciadorTelas.trocarTela(
             new TelaInicial(
                 gerenciadorTelas,
-                this::abrirEscolhaPersonagem,
+                this::abrirPrologo,
                 this::continuarPartida,
                 this::abrirOpcoes,
+                this::abrirCreditos,
                 repositorioPartida::existe,
                 gerenciadorAudio,
                 skin
@@ -276,9 +279,9 @@ public class BlameCindersGame extends ApplicationAdapter implements InteracaoCar
                 break;
 
             case REVELAR:
-            telaModalAberta = true;
-            fluxoInteracaoCarta.revelar(linha, coluna, cartaOriginal);
-            break;
+                telaModalAberta = true;
+                fluxoInteracaoCarta.revelar(linha, coluna, cartaOriginal);
+                break;
 
             default:
                 throw new IllegalStateException("Ação de clique desconhecida.");
@@ -289,6 +292,17 @@ public class BlameCindersGame extends ApplicationAdapter implements InteracaoCar
         gerenciadorTelas.trocarTela(
             new TelaEscolhaPersonagem(
                 this::iniciarNovoJogo,
+                this::abrirMenuPrincipal,
+                gerenciadorAudio,
+                skin
+            )
+        );
+    }
+
+    private void abrirPrologo() {
+        gerenciadorTelas.trocarTela(
+            new TelaPrologo(
+                this::abrirEscolhaPersonagem,
                 this::abrirMenuPrincipal,
                 gerenciadorAudio,
                 skin
@@ -384,9 +398,12 @@ public class BlameCindersGame extends ApplicationAdapter implements InteracaoCar
         atualizarHUDCompleto();
         moverJogadorPara(linha, coluna, () -> {
             if (resultado.isObjetivoConcluido()) {
-                int objetivo = BalanceamentoJogo.OBJETIVO_CHAMAS;
-                mostrarMensagemFinal(
-                    "Você venceu! " + objetivo + "/" + objetivo + " chamas coletadas."
+                telaModalAberta = true;
+                gerenciadorAudio.pararMusicaFase();
+                popupManager.mostrarVitoria(
+                    partida.getCinzas(),
+                    this::reiniciarPartida,
+                    this::voltarAoMenuPrincipal
                 );
             }
         });
@@ -432,11 +449,6 @@ public class BlameCindersGame extends ApplicationAdapter implements InteracaoCar
             }
         };
         Timer.schedule(tarefaLimparMensagem, 2f);
-    }
-
-    private void mostrarMensagemFinal(String texto) {
-        cancelarLimpezaMensagem();
-        labelMensagem.setText(texto);
     }
 
     private void cancelarLimpezaMensagem() {
@@ -560,7 +572,10 @@ public class BlameCindersGame extends ApplicationAdapter implements InteracaoCar
                 mostrarMensagem(resultado.getMensagem());
                 gerenciadorAudio.tocarGameOver();
                 gerenciadorAudio.pararMusicaFase();
-                popupManager.mostrarGameOver();
+                popupManager.mostrarGameOver(
+                    this::reiniciarPartida,
+                    this::voltarAoMenuPrincipal
+                );
                 break;
 
             case RECUO:
@@ -605,7 +620,10 @@ public class BlameCindersGame extends ApplicationAdapter implements InteracaoCar
             if (resultado.getDesfecho() == DesfechoInimigo.JOGADOR_DERROTADO) {
                 gerenciadorAudio.tocarGameOver();
                 gerenciadorAudio.pararMusicaFase();
-                popupManager.mostrarGameOver();
+                popupManager.mostrarGameOver(
+                    this::reiniciarPartida,
+                    this::voltarAoMenuPrincipal
+                );
             } else {
                 atualizarDestaqueCartas();
             }
@@ -670,17 +688,29 @@ public class BlameCindersGame extends ApplicationAdapter implements InteracaoCar
         abrirMenuPrincipal();
     }
 
+    private void reiniciarPartida() {
+        Personagem personagem = partida != null ? partida.getPersonagem() : Personagem.PADRAO;
+        prepararPartida(new EstadoPartida(personagem));
+    }
+
     private void abrirOpcoes() {
         gerenciadorTelas.trocarTela(
             new TelaOpcoes(this::abrirMenuPrincipal, gerenciadorAudio, skin)
         );
     }
 
+    private void abrirCreditos() {
+        gerenciadorTelas.trocarTela(
+            new TelaCreditos(this::abrirMenuPrincipal, gerenciadorAudio, skin)
+        );
+    }
+
     private void abrirMenuPrincipal() {
         gerenciadorTelas.trocarTela(new MenuPrincipal(
-            this::abrirEscolhaPersonagem,
+            this::abrirPrologo,
             this::continuarPartida,
             this::abrirOpcoes,
+            this::abrirCreditos,
             repositorioPartida::existe,
             gerenciadorAudio,
             skin

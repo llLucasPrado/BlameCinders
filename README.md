@@ -32,11 +32,20 @@ de 1280x720 e preservam a proporção das cartas.
 - baús podem conter armas ou comida;
 - três chamas encerram a fase;
 - o menu de pause congela tabuleiro, animações e timers da partida;
-- a partida é salva localmente e pode ser retomada por `Continuar`;
+- a partida pode ser salva manualmente pelo menu de pause e retomada por
+  `Continuar`;
+- o save é um JSON legível em `%USERPROFILE%\BlameCinders\saves\slot-001.json`;
+- a gravação usa arquivo temporário e mantém `slot-001.backup.json` para
+  recuperação;
+- `Salvar / Sair` oferece as opções de apenas salvar ou salvar e retornar ao
+  menu principal;
+- um indicador animado de pena e livro confirma visualmente o salvamento;
 - música e efeitos podem ser ligados ou desligados no menu e no pause;
 - a furtividade sempre troca o herói e o inimigo de posição, sem acionar a
   esteira; no sucesso não há dano e, na falha, metade do dano vai direto à vida;
-- texturas de cartas são carregadas sob demanda e possuem fallback procedural
+- assassino possui a maior chance de furtividade, seguido pela arqueira;
+  cavaleiro possui chance baixa e o anão não pode escolher furtividade;
+- texturas de cartas são preparadas antes do flip e possuem fallback procedural
   identificado por texto.
 
 O mapeamento técnico está em [`docs/ARQUITETURA.md`](docs/ARQUITETURA.md), e as

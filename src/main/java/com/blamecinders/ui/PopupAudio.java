@@ -28,6 +28,8 @@ public final class PopupAudio {
     private final Skin skin;
     private final GerenciadorAudio audio;
     private final Slider.SliderStyle estiloSlider;
+    private Image overlayAtual;
+    private Window popupAtual;
 
     public PopupAudio(Stage stage, Skin skin, GerenciadorAudio audio) {
         this.stage = Objects.requireNonNull(stage, "stage");
@@ -37,8 +39,12 @@ public final class PopupAudio {
     }
 
     public void mostrar() {
-        Image overlay = ElementosPopup.criarOverlay(stage, 0.75f);
-        Window popup = new Window("", skin);
+        if (estaAberto()) return;
+
+        overlayAtual = ElementosPopup.criarOverlay(stage, 0.75f);
+        popupAtual = new Window("", skin);
+        Image overlay = overlayAtual;
+        Window popup = popupAtual;
         Label titulo = new Label("ÁUDIO", skin);
         titulo.setAlignment(Align.center);
         titulo.setFontScale(2f);
@@ -55,11 +61,7 @@ public final class PopupAudio {
             audio.setEfeitosAtivos(!audio.isEfeitosAtivos());
             btnEfeitos.setText(textoEfeitos());
         }));
-        btnVoltar.addListener(aoClicar(() -> AnimadorPopup.fecharComOverlay(
-            popup,
-            overlay,
-            null
-        )));
+        btnVoltar.addListener(aoClicar(() -> fechar(null)));
 
         popup.add(titulo).width(440).pad(18);
         popup.row();
@@ -79,6 +81,23 @@ public final class PopupAudio {
         AnimadorPopup.abrir(popup);
         overlay.toFront();
         popup.toFront();
+    }
+
+    public boolean estaAberto() {
+        return popupAtual != null && popupAtual.getStage() != null;
+    }
+
+    public void fechar(Runnable aoFinalizar) {
+        if (!estaAberto()) {
+            if (aoFinalizar != null) aoFinalizar.run();
+            return;
+        }
+
+        Window popup = popupAtual;
+        Image overlay = overlayAtual;
+        popupAtual = null;
+        overlayAtual = null;
+        AnimadorPopup.fecharComOverlay(popup, overlay, aoFinalizar);
     }
 
     private void adicionarControleVolume(Window popup, boolean musica) {

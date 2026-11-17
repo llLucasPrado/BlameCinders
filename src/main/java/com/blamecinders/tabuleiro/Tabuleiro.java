@@ -5,6 +5,7 @@ import com.blamecinders.combate.Inimigo;
 import com.blamecinders.configuracao.BalanceamentoJogo;
 import com.blamecinders.item.CatalogoItens;
 import com.blamecinders.item.ItemBau;
+import java.util.ArrayDeque;
 import java.util.Objects;
 import java.util.Random;
 
@@ -76,13 +77,16 @@ public class Tabuleiro {
         int jogadorColuna,
         int chamasColetadas
     ) {
-        return new Tabuleiro(
+        Tabuleiro tabuleiro = new Tabuleiro(
             grid,
             jogadorLinha,
             jogadorColuna,
             chamasColetadas,
             new Random()
         );
+        if (!tabuleiro.existeMovimentoValido()) tabuleiro.gerarSaidaEmergencial();
+        if (chamasColetadas < OBJETIVO_CHAMAS) tabuleiro.garantirUmaChama();
+        return tabuleiro;
     }
 
     private void inicializar() {
@@ -144,7 +148,9 @@ public class Tabuleiro {
 
         if (r < BalanceamentoJogo.CHANCE_BAU_TABULEIRO
             + BalanceamentoJogo.CHANCE_PAREDE_TABULEIRO) {
-            return TipoCarta.PAREDE;
+            return contarParedesNoTabuleiro() < BalanceamentoJogo.LIMITE_PAREDES_TABULEIRO
+                ? TipoCarta.PAREDE
+                : TipoCarta.INIMIGO;
         }
 
         return TipoCarta.INIMIGO;
@@ -222,21 +228,18 @@ public class Tabuleiro {
     }
 
     public void gerarNovaChamaUnica() {
-
         for (int tentativas = 0; tentativas < 300; tentativas++) {
-
             int l = random.nextInt(LINHAS);
             int c = random.nextInt(COLUNAS);
 
-            if (l == jogadorLinha && c == jogadorColuna) continue;
-            if (getTipoSeguro(l, c) == TipoCarta.PAREDE) continue;
-            if (getTipoSeguro(l, c) == TipoCarta.CHAMA) continue;
-            if (cartaEstaRevelada(l, c)) continue;
-
-            grid[l][c] = criarCarta(TipoCarta.CHAMA);
-            return;
+            if (podeReceberChama(l, c, true)) {
+                grid[l][c] = criarCarta(TipoCarta.CHAMA);
+                return;
+            }
         }
 
+        if (gerarChamaPorBusca(true)) return;
+        gerarChamaPorBusca(false);
     }
 
     public boolean coletarChama(int linha, int coluna) {
@@ -276,20 +279,55 @@ public class Tabuleiro {
             gerarSaidaEmergencial();
         }
 
-        if (chamasColetadas < OBJETIVO_CHAMAS && !existeChama()) {
+        if (chamasColetadas < OBJETIVO_CHAMAS) {
             garantirUmaChama();
         }
     }
 
-    private boolean existeChama() {
-        for (int i = 0; i < LINHAS; i++) {
-            for (int j = 0; j < COLUNAS; j++) {
-                if (getTipoSeguro(i, j) == TipoCarta.CHAMA) {
+    private boolean gerarChamaPorBusca(boolean exigirCartaFechada) {
+        for (int linha = 0; linha < LINHAS; linha++) {
+            for (int coluna = 0; coluna < COLUNAS; coluna++) {
+                if (podeReceberChama(linha, coluna, exigirCartaFechada)) {
+                    grid[linha][coluna] = criarCarta(TipoCarta.CHAMA);
                     return true;
                 }
             }
         }
+        return false;
+    }
 
+    private boolean podeReceberChama(int linha, int coluna, boolean exigirCartaFechada) {
+        if (linha == jogadorLinha && coluna == jogadorColuna) return false;
+        TipoCarta tipo = getTipoSeguro(linha, coluna);
+        if (tipo == TipoCarta.PAREDE || tipo == TipoCarta.CHAMA) return false;
+        if (exigirCartaFechada && cartaEstaRevelada(linha, coluna)) return false;
+        return posicaoAlcancavel(linha, coluna);
+    }
+
+    private boolean posicaoAlcancavel(int linhaDestino, int colunaDestino) {
+        boolean[][] visitada = new boolean[LINHAS][COLUNAS];
+        ArrayDeque<int[]> pendentes = new ArrayDeque<>();
+        pendentes.add(new int[] { jogadorLinha, jogadorColuna });
+        visitada[jogadorLinha][jogadorColuna] = true;
+
+        int[] deslocamentoLinha = { -1, 1, 0, 0 };
+        int[] deslocamentoColuna = { 0, 0, -1, 1 };
+        while (!pendentes.isEmpty()) {
+            int[] atual = pendentes.removeFirst();
+            if (atual[0] == linhaDestino && atual[1] == colunaDestino) return true;
+
+            for (int direcao = 0; direcao < deslocamentoLinha.length; direcao++) {
+                int linha = atual[0] + deslocamentoLinha[direcao];
+                int coluna = atual[1] + deslocamentoColuna[direcao];
+                if (!estaDentro(linha, coluna)
+                    || visitada[linha][coluna]
+                    || getTipoSeguro(linha, coluna) == TipoCarta.PAREDE) {
+                    continue;
+                }
+                visitada[linha][coluna] = true;
+                pendentes.addLast(new int[] { linha, coluna });
+            }
+        }
         return false;
     }
 
@@ -352,38 +390,21 @@ public class Tabuleiro {
         else grid[l + 1][c] = criarCarta(TipoCarta.INIMIGO);
     }
 
-    // Mantém exatamente uma chama ativa enquanto o objetivo não foi concluído.
     private void garantirUmaChama() {
-        int quantidade = 0;
-
+        boolean manteveChamaAlcancavel = false;
         for (int i = 0; i < LINHAS; i++) {
             for (int j = 0; j < COLUNAS; j++) {
                 if (getTipoSeguro(i, j) == TipoCarta.CHAMA) {
-                    quantidade++;
-                }
-            }
-        }
-
-        if (quantidade == 0) {
-            gerarNovaChamaUnica();
-            return;
-        }
-
-        if (quantidade > 1) {
-            boolean manteveUma = false;
-
-            for (int i = 0; i < LINHAS; i++) {
-                for (int j = 0; j < COLUNAS; j++) {
-                    if (getTipoSeguro(i, j) == TipoCarta.CHAMA) {
-                        if (!manteveUma) {
-                            manteveUma = true;
-                        } else {
-                            grid[i][j] = gerarCartaEsteiraSegura();
-                        }
+                    if (!manteveChamaAlcancavel && posicaoAlcancavel(i, j)) {
+                        manteveChamaAlcancavel = true;
+                    } else {
+                        grid[i][j] = criarCarta(TipoCarta.INIMIGO);
                     }
                 }
             }
         }
+
+        if (!manteveChamaAlcancavel) gerarNovaChamaUnica();
     }
 
     public void revelarCarta(int linha, int coluna) {
@@ -425,6 +446,18 @@ public class Tabuleiro {
                 if (getTipoSeguro(i, j) == TipoCarta.BAU) {
                     quantidade++;
                 }
+            }
+        }
+
+        return quantidade;
+    }
+
+    private int contarParedesNoTabuleiro() {
+        int quantidade = 0;
+
+        for (int i = 0; i < LINHAS; i++) {
+            for (int j = 0; j < COLUNAS; j++) {
+                if (getTipoSeguro(i, j) == TipoCarta.PAREDE) quantidade++;
             }
         }
 

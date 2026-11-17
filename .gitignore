@@ -11,3 +11,4 @@ out/
 .project
 .settings/
 hs_err_pid*
+debug.log

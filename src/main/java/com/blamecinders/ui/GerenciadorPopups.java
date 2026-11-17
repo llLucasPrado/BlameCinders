@@ -3,8 +3,11 @@ package com.blamecinders.ui;
 import java.util.Objects;
 import java.util.function.BooleanSupplier;
 
+import com.badlogic.gdx.Input;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
+import com.badlogic.gdx.scenes.scene2d.Group;
 import com.badlogic.gdx.scenes.scene2d.InputEvent;
+import com.badlogic.gdx.scenes.scene2d.InputListener;
 import com.badlogic.gdx.scenes.scene2d.Stage;
 import com.badlogic.gdx.scenes.scene2d.ui.Image;
 import com.badlogic.gdx.scenes.scene2d.ui.Label;
@@ -14,6 +17,7 @@ import com.badlogic.gdx.scenes.scene2d.ui.Window;
 import com.badlogic.gdx.scenes.scene2d.utils.ClickListener;
 import com.badlogic.gdx.scenes.scene2d.utils.TextureRegionDrawable;
 import com.badlogic.gdx.utils.Align;
+import com.badlogic.gdx.utils.Scaling;
 import com.blamecinders.animacao.AnimacaoCarta;
 import com.blamecinders.audio.GerenciadorAudio;
 import com.blamecinders.item.Arma;
@@ -71,40 +75,24 @@ public class GerenciadorPopups {
         popup.toFront();
     }
 
-    public void mostrarGameOver() {
-        stageCartaZoom.clear();
-
-        Image overlay = criarOverlayBloqueador(0.85f);
-        stageCartaZoom.addActor(overlay);
-
-        Label titulo = new Label("GAME OVER", skin);
-        titulo.setFontScale(2.2f);
-        titulo.setAlignment(Align.center);
-        titulo.setWidth(500);
-
-        Label sub = new Label(
-            "Você foi derrotado.\nO menu de runs será ligado depois.",
-            skin
+    public void mostrarGameOver(Runnable tentarNovamente, Runnable voltarMenu) {
+        mostrarResultado(
+            VisualMenu.FUNDO_BRASAS,
+            "VOCÊ CAIU",
+            "As chamas se afastam, mas a jornada ainda pode recomeçar.",
+            tentarNovamente,
+            voltarMenu
         );
-        sub.setAlignment(Align.center);
-        sub.setWidth(500);
+    }
 
-        float centroX = stageCartaZoom.getViewport().getWorldWidth() / 2f;
-        float centroY = stageCartaZoom.getViewport().getWorldHeight() / 2f;
-
-        titulo.setPosition(
-            centroX - titulo.getWidth() / 2f,
-            centroY + 40
+    public void mostrarVitoria(int cinzas, Runnable tentarNovamente, Runnable voltarMenu) {
+        mostrarResultado(
+            VisualMenu.FUNDO_DRAGAO,
+            "AS TRÊS CHAMAS",
+            "A fase foi concluída. Cinzas carregadas: " + cinzas + ".",
+            tentarNovamente,
+            voltarMenu
         );
-
-        sub.setPosition(
-            centroX - sub.getWidth() / 2f,
-            centroY - 40
-        );
-
-        stageCartaZoom.addActor(titulo);
-        stageCartaZoom.addActor(sub);
-
     }
 
     public Image criarOverlayBloqueador(float alpha) {
@@ -308,6 +296,85 @@ public class GerenciadorPopups {
 
     public void fecharPause(Runnable aoFinalizar) {
         popupPause.fechar(aoFinalizar);
+    }
+
+    private void mostrarResultado(
+        String caminhoFundo,
+        String textoTitulo,
+        String mensagem,
+        Runnable tentarNovamente,
+        Runnable voltarMenu
+    ) {
+        Objects.requireNonNull(tentarNovamente, "tentarNovamente");
+        Objects.requireNonNull(voltarMenu, "voltarMenu");
+        stageCartaZoom.clear();
+
+        Image fundo = new Image(new TextureRegionDrawable(new TextureRegion(
+            GerenciadorTexturas.getArquivo(caminhoFundo)
+        )));
+        fundo.setScaling(Scaling.fill);
+        fundo.setFillParent(true);
+        stageCartaZoom.addActor(fundo);
+
+        Image overlay = criarOverlayBloqueador(0.48f);
+        stageCartaZoom.addActor(overlay);
+
+        Group painel = VisualMenu.criarPainel(340f, 190f, 600f, 340f);
+        Label titulo = new Label(textoTitulo, skin);
+        titulo.setFontScale(1.85f);
+        titulo.setAlignment(Align.center);
+        titulo.setBounds(30f, 230f, 540f, 70f);
+
+        Label texto = new Label(mensagem, skin);
+        texto.setWrap(true);
+        texto.setAlignment(Align.center);
+        texto.setBounds(55f, 145f, 490f, 80f);
+
+        TextButton btnTentar = new TextButton("Tentar novamente", skin);
+        btnTentar.setBounds(40f, 58f, 250f, 56f);
+        btnTentar.getLabel().setFontScale(0.85f);
+        btnTentar.getLabel().setAlignment(Align.center);
+        btnTentar.addListener(new ClickListener() {
+            @Override
+            public void clicked(InputEvent event, float x, float y) {
+                audio.tocarSelecionarOpcao();
+                tentarNovamente.run();
+            }
+        });
+
+        TextButton btnMenu = new TextButton("Menu principal", skin);
+        btnMenu.setBounds(310f, 58f, 250f, 56f);
+        btnMenu.addListener(new ClickListener() {
+            @Override
+            public void clicked(InputEvent event, float x, float y) {
+                audio.tocarSelecionarOpcao();
+                voltarMenu.run();
+            }
+        });
+
+        painel.addActor(titulo);
+        painel.addActor(texto);
+        painel.addActor(btnTentar);
+        painel.addActor(btnMenu);
+        painel.addListener(new InputListener() {
+            @Override
+            public boolean keyDown(InputEvent event, int keycode) {
+                if (keycode == Input.Keys.ENTER) {
+                    audio.tocarSelecionarOpcao();
+                    tentarNovamente.run();
+                    return true;
+                }
+                if (keycode == Input.Keys.ESCAPE) {
+                    audio.tocarSelecionarOpcao();
+                    voltarMenu.run();
+                    return true;
+                }
+                return false;
+            }
+        });
+        stageCartaZoom.addActor(painel);
+        stageCartaZoom.setKeyboardFocus(painel);
+        VisualMenu.animarEntrada(painel, 0.08f);
     }
 
 }

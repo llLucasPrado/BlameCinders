@@ -1,6 +1,7 @@
 package com.blamecinders.fluxo;
 
 import com.badlogic.gdx.scenes.scene2d.Stage;
+import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.utils.Align;
 import com.blamecinders.animacao.AnimacaoCarta;
 import com.blamecinders.ui.tabuleiro.CartaVisual;
@@ -58,6 +59,7 @@ public class FluxoCarta {
 
         tabuleiro.revelarCarta(linha, coluna);
         String textura = IdentificadorVisualCarta.obter(tabuleiro.getCartaInfo(linha, coluna));
+        Texture texturaCarregada = GerenciadorTexturas.get(textura);
         cartaZoomAtual = cartaOriginal;
         prepararCartaZoom(cartaZoomAtual);
 
@@ -67,7 +69,7 @@ public class FluxoCarta {
 
         animacaoCarta.aplicarFlip(
             cartaZoomAtual,
-            () -> cartaZoomAtual.setConteudo(GerenciadorTexturas.get(textura), textura),
+            () -> cartaZoomAtual.setConteudo(texturaCarregada, textura),
             () -> aoRevelar.accept(tipo)
         );
 

@@ -19,11 +19,15 @@ public final class EstadoPartida {
     private ResultadoPartida resultado = ResultadoPartida.EM_ANDAMENTO;
 
     public EstadoPartida() {
-    this(Personagem.PADRAO);
-}
+        this(Personagem.PADRAO);
+    }
 
     public EstadoPartida(Personagem personagem) {
-        this(new Tabuleiro(), new Jogador(personagem.getVidaInicial()), personagem);
+        this(
+            new Tabuleiro(),
+            new Jogador(Objects.requireNonNull(personagem, "personagem").getVidaInicial()),
+            personagem
+        );
     }
 
     public EstadoPartida(Tabuleiro tabuleiro, Jogador jogador) {
@@ -58,6 +62,9 @@ public final class EstadoPartida {
 
     public void adicionarCinzas(int quantidade) {
         validarQuantidadeCinzas(quantidade);
+        if (quantidade > Integer.MAX_VALUE - cinzas) {
+            throw new IllegalArgumentException("A quantidade de cinzas excede o limite.");
+        }
         cinzas += quantidade;
     }
 
@@ -66,7 +73,7 @@ public final class EstadoPartida {
         cinzas = quantidade;
     }
 
-    private void validarQuantidadeCinzas(int quantidade) {
+    private static void validarQuantidadeCinzas(int quantidade) {
         if (quantidade < 0) {
             throw new IllegalArgumentException("A quantidade de cinzas não pode ser negativa.");
         }

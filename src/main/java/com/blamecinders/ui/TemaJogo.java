@@ -66,15 +66,19 @@ public final class TemaJogo implements Disposable {
         Window.WindowStyle windowStyle = new Window.WindowStyle();
         windowStyle.titleFont = fonte;
         windowStyle.titleFontColor = Color.WHITE;
-        windowStyle.background = criarDrawableCor(new Color(0f, 0f, 0f, 0.85f));
+        windowStyle.background = criarDrawableCor(new Color(0.055f, 0.07f, 0.09f, 0.94f));
         skin.add("default", windowStyle);
 
         TextButton.TextButtonStyle buttonStyle = new TextButton.TextButtonStyle();
         buttonStyle.font = fonte;
         buttonStyle.fontColor = Color.WHITE;
-        buttonStyle.downFontColor = Color.GRAY;
-        buttonStyle.up = criarDrawableCor(new Color(0.18f, 0.18f, 0.18f, 1f));
-        buttonStyle.down = criarDrawableCor(new Color(0.10f, 0.10f, 0.10f, 1f));
+        buttonStyle.overFontColor = Color.WHITE;
+        buttonStyle.downFontColor = Color.LIGHT_GRAY;
+        buttonStyle.disabledFontColor = new Color(0.42f, 0.44f, 0.48f, 1f);
+        buttonStyle.up = criarDrawableCor(new Color(0.10f, 0.12f, 0.15f, 0.92f));
+        buttonStyle.over = criarDrawableCor(new Color(0.18f, 0.21f, 0.25f, 0.96f));
+        buttonStyle.down = criarDrawableCor(new Color(0.055f, 0.065f, 0.08f, 1f));
+        buttonStyle.disabled = criarDrawableCor(new Color(0.07f, 0.075f, 0.085f, 0.78f));
         skin.add("default", buttonStyle);
 
         return skin;

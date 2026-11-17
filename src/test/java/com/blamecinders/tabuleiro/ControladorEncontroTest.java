@@ -10,6 +10,7 @@ import com.blamecinders.aplicacao.ResultadoColetaChama;
 import com.blamecinders.aplicacao.ResultadoEncontroInimigo;
 import com.blamecinders.combate.Inimigo;
 import com.blamecinders.combate.Jogador;
+import com.blamecinders.combate.Personagem;
 import com.blamecinders.combate.SistemaCombate;
 import com.blamecinders.combate.SistemaFurtividade;
 import com.blamecinders.item.Arma;
@@ -168,6 +169,30 @@ class ControladorEncontroTest {
         assertEquals(1, partida.getTabuleiro().getJogadorColuna());
         assertSame(inimigo, partida.getTabuleiro().getCartaInfo(0, 0));
         assertTrue(partida.isFinalizada());
+    }
+
+    @Test
+    void anaoNaoPodeTentarFurtividade() {
+        CartaInfo[][] grid = criarGrid();
+        CartaInfo inimigo = criarInimigo(8);
+        grid[0][1] = inimigo;
+        EstadoPartida partida = new EstadoPartida(
+            new Tabuleiro(grid, 0, 0, new Random(1)),
+            new Jogador(Personagem.NAZARET.getVidaInicial()),
+            Personagem.NAZARET
+        );
+        ControladorEncontro controlador = controladorComRolagem(partida, 0);
+
+        assertFalse(controlador.podeUsarFurtividade());
+        IllegalStateException erro = assertThrows(
+            IllegalStateException.class,
+            () -> controlador.tentarFurtividade(inimigo)
+        );
+
+        assertTrue(erro.getMessage().contains("não pode usar furtividade"));
+        assertFalse(inimigo.isFurtividadeTentada());
+        assertEquals(0, partida.getTabuleiro().getJogadorLinha());
+        assertEquals(0, partida.getTabuleiro().getJogadorColuna());
     }
 
     @Test

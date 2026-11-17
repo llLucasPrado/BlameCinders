@@ -5,35 +5,34 @@ import com.badlogic.gdx.Input;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
-import com.badlogic.gdx.scenes.scene2d.Actor;
-import com.badlogic.gdx.scenes.scene2d.InputEvent;
+import com.badlogic.gdx.scenes.scene2d.Group;
 import com.badlogic.gdx.scenes.scene2d.Stage;
 import com.badlogic.gdx.scenes.scene2d.ui.Label;
 import com.badlogic.gdx.scenes.scene2d.ui.Skin;
-import com.badlogic.gdx.scenes.scene2d.utils.ClickListener;
 import com.badlogic.gdx.utils.Align;
 import com.badlogic.gdx.utils.viewport.FitViewport;
 import com.blamecinders.audio.GerenciadorAudio;
+import com.blamecinders.ui.CartaoMenu;
+import com.blamecinders.ui.VisualMenu;
 
 import java.util.Objects;
 import java.util.function.BooleanSupplier;
 
 public final class MenuPrincipal implements Tela {
 
-    private static final float LARGURA_MUNDO = 1280f;
-    private static final float ALTURA_MUNDO = 720f;
     private static final float DURACAO_FADE = 0.9f;
 
     private final AcaoTela acaoNovoJogo;
     private final AcaoTela acaoContinuar;
     private final AcaoTela acaoOpcoes;
+    private final AcaoTela acaoCreditos;
     private final BooleanSupplier partidaSalvaDisponivel;
     private final GerenciadorAudio audio;
     private final Skin skin;
 
     private Stage stage;
     private ShapeRenderer fadeRenderer;
-    private Label[] opcoes;
+    private CartaoMenu[] opcoes;
     private Label aviso;
     private int opcaoSelecionada;
     private float tempoFade;
@@ -43,6 +42,7 @@ public final class MenuPrincipal implements Tela {
         AcaoTela acaoNovoJogo,
         AcaoTela acaoContinuar,
         AcaoTela acaoOpcoes,
+        AcaoTela acaoCreditos,
         BooleanSupplier partidaSalvaDisponivel,
         GerenciadorAudio audio,
         Skin skin
@@ -50,6 +50,7 @@ public final class MenuPrincipal implements Tela {
         this.acaoNovoJogo = Objects.requireNonNull(acaoNovoJogo, "acaoNovoJogo");
         this.acaoContinuar = Objects.requireNonNull(acaoContinuar, "acaoContinuar");
         this.acaoOpcoes = Objects.requireNonNull(acaoOpcoes, "acaoOpcoes");
+        this.acaoCreditos = Objects.requireNonNull(acaoCreditos, "acaoCreditos");
         this.partidaSalvaDisponivel = Objects.requireNonNull(
             partidaSalvaDisponivel,
             "partidaSalvaDisponivel"
@@ -60,34 +61,48 @@ public final class MenuPrincipal implements Tela {
 
     @Override
     public void mostrar() {
-        stage = new Stage(new FitViewport(LARGURA_MUNDO, ALTURA_MUNDO));
+        stage = new Stage(new FitViewport(VisualMenu.LARGURA, VisualMenu.ALTURA));
+        VisualMenu.adicionarFundo(stage, VisualMenu.FUNDO_CEMITERIO, 0.34f);
 
-        Label titulo = new Label("Blame Cinders", skin);
-        titulo.setFontScale(2.5f);
+        Group painelTitulo = VisualMenu.criarPainel(330f, 590f, 620f, 86f);
+        Label titulo = new Label("B L A M E   C I N D E R S", skin);
         titulo.setAlignment(Align.center);
-        titulo.setSize(LARGURA_MUNDO, 100f);
-        titulo.setPosition(0f, 500f);
+        titulo.setFontScale(1.55f);
+        titulo.setFillParent(true);
+        painelTitulo.addActor(titulo);
+        stage.addActor(painelTitulo);
 
-        opcoes = new Label[] {
-            criarOpcao("NOVO JOGO", 360f, 0),
-            criarOpcao("CONTINUAR", 300f, 1),
-            criarOpcao("OPÇÕES", 240f, 2),
-            criarOpcao("SAIR", 180f, 3)
-        };
+        opcoes = new CartaoMenu[5];
+        opcoes[0] = criarCartao(
+            "NOVO JOGO", "UI/Menu/novo-jogo.jpeg", 220f, 170f, 280f, 365f, 0
+        );
+        opcoes[1] = criarCartao(
+            "CONTINUAR", "UI/Menu/continuar.jpeg", 520f, 455f, 540f, 80f, 1
+        );
+        opcoes[2] = criarCartao(
+            "OPÇÕES", "UI/Menu/opcoes.jpeg", 520f, 360f, 540f, 80f, 2
+        );
+        opcoes[3] = criarCartao(
+            "CRÉDITOS", "UI/Fundos/brasas.png", 520f, 265f, 540f, 80f, 3
+        );
+        opcoes[4] = criarCartao(
+            "SAIR", "UI/Menu/sair.jpeg", 520f, 170f, 540f, 80f, 4
+        );
+
+        for (CartaoMenu opcao : opcoes) stage.addActor(opcao);
+        if (!partidaSalvaDisponivel.getAsBoolean()) opcoes[1].setDisponivel(false);
 
         aviso = new Label("", skin);
         aviso.setColor(Color.LIGHT_GRAY);
         aviso.setAlignment(Align.center);
-        aviso.setSize(LARGURA_MUNDO, 40f);
-        aviso.setPosition(0f, 115f);
-
-        stage.addActor(titulo);
-        for (Label opcao : opcoes) {
-            stage.addActor(opcao);
-        }
+        aviso.setBounds(220f, 96f, 840f, 44f);
         stage.addActor(aviso);
 
-        atualizarSelecao();
+        atualizarSelecao(false);
+        VisualMenu.animarEntrada(painelTitulo, 0f);
+        for (int i = 0; i < opcoes.length; i++) {
+            VisualMenu.animarEntrada(opcoes[i], 0.08f + i * 0.05f);
+        }
         fadeRenderer = new ShapeRenderer();
         Gdx.input.setInputProcessor(stage);
         audio.iniciarMusicaMenu();
@@ -97,44 +112,37 @@ public final class MenuPrincipal implements Tela {
     public void render(float delta) {
         stage.act(delta);
         stage.draw();
-
         if (tempoFade < DURACAO_FADE) {
             tempoFade = Math.min(tempoFade + delta, DURACAO_FADE);
             desenharFade(1f - tempoFade / DURACAO_FADE);
         }
-
         if (acaoEmExecucao) return;
 
-        if (Gdx.input.isKeyJustPressed(Input.Keys.DOWN)) {
+        if (Gdx.input.isKeyJustPressed(Input.Keys.DOWN)
+            || Gdx.input.isKeyJustPressed(Input.Keys.RIGHT)) {
             selecionar((opcaoSelecionada + 1) % opcoes.length, true);
-        } else if (Gdx.input.isKeyJustPressed(Input.Keys.UP)) {
+        } else if (Gdx.input.isKeyJustPressed(Input.Keys.UP)
+            || Gdx.input.isKeyJustPressed(Input.Keys.LEFT)) {
             selecionar((opcaoSelecionada - 1 + opcoes.length) % opcoes.length, true);
         } else if (Gdx.input.isKeyJustPressed(Input.Keys.ENTER)) {
-            audio.tocarSelecionarOpcao();
             executarOpcao();
         }
     }
 
     @Override
     public void redimensionar(int largura, int altura) {
-        if (stage != null) {
-            stage.getViewport().update(largura, altura, true);
-        }
+        if (stage != null) stage.getViewport().update(largura, altura, true);
     }
 
     @Override
     public void esconder() {
-        if (stage != null) {
-            stage.getRoot().setVisible(false);
-        }
+        if (stage != null) stage.getRoot().setVisible(false);
     }
 
     @Override
     public void destruir() {
         if (stage != null) {
-            if (Gdx.input.getInputProcessor() == stage) {
-                Gdx.input.setInputProcessor(null);
-            }
+            if (Gdx.input.getInputProcessor() == stage) Gdx.input.setInputProcessor(null);
             stage.dispose();
             stage = null;
         }
@@ -144,47 +152,48 @@ public final class MenuPrincipal implements Tela {
         }
     }
 
-    private Label criarOpcao(String texto, float y, int indice) {
-        Label opcao = new Label(texto, skin);
-        opcao.setFontScale(1.3f);
-        opcao.setAlignment(Align.center);
-        opcao.setSize(LARGURA_MUNDO, 50f);
-        opcao.setPosition(0f, y);
-        opcao.addListener(new ClickListener() {
-            @Override
-            public void enter(InputEvent event, float x, float y, int pointer, Actor fromActor) {
-                if (!acaoEmExecucao && opcaoSelecionada != indice) {
-                    selecionar(indice, true);
-                }
-            }
-
-            @Override
-            public void clicked(InputEvent event, float x, float y) {
-                if (acaoEmExecucao) return;
+    private CartaoMenu criarCartao(
+        String texto,
+        String imagem,
+        float x,
+        float y,
+        float largura,
+        float altura,
+        int indice
+    ) {
+        CartaoMenu cartao = new CartaoMenu(
+            skin,
+            texto,
+            imagem,
+            largura,
+            altura,
+            () -> selecionar(indice, true),
+            () -> {
                 selecionar(indice, false);
-                audio.tocarSelecionarOpcao();
                 executarOpcao();
             }
-        });
-        return opcao;
+        );
+        cartao.setPosition(x, y);
+        return cartao;
     }
 
     private void selecionar(int indice, boolean tocarSom) {
+        if (acaoEmExecucao || opcaoSelecionada == indice) return;
         opcaoSelecionada = indice;
-        atualizarSelecao();
         aviso.setText("");
-        if (tocarSom) {
-            audio.tocarTrocaOpcao();
-        }
+        atualizarSelecao(true);
+        if (tocarSom) audio.tocarTrocaOpcao();
     }
 
-    private void atualizarSelecao() {
+    private void atualizarSelecao(boolean animar) {
         for (int i = 0; i < opcoes.length; i++) {
-            opcoes[i].setFontScale(i == opcaoSelecionada ? 1.5f : 1.3f);
+            opcoes[i].setSelecionado(i == opcaoSelecionada, animar);
         }
     }
 
     private void executarOpcao() {
+        if (acaoEmExecucao) return;
+        audio.tocarSelecionarOpcao();
         switch (opcaoSelecionada) {
             case 0:
                 acaoEmExecucao = true;
@@ -192,8 +201,8 @@ public final class MenuPrincipal implements Tela {
                 break;
             case 1:
                 if (!partidaSalvaDisponivel.getAsBoolean()) {
-                    aviso.setText("Não há partida salva disponível.");
-                    break;
+                    aviso.setText("NÃO HÁ PARTIDA SALVA DISPONÍVEL");
+                    return;
                 }
                 acaoEmExecucao = true;
                 acaoContinuar.executar();
@@ -203,6 +212,10 @@ public final class MenuPrincipal implements Tela {
                 acaoOpcoes.executar();
                 break;
             case 3:
+                acaoEmExecucao = true;
+                acaoCreditos.executar();
+                break;
+            case 4:
                 acaoEmExecucao = true;
                 Gdx.app.exit();
                 break;
@@ -216,7 +229,7 @@ public final class MenuPrincipal implements Tela {
         fadeRenderer.setProjectionMatrix(stage.getCamera().combined);
         fadeRenderer.begin(ShapeRenderer.ShapeType.Filled);
         fadeRenderer.setColor(0f, 0f, 0f, alpha);
-        fadeRenderer.rect(0f, 0f, LARGURA_MUNDO, ALTURA_MUNDO);
+        fadeRenderer.rect(0f, 0f, VisualMenu.LARGURA, VisualMenu.ALTURA);
         fadeRenderer.end();
         Gdx.gl.glDisable(GL20.GL_BLEND);
     }

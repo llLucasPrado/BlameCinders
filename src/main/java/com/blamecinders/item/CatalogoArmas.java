@@ -1,5 +1,7 @@
 package com.blamecinders.item;
 
+import com.blamecinders.configuracao.BalanceamentoJogo;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -13,14 +15,14 @@ public final class CatalogoArmas {
     static {
         armas.add(new Arma(
             "Claymore",
-            15,
+            BalanceamentoJogo.DURABILIDADE_CLAYMORE,
             "ARMA: CLAYMORE"
         ));
 
         armas.add(new Arma(
             "Espada Curta",
-            5,
-            "ARMA: PUNHAL"
+            BalanceamentoJogo.DURABILIDADE_ESPADA_CURTA,
+            "ARMA: ESPADA_CURTA"
         ));
 
     }

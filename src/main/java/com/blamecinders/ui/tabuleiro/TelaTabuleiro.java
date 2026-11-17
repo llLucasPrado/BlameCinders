@@ -13,6 +13,7 @@ import com.blamecinders.aplicacao.MovimentoTabuleiro;
 import com.blamecinders.tabuleiro.CartaInfo;
 import com.blamecinders.tabuleiro.Tabuleiro;
 import com.blamecinders.tabuleiro.TipoCarta;
+import com.blamecinders.ui.VisualMenu;
 import com.blamecinders.ui.carta.IdentificadorVisualCarta;
 
 /**
@@ -33,7 +34,12 @@ public final class TelaTabuleiro implements Disposable {
     private final AnimacaoTabuleiro animacao;
     private boolean destruida = false;
 
-    public TelaTabuleiro(Tabuleiro tabuleiro, BitmapFont fonteCarta, InteracaoCartaVisual interacao, String identificadorHeroi) {
+    public TelaTabuleiro(
+        Tabuleiro tabuleiro,
+        BitmapFont fonteCarta,
+        InteracaoCartaVisual interacao,
+        String identificadorHeroi
+    ) {
         this(tabuleiro, fonteCarta, interacao, identificadorHeroi, () -> {});
     }
 
@@ -44,13 +50,18 @@ public final class TelaTabuleiro implements Disposable {
         String identificadorHeroi,
         Runnable aoHoverCarta
     ) {
-        if (tabuleiro == null || fonteCarta == null || interacao == null || identificadorHeroi == null) {
+        if (tabuleiro == null
+            || fonteCarta == null
+            || interacao == null
+            || identificadorHeroi == null
+            || aoHoverCarta == null) {
             throw new IllegalArgumentException("Tela do tabuleiro recebeu uma dependência nula.");
         }
 
         this.tabuleiro = tabuleiro;
         this.identificadorHeroi = identificadorHeroi;
         stage = new Stage(new FitViewport(LARGURA_MUNDO, ALTURA_MUNDO));
+        VisualMenu.adicionarFundo(stage, VisualMenu.FUNDO_CEMITERIO, 0.42f);
         cartas = new CartaVisual[Tabuleiro.LINHAS][Tabuleiro.COLUNAS];
         layout = new LayoutTabuleiro(
             Tabuleiro.LINHAS,

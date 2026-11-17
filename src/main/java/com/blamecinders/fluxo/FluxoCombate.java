@@ -94,14 +94,12 @@ public class FluxoCombate {
             identificadorHeroi,
             skin.getFont("default-font")
         );
-        
-        cartaJogador.setRotuloVisivel(!GerenciadorTexturas.possuiImagem("HERÓI-TESTE"));
+        cartaJogador.setRotuloVisivel(
+            !GerenciadorTexturas.possuiImagem(identificadorHeroi)
+        );
         cartaJogador.setSize(280, 380);
         cartaJogador.setPosition(700, 300);
         stageCartaZoom.addActor(cartaJogador);
-
-        cartaInimigo.setRotuloVisivel(false);
-        cartaJogador.setRotuloVisivel(false);
 
         animacaoCarta.aplicarIdleFlutuacao(cartaInimigo);
         animacaoCarta.aplicarIdleFlutuacao(cartaJogador);
@@ -181,6 +179,11 @@ public class FluxoCombate {
         TextButton btnFurtividade = new TextButton("Furtividade", skin);
         btnFurtividade.setSize(180, 60);
         btnFurtividade.setPosition(660, 90);
+        if (!controladorEncontro.podeUsarFurtividade()) {
+            btnFurtividade.setText("Indisponível");
+            btnFurtividade.setDisabled(true);
+            btnFurtividade.setTouchable(Touchable.disabled);
+        }
 
         btnVoltar.addListener(new ClickListener() {
             @Override

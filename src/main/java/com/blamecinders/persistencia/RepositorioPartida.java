@@ -11,7 +11,10 @@ public final class RepositorioPartida {
     private final Json json;
 
     public RepositorioPartida() {
-        this(new ArmazenamentoPreferenciasPartida(), new Json());
+        this(
+            new ArmazenamentoArquivoPartida(new ArmazenamentoPreferenciasPartida()),
+            new Json()
+        );
     }
 
     RepositorioPartida(ArmazenamentoPartida armazenamento, Json json) {
@@ -20,11 +23,10 @@ public final class RepositorioPartida {
     }
 
     public boolean existe() {
-        if (armazenamento.ler().trim().isEmpty()) return false;
         try {
+            if (armazenamento.ler().trim().isEmpty()) return false;
             return carregar() != null;
-        } catch (IllegalStateException erro) {
-            remover();
+        } catch (RuntimeException erro) {
             return false;
         }
     }
@@ -41,14 +43,40 @@ public final class RepositorioPartida {
         String conteudo = armazenamento.ler();
         if (conteudo.trim().isEmpty()) return null;
         try {
-            DadosPartida dados = json.fromJson(DadosPartida.class, conteudo);
-            return ConversorDadosPartida.paraPartida(dados);
-        } catch (RuntimeException erro) {
-            throw new IllegalStateException("Não foi possível carregar a partida salva.", erro);
+            return converter(conteudo);
+        } catch (RuntimeException erroPrincipal) {
+            String conteudoBackup = armazenamento.lerBackup();
+            if (!conteudoBackup.trim().isEmpty()) {
+                EstadoPartida partidaRecuperada;
+                try {
+                    partidaRecuperada = converter(conteudoBackup);
+                } catch (RuntimeException erroBackup) {
+                    erroPrincipal.addSuppressed(erroBackup);
+                    throw new IllegalStateException(
+                        "Não foi possível carregar a partida salva.",
+                        erroPrincipal
+                    );
+                }
+                try {
+                    armazenamento.restaurarBackup();
+                } catch (RuntimeException erroRestauracao) {
+                    erroPrincipal.addSuppressed(erroRestauracao);
+                }
+                return partidaRecuperada;
+            }
+            throw new IllegalStateException(
+                "Não foi possível carregar a partida salva.",
+                erroPrincipal
+            );
         }
     }
 
     public void remover() {
         armazenamento.remover();
+    }
+
+    private EstadoPartida converter(String conteudo) {
+        DadosPartida dados = json.fromJson(DadosPartida.class, conteudo);
+        return ConversorDadosPartida.paraPartida(dados);
     }
 }

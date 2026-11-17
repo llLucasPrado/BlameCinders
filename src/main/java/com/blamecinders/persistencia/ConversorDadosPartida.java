@@ -3,6 +3,7 @@ package com.blamecinders.persistencia;
 import java.util.Objects;
 
 import com.blamecinders.aplicacao.EstadoPartida;
+import com.blamecinders.combate.CategoriaInimigo;
 import com.blamecinders.combate.Inimigo;
 import com.blamecinders.combate.Jogador;
 import com.blamecinders.combate.Personagem;
@@ -19,7 +20,8 @@ import com.blamecinders.tabuleiro.TipoCarta;
 
 final class ConversorDadosPartida {
 
-    static final int VERSAO_ATUAL = 1;
+    static final int VERSAO_INICIAL = 1;
+    static final int VERSAO_ATUAL = 3;
 
     private ConversorDadosPartida() {
     }
@@ -77,7 +79,11 @@ final class ConversorDadosPartida {
             throw new IllegalArgumentException("O item equipado no save não é uma arma.");
         }
         jogador.setArmaEquipada((Arma) arma);
-        EstadoPartida partida = new EstadoPartida(tabuleiro, jogador, Personagem.porId(dados.personagemId));
+        EstadoPartida partida = new EstadoPartida(
+            tabuleiro,
+            jogador,
+            Personagem.porId(dados.personagemId)
+        );
         partida.restaurarCinzas(dados.cinzas);
         return partida;
     }
@@ -126,15 +132,28 @@ final class ConversorDadosPartida {
         salvo.identificadorVisual = inimigo.getIdentificadorVisual();
         salvo.vida = inimigo.getVida();
         salvo.dificuldadeFurtividade = inimigo.getDificuldadeFurtividade();
+        salvo.categoria = inimigo.getCategoria();
         return salvo;
     }
 
     private static Inimigo paraInimigo(InimigoSalvo salvo) {
         if (salvo == null) return null;
+        String nome = salvaObrigatoria(salvo.nome, "nome do inimigo");
+        String identificador = salvaObrigatoria(
+            salvo.identificadorVisual,
+            "identificador do inimigo"
+        );
+        if (salvo.vida <= 0) {
+            throw new IllegalArgumentException("Vida do inimigo inválida no save.");
+        }
+        CategoriaInimigo categoria = salvo.categoria != null
+            ? salvo.categoria
+            : CategoriaInimigo.porVida(salvo.vida);
         return new Inimigo(
-            salvaObrigatoria(salvo.nome, "nome do inimigo"),
+            nome,
             salvo.vida,
-            salvaObrigatoria(salvo.identificadorVisual, "identificador do inimigo"),
+            identificador,
+            categoria,
             salvo.dificuldadeFurtividade
         );
     }
@@ -173,7 +192,9 @@ final class ConversorDadosPartida {
     }
 
     private static void validarDados(DadosPartida dados) {
-        if (dados == null || dados.versao != VERSAO_ATUAL) {
+        if (dados == null
+            || dados.versao < VERSAO_INICIAL
+            || dados.versao > VERSAO_ATUAL) {
             throw new IllegalArgumentException("Versão de save incompatível.");
         }
         if (dados.cartas == null

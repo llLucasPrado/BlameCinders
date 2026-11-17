@@ -9,16 +9,15 @@ import java.util.Random;
 public final class CatalogoItens {
 
     private static final List<Comida> COMIDAS = Arrays.asList(
-        new Comida("Ração de viagem", 8, "COMIDA: RAÇÃO"),
-        new Comida("Sopa de cinzas", 12, "COMIDA: SOPA"),
-        new Comida("Frasco rubro", 18, "COMIDA: FRASCO")
+        new Comida("Ração de viagem", BalanceamentoJogo.CURA_RACAO, "COMIDA: RAÇÃO"),
+        new Comida("Sopa de cinzas", BalanceamentoJogo.CURA_SOPA, "COMIDA: SOPA"),
+        new Comida("Frasco rubro", BalanceamentoJogo.CURA_FRASCO, "COMIDA: FRASCO")
     );
 
     private CatalogoItens() {
     }
 
     public static ItemBau gerarItemAleatorio(Random random) {
-        // Distribuição inicial para balanceamento: 55% arma, 45% comida.
         if (random.nextInt(BalanceamentoJogo.TOTAL_PERCENTUAL)
             < BalanceamentoJogo.CHANCE_ARMA_NO_BAU) {
             Arma arma = CatalogoArmas.gerarArmaAleatoria(random);

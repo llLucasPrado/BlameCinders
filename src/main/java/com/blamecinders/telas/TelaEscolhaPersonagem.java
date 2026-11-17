@@ -1,32 +1,24 @@
 package com.blamecinders.telas;
 
-import java.util.Objects;
-import java.util.function.Consumer;
-
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
 import com.badlogic.gdx.graphics.Color;
-import com.badlogic.gdx.graphics.g2d.TextureRegion;
-import com.badlogic.gdx.scenes.scene2d.Actor;
-import com.badlogic.gdx.scenes.scene2d.InputEvent;
+import com.badlogic.gdx.scenes.scene2d.Group;
 import com.badlogic.gdx.scenes.scene2d.Stage;
-import com.badlogic.gdx.scenes.scene2d.ui.Image;
 import com.badlogic.gdx.scenes.scene2d.ui.Label;
 import com.badlogic.gdx.scenes.scene2d.ui.Skin;
-import com.badlogic.gdx.scenes.scene2d.utils.ClickListener;
-import com.badlogic.gdx.scenes.scene2d.utils.TextureRegionDrawable;
 import com.badlogic.gdx.utils.Align;
-import com.badlogic.gdx.utils.Scaling;
 import com.badlogic.gdx.utils.viewport.FitViewport;
 import com.blamecinders.audio.GerenciadorAudio;
 import com.blamecinders.combate.Personagem;
-import com.blamecinders.configuracao.BalanceamentoJogo;
+import com.blamecinders.ui.CartaoMenu;
+import com.blamecinders.ui.VisualMenu;
 import com.blamecinders.util.GerenciadorTexturas;
 
-public final class TelaEscolhaPersonagem implements Tela {
+import java.util.Objects;
+import java.util.function.Consumer;
 
-    private static final float LARGURA_MUNDO = 1280f;
-    private static final float ALTURA_MUNDO = 720f;
+public final class TelaEscolhaPersonagem implements Tela {
 
     private final Consumer<Personagem> aoEscolher;
     private final AcaoTela aoVoltar;
@@ -34,9 +26,8 @@ public final class TelaEscolhaPersonagem implements Tela {
     private final Skin skin;
 
     private Stage stage;
-    private Label[] opcoes;
+    private CartaoMenu[] opcoes;
     private Label descricao;
-    private Image retrato;
     private int selecionado;
     private boolean acaoEmExecucao;
 
@@ -54,38 +45,56 @@ public final class TelaEscolhaPersonagem implements Tela {
 
     @Override
     public void mostrar() {
-        stage = new Stage(new FitViewport(LARGURA_MUNDO, ALTURA_MUNDO));
+        stage = new Stage(new FitViewport(VisualMenu.LARGURA, VisualMenu.ALTURA));
+        VisualMenu.adicionarFundo(stage, VisualMenu.FUNDO_CEMITERIO, 0.46f);
 
-        Label titulo = criarTexto("Escolha seu personagem", 2f, 560f, 100f);
-        stage.addActor(titulo);
+        Group tituloPainel = VisualMenu.criarPainel(340f, 610f, 600f, 70f);
+        Label titulo = new Label("ESCOLHA SEU ARQUÉTIPO", skin);
+        titulo.setAlignment(Align.center);
+        titulo.setFontScale(1.55f);
+        titulo.setFillParent(true);
+        tituloPainel.addActor(titulo);
+        stage.addActor(tituloPainel);
 
         Personagem[] personagens = Personagem.values();
-        opcoes = new Label[personagens.length];
+        opcoes = new CartaoMenu[personagens.length];
         for (int i = 0; i < personagens.length; i++) {
-            opcoes[i] = criarOpcao(personagens[i].getNome(), 440f - i * 60f, i);
-            stage.addActor(opcoes[i]);
+            final int indice = i;
+            CartaoMenu cartao = new CartaoMenu(
+                skin,
+                "",
+                GerenciadorTexturas.get(personagens[i].getIdentificadorVisual()),
+                240f,
+                340f,
+                () -> selecionar(indice),
+                () -> {
+                    selecionar(indice);
+                    confirmar();
+                }
+            );
+            cartao.setPosition(100f + i * 270f, 225f);
+            opcoes[i] = cartao;
+            stage.addActor(cartao);
+            VisualMenu.animarEntrada(cartao, 0.07f + i * 0.06f);
         }
 
-        descricao = criarTexto("", 1f, 130f, 80f);
-        Label dica = criarTexto("ENTER confirma  -  ESC volta", 1f, 50f, 40f);
+        Group descricaoPainel = VisualMenu.criarPainel(200f, 82f, 880f, 104f);
+        descricao = new Label("", skin);
+        descricao.setAlignment(Align.center);
+        descricao.setWrap(true);
+        descricao.setBounds(28f, 12f, 824f, 80f);
+        descricaoPainel.addActor(descricao);
+        stage.addActor(descricaoPainel);
+
+        Label dica = new Label("ENTER CONFIRMA    •    ESC VOLTA", skin);
+        dica.setAlignment(Align.center);
         dica.setColor(Color.LIGHT_GRAY);
-        stage.addActor(descricao);
+        dica.setBounds(390f, 26f, 500f, 32f);
         stage.addActor(dica);
 
-        retrato = new Image();
-        retrato.setScaling(Scaling.fit);
-        retrato.setSize(240f, 320f);
-        retrato.setPosition(LARGURA_MUNDO - 340f, 200f);
-        stage.addActor(retrato);
-
-        atualizarSelecao();
-
-        retrato = new Image();
-        retrato.setSize(240f, 320f);
-        retrato.setPosition(LARGURA_MUNDO - 340f, 200f);
-        stage.addActor(retrato);
-
-        atualizarSelecao();
+        atualizarSelecao(false);
+        VisualMenu.animarEntrada(tituloPainel, 0f);
+        VisualMenu.animarEntrada(descricaoPainel, 0.25f);
         Gdx.input.setInputProcessor(stage);
         audio.iniciarMusicaMenu();
     }
@@ -96,14 +105,17 @@ public final class TelaEscolhaPersonagem implements Tela {
         stage.draw();
         if (acaoEmExecucao) return;
 
-        if (Gdx.input.isKeyJustPressed(Input.Keys.DOWN)) {
+        if (Gdx.input.isKeyJustPressed(Input.Keys.RIGHT)
+            || Gdx.input.isKeyJustPressed(Input.Keys.DOWN)) {
             selecionar((selecionado + 1) % opcoes.length);
-        } else if (Gdx.input.isKeyJustPressed(Input.Keys.UP)) {
+        } else if (Gdx.input.isKeyJustPressed(Input.Keys.LEFT)
+            || Gdx.input.isKeyJustPressed(Input.Keys.UP)) {
             selecionar((selecionado - 1 + opcoes.length) % opcoes.length);
         } else if (Gdx.input.isKeyJustPressed(Input.Keys.ENTER)) {
             confirmar();
         } else if (Gdx.input.isKeyJustPressed(Input.Keys.ESCAPE)) {
             acaoEmExecucao = true;
+            audio.tocarSelecionarOpcao();
             aoVoltar.executar();
         }
     }
@@ -120,66 +132,30 @@ public final class TelaEscolhaPersonagem implements Tela {
 
     @Override
     public void destruir() {
-        if (stage != null) {
-            if (Gdx.input.getInputProcessor() == stage) Gdx.input.setInputProcessor(null);
-            stage.dispose();
-            stage = null;
-        }
-    }
-
-    private Label criarTexto(String texto, float escala, float y, float altura) {
-        Label label = new Label(texto, skin);
-        label.setFontScale(escala);
-        label.setAlignment(Align.center);
-        label.setSize(LARGURA_MUNDO, altura);
-        label.setPosition(0f, y);
-        return label;
-    }
-
-    private Label criarOpcao(String texto, float y, int indice) {
-        Label opcao = criarTexto(texto, 1.3f, y, 50f);
-        opcao.addListener(new ClickListener() {
-            @Override
-            public void enter(InputEvent event, float x, float y, int pointer, Actor fromActor) {
-                if (!acaoEmExecucao && selecionado != indice) selecionar(indice);
-            }
-
-            @Override
-            public void clicked(InputEvent event, float x, float y) {
-                if (acaoEmExecucao) return;
-                selecionado = indice;
-                confirmar();
-            }
-        });
-        return opcao;
+        if (stage == null) return;
+        if (Gdx.input.getInputProcessor() == stage) Gdx.input.setInputProcessor(null);
+        stage.dispose();
+        stage = null;
     }
 
     private void selecionar(int indice) {
+        if (acaoEmExecucao || selecionado == indice) return;
         selecionado = indice;
-        atualizarSelecao();
+        atualizarSelecao(true);
         audio.tocarTrocaOpcao();
     }
 
-    private void atualizarSelecao() {
+    private void atualizarSelecao(boolean animar) {
         for (int i = 0; i < opcoes.length; i++) {
-            opcoes[i].setFontScale(i == selecionado ? 1.5f : 1.3f);
+            opcoes[i].setSelecionado(i == selecionado, animar);
         }
-        Personagem atual = Personagem.values()[selecionado];
-        int minimo = BalanceamentoJogo.CHANCE_MINIMA_FURTIVIDADE;
-        int maximo = BalanceamentoJogo.CHANCE_MAXIMA_FURTIVIDADE;
-        int base = atual.getChanceFurtividade();
-        int melhor = Math.max(minimo, Math.min(maximo, base - BalanceamentoJogo.DIFICULDADE_BASE_FURTIVIDADE));
-        int pior = Math.max(minimo, Math.min(maximo, base - BalanceamentoJogo.DIFICULDADE_PADRAO_MAXIMA));
 
-        descricao.setText(atual.getDescricao()
-            + "\nVida: " + atual.getVidaInicial()
-            + "   Furtividade: " + pior + "% a " + melhor + "%");
-        retrato.setDrawable(new TextureRegionDrawable(new TextureRegion(
-            GerenciadorTexturas.get(atual.getIdentificadorVisual())
-        )));
+        Personagem atual = Personagem.values()[selecionado];
+        descricao.setText(atual.getDescricao().toUpperCase());
     }
 
     private void confirmar() {
+        if (acaoEmExecucao) return;
         acaoEmExecucao = true;
         audio.tocarSelecionarOpcao();
         aoEscolher.accept(Personagem.values()[selecionado]);

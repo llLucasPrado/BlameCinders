@@ -1,4 +1,4 @@
---- Corrigir a opção "opções" do menu pause --- pendente
+--- Corrigir a opção "opções" do menu pause --- concluído
 --- Corrigir ordem de popups da chama --- concluído
 --- Corrigir ordem popups de baú --- concluído
 --- Adicionar escolha de personagens --- concluído
@@ -6,4 +6,4 @@
 --- Adicionar habilidades de cada personagem --- pendente
 --- Adicionar mostruário --- pendente
 --- Adicionar upgrades (árvore) --- em processo
---- Corrigir a leve travada do flip ao revelar cartas ainda viradas --- pendente
+--- Corrigir a leve travada do flip ao revelar cartas ainda viradas --- concluído

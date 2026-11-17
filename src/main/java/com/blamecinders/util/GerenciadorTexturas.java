@@ -68,6 +68,25 @@ public final class GerenciadorTexturas {
         return textura;
     }
 
+    public static Texture getArquivo(String caminho) {
+        Objects.requireNonNull(caminho, "caminho");
+        String chave = "ARQUIVO:" + caminho;
+        Texture existente = cache.get(chave);
+        if (existente != null) return existente;
+
+        if (Gdx.files == null || !Gdx.files.internal(caminho).exists()) {
+            throw new IllegalArgumentException("Imagem não encontrada: " + caminho);
+        }
+
+        Texture textura = new Texture(Gdx.files.internal(caminho), true);
+        textura.setFilter(
+            Texture.TextureFilter.MipMapLinearLinear,
+            Texture.TextureFilter.Linear
+        );
+        cache.put(chave, textura);
+        return textura;
+    }
+
     public static boolean possuiImagem(String identificador) {
         Boolean resultadoEmCache = cacheDisponibilidade.get(identificador);
         if (resultadoEmCache != null) return resultadoEmCache;
@@ -147,36 +166,50 @@ public final class GerenciadorTexturas {
             return "Cartas/Frente/Jogador/"
                 + id.substring("PERSONAGEM_".length()).toLowerCase(Locale.ROOT) + ".png";
         }
-        if (id.startsWith("HER")) return "Cartas/Frente/Jogador/jogadorTeste.png";
+        if (id.startsWith("HER")) return "Cartas/Frente/Jogador/jogador-teste.png";
         if (id.startsWith("BA")) return "Cartas/Frente/Bau/frenteTeste7.jpg";
         if (id.contains("CHAMA")) return "Cartas/Frente/Chama/frenteTeste4.jpg";
         if (id.contains("PAREDE")) return "Cartas/Frente/Parede/paredeTeste1.png";
-        if (id.contains("CLAYMORE")) return "Cartas/Frente/Armas/claymore.jpeg";
-        if (id.contains("PUNHAL")) return "Cartas/Frente/Armas/punhal.jpeg";
-
-        if (id.startsWith("INIMIGO")) {
-            return "Cartas/Frente/Inimigo/frenteTeste"
-                + extrairNumeroInimigo(id) + ".jpg";
+        if (id.contains("CLAYMORE")) return "Cartas/Frente/Armas/claymore.png";
+        if (id.contains("PUNHAL") || id.contains("ESPADA_CURTA")) {
+            return "Cartas/Frente/Armas/espada-curta.png";
         }
+
+        String caminhoInimigo = resolverCaminhoInimigo(id);
+        if (caminhoInimigo != null) return caminhoInimigo;
         return null;
     }
 
-    private static int extrairNumeroInimigo(String identificador) {
-        String somenteDigitos = identificador.replaceAll("\\D+", "");
-        if (somenteDigitos.isEmpty()) return 0;
-
-        switch (Integer.parseInt(somenteDigitos)) {
-            case 1: return 0;
-            case 2: return 1;
-            case 3: return 2;
-            case 4: return 3;
-            case 5: return 5;
-            case 6: return 6;
-            case 7: return 8;
-            case 8: return 9;
-            case 9: return 10;
-            case 10: return 11;
-            default: return 0;
+    private static String resolverCaminhoInimigo(String identificador) {
+        switch (identificador) {
+            case "INIMIGO 1":
+                return "Cartas/Frente/Inimigo/esqueleto-sentinela.png";
+            case "INIMIGO 2":
+                return "Cartas/Frente/Inimigo/esqueleto-rachado.png";
+            case "INIMIGO 3":
+                return "Cartas/Frente/Inimigo/lobo-faminto.png";
+            case "INIMIGO 4":
+                return "Cartas/Frente/Inimigo/espirito-errante.png";
+            case "INIMIGO 5":
+                return "Cartas/Frente/Inimigo/zumbi-decaido.png";
+            case "INIMIGO 6":
+                return "Cartas/Frente/Inimigo/aparicao.png";
+            case "INIMIGO 7":
+                return "Cartas/Frente/Inimigo/rato-da-cripta.png";
+            case "INIMIGO 8":
+                return "Cartas/Frente/Inimigo/lobo-doente.png";
+            case "INIMIGO 9":
+                return "Cartas/Frente/Inimigo/rato-voraz.png";
+            case "INIMIGO 10":
+                return "Cartas/Frente/Inimigo/cadaver-vacilante.png";
+            case "INIMIGO_CORVO_VIGIA":
+                return "Cartas/Frente/Inimigo/corvo-vigia.png";
+            case "INIMIGO_RATO_COURACADO":
+                return "Cartas/Frente/Inimigo/rato-couracado.png";
+            case "INIMIGO_ESPIRITO_ACORRENTADO":
+                return "Cartas/Frente/Inimigo/espirito-acorrentado.png";
+            default:
+                return null;
         }
     }
 
@@ -189,7 +222,12 @@ public final class GerenciadorTexturas {
         if (id.contains("BAÚ") || id.contains("BAU")) return new Color(0.30f, 0.20f, 0.07f, 1f);
         if (id.contains("PAREDE")) return new Color(0.18f, 0.19f, 0.22f, 1f);
         if (id.contains("COMIDA")) return new Color(0.10f, 0.28f, 0.14f, 1f);
-        if (id.contains("ARMA") || id.contains("CLAYMORE") || id.contains("PUNHAL")) {
+        if (
+            id.contains("ARMA")
+                || id.contains("CLAYMORE")
+                || id.contains("PUNHAL")
+                || id.contains("ESPADA_CURTA")
+        ) {
             return new Color(0.10f, 0.18f, 0.28f, 1f);
         }
         return new Color(0.20f, 0.12f, 0.24f, 1f);

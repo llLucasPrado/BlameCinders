@@ -12,8 +12,12 @@
 - furtividade troca as posições do herói e do inimigo sem acionar a esteira;
 - sucesso furtivo não causa dano; falha causa metade do dano diretamente na
   vida, ignorando arma e qualquer proteção;
+- assassino possui a maior chance de furtividade, seguido pela arqueira;
+- cavaleiro possui uma chance baixa e o anão não pode usar furtividade;
 - baús podem conter arma ou comida;
 - três chamas coletadas encerram a fase;
+- a chama ativa é mantida em uma região alcançável pelo herói, inclusive ao
+  restaurar saves antigos ou depois de movimentos da esteira;
 - somente o segmento entre a borda de entrada e a posição anterior do herói
   desliza para preencher o espaço vazio.
 
@@ -61,15 +65,23 @@ Fonte dark fantasy registrada: **Cinzel Decorative Bold** em
 - fechar a aplicação antes de iniciar uma partida é seguro;
 - Enter executa somente uma opção do menu;
 - `Continuar` só inicia quando existe um save local válido;
+- saves são feitos manualmente no pause, sem gravações automáticas durante as
+  ações da partida;
+- o save principal usa JSON em `BlameCinders/saves/slot-001.json` na pasta do
+  usuário, com escrita temporária, backup e migração automática do `Preferences`;
+- um arquivo principal corrompido pode ser recuperado pelo backup e não é
+  apagado durante a consulta do botão `Continuar`;
+- o menu `Salvar / Sair` permite salvar e continuar ou salvar e voltar ao menu;
 - música e efeitos possuem configuração persistente no menu e no pause;
 - pause preserva a modal anterior e congela tabuleiro, zoom, animações e timers;
 - reiniciar após voltar ao menu recria HUD e mensagens;
-- revelação aguarda o flip terminar antes de abrir a informação;
+- a textura da frente é preparada antes do flip, e a revelação aguarda a
+  animação terminar antes de abrir a informação;
 - existe um único mapeamento entre o tipo lógico e o identificador visual da carta;
 - modelos e serviços rejeitam dependências e estados nulos na entrada;
 - regras numéricas estão reunidas em `BalanceamentoJogo`;
 - consultas de existência de imagens e atores do HUD são reutilizadas;
-- existem 67 testes automatizados no código-fonte.
+- existem 107 testes automatizados no código-fonte.
 
 ## Pendências deliberadas
 

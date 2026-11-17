@@ -1,10 +1,13 @@
 package com.blamecinders.tabuleiro;
 
+import com.blamecinders.combate.Inimigo;
+import com.blamecinders.configuracao.BalanceamentoJogo;
 import org.junit.jupiter.api.Test;
 
 import java.util.Random;
 
 import static com.blamecinders.tabuleiro.TipoCarta.CHAMA;
+import static com.blamecinders.tabuleiro.TipoCarta.BAU;
 import static com.blamecinders.tabuleiro.TipoCarta.INIMIGO;
 import static com.blamecinders.tabuleiro.TipoCarta.PAREDE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -14,6 +17,62 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class TabuleiroTest {
+
+    @Test
+    void geraChamaMesmoQuandoTodasAsCartasEstaoReveladas() {
+        CartaInfo[][] grid = gridPreenchido();
+        grid[0][0] = null;
+        for (int linha = 0; linha < Tabuleiro.LINHAS; linha++) {
+            for (int coluna = 0; coluna < Tabuleiro.COLUNAS; coluna++) {
+                if (grid[linha][coluna] != null) {
+                    grid[linha][coluna].setInimigo(
+                        new Inimigo("Teste", 5, "INIMIGO 1")
+                    );
+                    grid[linha][coluna].setEstado(EstadoCarta.REVELADA);
+                }
+            }
+        }
+        Tabuleiro tabuleiro = new Tabuleiro(grid, 0, 0, new Random(1));
+
+        tabuleiro.gerarNovaChamaUnica();
+
+        assertEquals(1, contarTipo(tabuleiro, TipoCarta.CHAMA));
+    }
+
+    @Test
+    void reposicionaChamaQueFicouIsoladaPorParedes() {
+        CartaInfo[][] grid = gridPreenchido();
+        grid[0][0] = null;
+        for (int linha = 0; linha < Tabuleiro.LINHAS; linha++) {
+            grid[linha][1] = new CartaInfo(PAREDE);
+        }
+        grid[0][2] = new CartaInfo(CHAMA);
+        Tabuleiro tabuleiro = new Tabuleiro(grid, 0, 0, new Random(4));
+
+        tabuleiro.moverJogador(1, 0);
+        tabuleiro.aplicarEsteira(0, 0, 1, 0);
+
+        assertEquals(1, contarTipo(tabuleiro, CHAMA));
+        assertEquals(0, colunaDoTipo(tabuleiro, CHAMA));
+        assertTrue(tabuleiro.existeMovimentoValido());
+    }
+
+    @Test
+    void restauraSaveAntigoCercadoComChamaAlcancavel() {
+        CartaInfo[][] grid = gridPreenchido();
+        grid[0][0] = null;
+        for (int linha = 0; linha < Tabuleiro.LINHAS; linha++) {
+            grid[linha][1] = new CartaInfo(PAREDE);
+        }
+        grid[1][0] = new CartaInfo(PAREDE);
+        grid[0][2] = new CartaInfo(CHAMA);
+
+        Tabuleiro tabuleiro = Tabuleiro.restaurar(grid, 0, 0, 0);
+
+        assertTrue(tabuleiro.existeMovimentoValido());
+        assertEquals(1, contarTipo(tabuleiro, CHAMA));
+        assertEquals(0, colunaDoTipo(tabuleiro, CHAMA));
+    }
 
     @Test
     void iniciaComUmaUnicaChamaESemCartaSobHeroi() {
@@ -26,8 +85,52 @@ class TabuleiroTest {
     }
 
     @Test
+    void respeitaLimitesDeBausEParedesNaGeracaoInicial() {
+        for (int semente = 0; semente < 300; semente++) {
+            Tabuleiro tabuleiro = new Tabuleiro(new Random(semente));
+            assertTrue(
+                contarTipo(tabuleiro, BAU) <= BalanceamentoJogo.LIMITE_BAUS_TABULEIRO
+            );
+            assertTrue(
+                contarTipo(tabuleiro, PAREDE)
+                    <= BalanceamentoJogo.LIMITE_PAREDES_TABULEIRO
+            );
+        }
+    }
+
+    @Test
+    void distribuicaoMediaDoTabuleiroPermaneceDentroDaFaixaPlanejada() {
+        int amostras = 2_000;
+        int totalBaus = 0;
+        int totalParedes = 0;
+        int totalInimigos = 0;
+
+        for (int semente = 0; semente < amostras; semente++) {
+            Tabuleiro tabuleiro = new Tabuleiro(new Random(semente));
+            totalBaus += contarTipo(tabuleiro, BAU);
+            totalParedes += contarTipo(tabuleiro, PAREDE);
+            totalInimigos += contarTipo(tabuleiro, INIMIGO);
+            assertEquals(1, contarTipo(tabuleiro, CHAMA));
+        }
+
+        double mediaBaus = (double) totalBaus / amostras;
+        double mediaParedes = (double) totalParedes / amostras;
+        double mediaInimigos = (double) totalInimigos / amostras;
+        assertTrue(mediaBaus >= 1.5 && mediaBaus <= 2.8, "Média de baús: " + mediaBaus);
+        assertTrue(
+            mediaParedes >= 1.7 && mediaParedes <= 3.2,
+            "Média de paredes: " + mediaParedes
+        );
+        assertTrue(
+            mediaInimigos >= 12.0 && mediaInimigos <= 15.0,
+            "Média de inimigos: " + mediaInimigos
+        );
+    }
+
+    @Test
     void moverParaDireitaDeslocaSomenteSegmentoDaEsquerda() {
         CartaInfo[][] grid = gridPreenchido();
+        grid[0][0] = new CartaInfo(CHAMA);
         CartaInfo primeira = grid[1][0];
         CartaInfo segunda = grid[1][1];
         CartaInfo ultima = grid[1][4];
@@ -47,6 +150,7 @@ class TabuleiroTest {
     @Test
     void moverParaCimaDeslocaSomenteSegmentoDeBaixo() {
         CartaInfo[][] grid = gridPreenchido();
+        grid[0][0] = new CartaInfo(CHAMA);
         CartaInfo bordaInferior = grid[3][3];
         CartaInfo acimaDoDestino = grid[0][3];
         Tabuleiro tabuleiro = new Tabuleiro(grid, 2, 3, new Random(13));
@@ -126,5 +230,14 @@ class TabuleiroTest {
 
     private static int contarCelulasVazias(Tabuleiro tabuleiro) {
         return contarTipo(tabuleiro, TipoCarta.VAZIO);
+    }
+
+    private static int colunaDoTipo(Tabuleiro tabuleiro, TipoCarta tipo) {
+        for (int linha = 0; linha < Tabuleiro.LINHAS; linha++) {
+            for (int coluna = 0; coluna < Tabuleiro.COLUNAS; coluna++) {
+                if (tabuleiro.getTipoSeguro(linha, coluna) == tipo) return coluna;
+            }
+        }
+        return -1;
     }
 }
